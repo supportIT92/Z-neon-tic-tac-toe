@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Neon Gaming — Login or create your account">
+    <title>Neon Gaming — Login</title>
+    <link rel="stylesheet" href="auth.css">
+</head>
+
+<body>
+
+    <!-- =============================
+         ANIMATED BACKGROUND
+    ============================== -->
+    <div class="bg" aria-hidden="true">
+        <div class="bg-grid"></div>
+        <div class="glow glow-left"></div>
+        <div class="glow glow-right"></div>
+        <div class="glow glow-top"></div>
+        <!-- Floating neon particles -->
+        <div class="particle p1"></div>
+        <div class="particle p2"></div>
+        <div class="particle p3"></div>
+        <div class="particle p4"></div>
+        <div class="particle p5"></div>
+        <div class="particle p6"></div>
+    </div>
+
+    <!-- =============================
+         AUTH CARD
+    ============================== -->
+    <main class="auth-wrapper" id="authWrapper">
+
+        <div class="auth-card" id="authCard" role="main">
+
+            <!-- LOGO -->
+            <div class="logo" aria-label="Neon Gaming">
+                <span class="logo-x">✕</span>
+                <span class="logo-o">○</span>
+            </div>
+
+            <h1 class="brand-name">NEON GAMING</h1>
+            <p class="brand-tagline">
+                <span class="line"></span>
+                PLAY. CHALLENGE. WIN.
+                <span class="line"></span>
+            </p>
+
+            <!-- ===== FORM TITLE ===== -->
+            <div class="form-title-wrap">
+                <span class="form-divider"></span>
+                <h2 class="form-title" id="formTitle">LOGIN</h2>
+                <span class="form-divider"></span>
+            </div>
+
+            <!-- ===== ERROR / SUCCESS BANNER ===== -->
+            <div class="alert" id="alertBox" role="alert" aria-live="polite" aria-atomic="true"></div>
+
+            <!-- ===== LOGIN FORM ===== -->
+            <form class="auth-form" id="loginForm" novalidate autocomplete="off">
+
+                <div class="field-group">
+                    <span class="field-icon" aria-hidden="true">👤</span>
+                    <input
+                        type="text"
+                        id="loginIdentifier"
+                        name="loginIdentifier"
+                        placeholder="Email or Username"
+                        maxlength="60"
+                        autocomplete="username"
+                        spellcheck="false"
+                        aria-label="Email or Username"
+                        required>
+                </div>
+
+                <div class="field-group">
+                    <span class="field-icon" aria-hidden="true">🔒</span>
+                    <input
+                        type="password"
+                        id="loginPassword"
+                        name="loginPassword"
+                        placeholder="Password"
+                        maxlength="128"
+                        autocomplete="current-password"
+                        aria-label="Password"
+                        required>
+                    <button
+                        type="button"
+                        class="toggle-pw"
+                        id="toggleLoginPw"
+                        aria-label="Show password"
+                        tabindex="0">
+                        <span class="eye-icon" aria-hidden="true">👁</span>
+                    </button>
+                </div>
+
+                <div class="form-options">
+                    <label class="remember-label">
+                        <input type="checkbox" id="rememberMe" name="rememberMe">
+                        <span class="custom-check" aria-hidden="true"></span>
+                        Remember Me
+                    </label>
+                    <button type="button" class="link-btn" id="forgotBtn">Forgot Password?</button>
+                </div>
+
+                <button type="submit" class="submit-btn" id="loginBtn">
+                    <span class="btn-text">LOGIN</span>
+                    <span class="btn-glow" aria-hidden="true"></span>
+                </button>
+
+            </form>
+
+            <!-- ===== SIGNUP FORM ===== -->
+            <form class="auth-form hidden" id="signupForm" novalidate autocomplete="off">
+
+                <div class="field-group">
+                    <span class="field-icon" aria-hidden="true">👤</span>
+                    <input
+                        type="text"
+                        id="signupUsername"
+                        name="signupUsername"
+                        placeholder="Username"
+                        maxlength="20"
+                        autocomplete="username"
+                        spellcheck="false"
+                        aria-label="Username"
+                        required>
+                </div>
+
+                <div class="field-group">
+                    <span class="field-icon" aria-hidden="true">✉</span>
+                    <input
+                        type="email"
+                        id="signupEmail"
+                        name="signupEmail"
+                        placeholder="Email Address"
+                        maxlength="100"
+                        autocomplete="email"
+                        spellcheck="false"
+                        aria-label="Email Address"
+                        required>
+                </div>
+
+                <div class="field-group">
+                    <span class="field-icon" aria-hidden="true">🔒</span>
+                    <input
+                        type="password"
+                        id="signupPassword"
+                        name="signupPassword"
+                        placeholder="Password"
+                        maxlength="128"
+                        autocomplete="new-password"
+                        aria-label="Password"
+                        required>
+                    <button
+                        type="button"
+                        class="toggle-pw"
+                        id="toggleSignupPw"
+                        aria-label="Show password"
+                        tabindex="0">
+                        <span class="eye-icon" aria-hidden="true">👁</span>
+                    </button>
+                </div>
+
+                <!-- Password strength bar -->
+                <div class="strength-wrap" id="strengthWrap" aria-live="polite">
+                    <div class="strength-bar">
+                        <div class="strength-fill" id="strengthFill"></div>
+                    </div>
+                    <span class="strength-label" id="strengthLabel"></span>
+                </div>
+
+                <!-- Password requirements hint -->
+                <p class="pw-hint" id="pwHint">
+                    🔒 Min 10 chars · Uppercase · Lowercase · Number · Special char (!@#$%)
+                </p>
+
+                <div class="field-group">
+                    <span class="field-icon" aria-hidden="true">🔒</span>
+                    <input
+                        type="password"
+                        id="signupConfirm"
+                        name="signupConfirm"
+                        placeholder="Confirm Password"
+                        maxlength="128"
+                        autocomplete="new-password"
+                        aria-label="Confirm Password"
+                        required>
+                    <button
+                        type="button"
+                        class="toggle-pw"
+                        id="toggleConfirmPw"
+                        aria-label="Show confirm password"
+                        tabindex="0">
+                        <span class="eye-icon" aria-hidden="true">👁</span>
+                    </button>
+                </div>
+
+                <div class="form-options terms-row">
+                    <label class="remember-label">
+                        <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                        <span class="custom-check" aria-hidden="true"></span>
+                        I agree to the <button type="button" class="link-btn inline">Terms &amp; Conditions</button>
+                    </label>
+                </div>
+
+                <button type="submit" class="submit-btn" id="signupBtn">
+                    <span class="btn-text">SEND OTP &amp; VERIFY</span>
+                    <span class="btn-glow" aria-hidden="true"></span>
+                </button>
+
+            </form>
+
+            <!-- ===== FORGOT PASSWORD PANEL ===== -->
+            <form class="auth-form hidden" id="forgotForm" novalidate autocomplete="off">
+
+                <p class="forgot-hint">Enter your email and we'll send you a reset link.</p>
+
+                <div class="field-group">
+                    <span class="field-icon" aria-hidden="true">✉</span>
+                    <input
+                        type="email"
+                        id="forgotEmail"
+                        name="forgotEmail"
+                        placeholder="Email Address"
+                        maxlength="100"
+                        autocomplete="email"
+                        spellcheck="false"
+                        aria-label="Email Address"
+                        required>
+                </div>
+
+                <button type="submit" class="submit-btn" id="forgotSubmitBtn">
+                    <span class="btn-text">SEND RESET LINK</span>
+                    <span class="btn-glow" aria-hidden="true"></span>
+                </button>
+
+                <button type="button" class="link-btn back-link" id="backToLoginBtn">← Back to Login</button>
+
+            </form>
+
+            <!-- ===== OTP VERIFICATION PANEL ===== -->
+            <div class="auth-form hidden" id="otpPanel">
+
+                <div class="otp-header">
+                    <div class="otp-mail-icon" aria-hidden="true">📧</div>
+                    <p class="otp-sent-msg">
+                        We've sent a <strong>6-digit OTP</strong> to<br>
+                        <span class="otp-email-display" id="otpEmailDisplay">—</span>
+                    </p>
+                </div>
+
+                <!-- 6 individual OTP digit boxes -->
+                <div class="otp-boxes" id="otpBoxes" role="group" aria-label="Enter OTP digits">
+                    <input class="otp-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Digit 1" autocomplete="one-time-code">
+                    <input class="otp-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Digit 2" autocomplete="off">
+                    <input class="otp-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Digit 3" autocomplete="off">
+                    <input class="otp-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Digit 4" autocomplete="off">
+                    <input class="otp-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Digit 5" autocomplete="off">
+                    <input class="otp-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Digit 6" autocomplete="off">
+                </div>
+
+                <!-- Timer -->
+                <div class="otp-timer-wrap" aria-live="polite">
+                    <span class="otp-timer-icon" aria-hidden="true">⏱</span>
+                    <span id="otpTimerText">OTP expires in <strong id="otpTimerCount">05:00</strong></span>
+                </div>
+
+                <button type="button" class="submit-btn" id="otpVerifyBtn">
+                    <span class="btn-text">VERIFY OTP</span>
+                    <span class="btn-glow" aria-hidden="true"></span>
+                </button>
+
+                <div class="otp-footer">
+                    <span>Didn't receive it?</span>
+                    <button type="button" class="link-btn accent" id="otpResendBtn" disabled>
+                        Resend OTP <span id="otpResendTimer"></span>
+                    </button>
+                </div>
+
+                <button type="button" class="link-btn back-link" id="otpBackBtn">← Back to Signup</button>
+
+            </div>
+
+            <!-- ===== SWITCH LINK ===== -->
+            <p class="switch-text" id="switchText">
+                Don't have an account?
+                <button type="button" class="link-btn accent" id="switchBtn">Register</button>
+            </p>
+
+        </div><!-- /.auth-card -->
+
+    </main>
+
+    <!-- EmailJS SDK v4 -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="auth.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Neon Tic Tac Toe - Play against a friend or challenge the AI">
+    <title>Neon Tic Tac Toe</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- BACKGROUND -->
+    <div class="background" aria-hidden="true">
+        <div class="glow glow-one"></div>
+        <div class="glow glow-two"></div>
+        <div class="glow glow-three"></div>
+    </div>
+
+    <!-- =========================
+         VICTORY OVERLAY
+    ========================== -->
+    <section
+        class="victory-overlay"
+        id="victoryOverlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="victoryTitle"
+        aria-hidden="true"
+        tabindex="-1">
+
+        <div class="confetti-container" id="confettiContainer" aria-hidden="true"></div>
+
+        <div class="victory-card">
+
+            <div class="victory-icon" aria-hidden="true">🏆</div>
+
+            <p class="victory-label">VICTORY</p>
+
+            <h2 id="victoryTitle">YOU WIN!</h2>
+
+            <p id="victoryMessage" class="victory-message">Amazing move!</p>
+
+            <div class="victory-buttons">
+
+                <button id="playAgainButton" class="primary-button">
+                    🔄 PLAY AGAIN
+                </button>
+
+                <button id="homeButton" class="back-button">
+                    🏠 HOME
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- =========================
+         HOME SCREEN
+    ========================== -->
+    <section class="home-screen" id="homeScreen" aria-label="Home">
+
+        <div class="home-card">
+
+            <div class="home-toolbar">
+                <button id="themeButton" class="mini-button" aria-label="Switch to light mode">
+                    🌙
+                </button>
+                <button id="rulesButton" class="mini-button" aria-label="Open rules">
+                    ?
+                </button>
+                <button id="logoutButton" class="mini-button" aria-label="Logout" title="Logout">
+                    🚪
+                </button>
+                <!-- Admin panel link — shown only to admin users via script -->
+                <a href="admin.html" id="adminLink" class="mini-button" aria-label="Admin Panel" title="Admin Panel" style="display:none;text-decoration:none;line-height:38px;text-align:center;">👑</a>
+            </div>
+
+            <!-- Logged-in user greeting -->
+            <p class="user-greeting" id="userGreeting" aria-live="polite"></p>
+
+            <div class="game-logo" aria-hidden="true">
+                <span>✕</span>
+                <span>○</span>
+            </div>
+
+            <p class="brand">NEON ARCADE</p>
+
+            <h1>TIC TAC <span>TOE</span></h1>
+
+            <p class="subtitle">The ultimate X &amp; O battle</p>
+
+            <div class="quick-stats" id="quickStats" aria-label="Your stats">
+                <div>
+                    <span>BEST SCORE</span>
+                    <strong id="bestScoreLabel">0</strong>
+                </div>
+                <div>
+                    <span>MODE</span>
+                    <strong id="activeModeLabel">2P</strong>
+                </div>
+            </div>
+
+            <button id="playButton" class="primary-button">
+                PLAY NOW
+            </button>
+
+        </div>
+
+    </section>
+
+    <!-- =========================
+         MODE SCREEN
+    ========================== -->
+    <section class="mode-screen" id="modeScreen" aria-label="Select game mode">
+
+        <div class="mode-card">
+
+            <p class="brand">SELECT GAME MODE</p>
+
+            <h2>HOW DO YOU WANT <span>TO PLAY?</span></h2>
+
+            <button id="twoPlayerButton" class="mode-button">
+                <div class="mode-icon" aria-hidden="true">👥</div>
+                <div class="mode-content">
+                    <strong>2 PLAYER</strong>
+                    <small>Play with a friend</small>
+                </div>
+            </button>
+
+            <button id="computerButton" class="mode-button">
+                <div class="mode-icon" aria-hidden="true">🤖</div>
+                <div class="mode-content">
+                    <strong>VS COMPUTER</strong>
+                    <small>Challenge the AI</small>
+                </div>
+            </button>
+
+            <button id="backHomeButton" class="back-button">← BACK</button>
+
+        </div>
+
+    </section>
+
+    <!-- =========================
+         PLAYER SETUP SCREEN
+    ========================== -->
+    <section class="setup-screen" id="setupScreen" aria-label="Game setup">
+
+        <div class="setup-card">
+
+            <p class="brand">GAME SETUP</p>
+
+            <h2>READY TO <span>PLAY?</span></h2>
+
+            <!-- PLAYER X -->
+            <div class="input-group">
+                <label for="playerXInput" id="playerXLabel">PLAYER X NAME</label>
+                <input
+                    type="text"
+                    id="playerXInput"
+                    placeholder="Enter name"
+                    maxlength="15"
+                    autocomplete="off"
+                    spellcheck="false">
+            </div>
+
+            <!-- PLAYER O -->
+            <div class="input-group">
+                <label for="playerOInput" id="playerOLabel">PLAYER O NAME</label>
+                <input
+                    type="text"
+                    id="playerOInput"
+                    placeholder="Enter name"
+                    maxlength="15"
+                    autocomplete="off"
+                    spellcheck="false">
+            </div>
+
+            <!-- AI DIFFICULTY -->
+            <div class="difficulty-box" id="difficultyBox" role="group" aria-labelledby="difficultyLabel">
+                <label id="difficultyLabel">AI DIFFICULTY</label>
+                <div class="difficulty-buttons">
+                    <button class="difficulty-button active" data-level="easy" aria-pressed="true">EASY</button>
+                    <button class="difficulty-button" data-level="medium" aria-pressed="false">MEDIUM</button>
+                    <button class="difficulty-button" data-level="hard" aria-pressed="false">HARD</button>
+                </div>
+            </div>
+
+            <!-- MATCH FORMAT -->
+            <div class="match-format-box" role="group" aria-labelledby="matchFormatLabel">
+                <label id="matchFormatLabel">MATCH FORMAT</label>
+                <div class="match-format-buttons">
+                    <button class="format-button active" data-format="3" aria-pressed="true">BEST OF 3</button>
+                    <button class="format-button" data-format="5" aria-pressed="false">BEST OF 5</button>
+                </div>
+            </div>
+
+            <!-- START -->
+            <button id="startMatchButton" class="primary-button">START MATCH</button>
+
+            <button id="backModeButton" class="back-button">← BACK</button>
+
+        </div>
+
+    </section>
+
+    <!-- =========================
+         GAME SCREEN
+    ========================== -->
+    <main class="game-screen" id="gameScreen" aria-label="Game">
+
+        <!-- HEADER ROW -->
+        <div class="header-row">
+            <button id="backGameButton" class="back-game-button">← BACK</button>
+            <button id="rulesButtonGame" class="mini-button small" aria-label="Open rules">?</button>
+        </div>
+
+        <header class="top-bar">
+            <div>
+                <p class="brand">NEON ARCADE</p>
+                <h2>TIC TAC TOE</h2>
+            </div>
+            <button id="soundButton" class="sound-button" aria-label="Mute sound">🔊</button>
+        </header>
+
+        <!-- PLAYERS -->
+        <section class="players" aria-label="Players">
+
+            <div class="player player-x" id="playerCardX" aria-label="Player X info">
+                <div class="symbol" aria-hidden="true">X</div>
+                <div>
+                    <small id="playerXName">PLAYER X</small>
+                    <strong id="scoreX" aria-label="Round score">0</strong>
+                    <div class="player-stats">
+                        <span>WINS</span>
+                        <strong id="winsX" aria-label="Total wins">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="versus" aria-hidden="true">VS</div>
+
+            <div class="player player-o" id="playerCardO" aria-label="Player O info">
+                <div class="symbol" aria-hidden="true">O</div>
+                <div>
+                    <small id="playerOName">PLAYER O</small>
+                    <strong id="scoreO" aria-label="Round score">0</strong>
+                    <div class="player-stats">
+                        <span>WINS</span>
+                        <strong id="winsO" aria-label="Total wins">0</strong>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TURN -->
+        <div class="turn" role="status" aria-live="polite" aria-atomic="true">
+            <span id="turnSymbol" aria-hidden="true">X</span>
+            <span id="turnText">PLAYER X'S TURN</span>
+        </div>
+
+        <!-- MATCH PROGRESS -->
+        <div class="match-progress" aria-label="Match progress">
+            <div class="round-label" id="roundLabel">ROUND 1 OF 3</div>
+            <div class="round-dots" id="roundDots" aria-hidden="true"></div>
+        </div>
+
+        <!-- BOARD -->
+        <section
+            class="board"
+            id="board"
+            role="grid"
+            aria-label="Tic Tac Toe board"
+            aria-describedby="turnText">
+
+            <button class="cell" data-index="0" role="gridcell" aria-label="Row 1, Column 1"></button>
+            <button class="cell" data-index="1" role="gridcell" aria-label="Row 1, Column 2"></button>
+            <button class="cell" data-index="2" role="gridcell" aria-label="Row 1, Column 3"></button>
+            <button class="cell" data-index="3" role="gridcell" aria-label="Row 2, Column 1"></button>
+            <button class="cell" data-index="4" role="gridcell" aria-label="Row 2, Column 2"></button>
+            <button class="cell" data-index="5" role="gridcell" aria-label="Row 2, Column 3"></button>
+            <button class="cell" data-index="6" role="gridcell" aria-label="Row 3, Column 1"></button>
+            <button class="cell" data-index="7" role="gridcell" aria-label="Row 3, Column 2"></button>
+            <button class="cell" data-index="8" role="gridcell" aria-label="Row 3, Column 3"></button>
+
+        </section>
+
+        <!-- GAME MESSAGE -->
+        <div id="message" class="message" role="status" aria-live="polite">Make your move!</div>
+
+        <!-- GAME BUTTONS -->
+        <div class="game-buttons">
+
+            <button id="newGameButton" class="game-button">
+                🔄 NEW ROUND
+            </button>
+
+            <button id="undoButton" class="game-button undo-button" aria-label="Undo last move" disabled>
+                ↩ UNDO
+            </button>
+
+            <button id="resetButton" class="game-button secondary">
+                RESET SCORE
+            </button>
+
+        </div>
+
+        <footer>⚡ NEON ARCADE ⚡</footer>
+
+    </main>
+
+    <!-- =========================
+         AUDIO
+    ========================== -->
+    <audio id="backgroundMusic" loop preload="none">
+        <source src="Sound/background.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="clickSound" preload="auto">
+        <source src="Sound/click.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="winSound" preload="auto">
+        <source src="Sound/win.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- =========================
+         RULES MODAL
+    ========================== -->
+    <div
+        class="info-modal"
+        id="rulesModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rulesTitle"
+        aria-hidden="true"
+        tabindex="-1">
+
+        <div class="info-card">
+            <p class="brand">HOW TO PLAY</p>
+            <h3 id="rulesTitle">Neon Showdown</h3>
+            <ul>
+                <li>Take turns placing your symbol on the 3×3 board.</li>
+                <li>Complete a row, column, or diagonal to win the round.</li>
+                <li>First to reach the match target wins the game.</li>
+                <li>Choose 2-player mode or battle a smart AI at easy, medium, or hard difficulty.</li>
+                <li>In 2-player mode, use the <strong>↩ UNDO</strong> button to take back your last move.</li>
+                <li>Use arrow keys to navigate the board with a keyboard.</li>
+            </ul>
+            <button id="closeRulesButton" class="primary-button">GOT IT</button>
+        </div>
+
+    </div>
+
+    <!-- AUTH GUARD: redirect to login if no session -->
+    <script>
+        (function() {
+            try {
+                var session = JSON.parse(localStorage.getItem("neonGaming_session"));
+                if (!session || !session.username) {
+                    window.location.replace("auth.html");
+                }
+            } catch (e) {
+                window.location.replace("auth.html");
+            }
+        })();
+    </script>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

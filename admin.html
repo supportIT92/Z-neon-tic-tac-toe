@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Gaming — Admin Console</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+    <!-- ── ANIMATED BACKGROUND ─────────────────────────── -->
+    <div class="bg" aria-hidden="true">
+        <div class="bg-grid"></div>
+        <div class="glow glow-a"></div>
+        <div class="glow glow-b"></div>
+    </div>
+
+    <!-- ── ACCESS DENIED OVERLAY (shown if not admin) ──── -->
+    <div class="access-denied" id="accessDenied" aria-modal="true" role="alertdialog" aria-labelledby="adTitle">
+        <div class="ad-card">
+            <div class="ad-icon" aria-hidden="true">🚫</div>
+            <h2 id="adTitle">ACCESS DENIED</h2>
+            <p>You do not have permission to view this page.</p>
+            <button class="ad-btn" id="adBackBtn">← Go Back</button>
+        </div>
+    </div>
+
+    <!-- ── CONFIRM MODAL ────────────────────────────────── -->
+    <div class="modal-overlay" id="confirmModal" aria-modal="true" role="dialog" aria-labelledby="confirmTitle">
+        <div class="modal-card">
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure?</p>
+            <div class="modal-btns">
+                <button class="modal-confirm-btn" id="confirmYes">Yes, proceed</button>
+                <button class="modal-cancel-btn" id="confirmNo">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── EDIT USER MODAL ──────────────────────────────── -->
+    <div class="modal-overlay" id="editModal" aria-modal="true" role="dialog" aria-labelledby="editTitle">
+        <div class="modal-card">
+            <h3 id="editTitle">Edit User</h3>
+            <div class="edit-field">
+                <label for="editUsername">Username</label>
+                <input type="text" id="editUsername" maxlength="20" autocomplete="off">
+            </div>
+            <div class="edit-field">
+                <label for="editEmail">Email</label>
+                <input type="email" id="editEmail" maxlength="100" autocomplete="off">
+            </div>
+            <div class="edit-field">
+                <label for="editRole">Role</label>
+                <select id="editRole">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="edit-field">
+                <label for="editNewPassword">New Password <span class="optional">(leave blank to keep)</span></label>
+                <input type="password" id="editNewPassword" maxlength="128" autocomplete="new-password" placeholder="Leave blank to keep current">
+            </div>
+            <div class="modal-btns">
+                <button class="modal-confirm-btn" id="editSaveBtn">Save Changes</button>
+                <button class="modal-cancel-btn" id="editCancelBtn">Cancel</button>
+            </div>
+            <p class="edit-error" id="editError"></p>
+        </div>
+    </div>
+
+    <!-- ── MAIN WRAPPER ─────────────────────────────────── -->
+    <div class="admin-wrapper" id="adminWrapper">
+
+        <!-- ── SIDEBAR ──────────────────────────────────── -->
+        <aside class="sidebar" id="sidebar">
+
+            <div class="sidebar-logo">
+                <span class="logo-x" aria-hidden="true">✕</span>
+                <span class="logo-o" aria-hidden="true">○</span>
+                <span class="logo-text">ADMIN</span>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Admin navigation">
+                <button class="nav-item active" data-section="dashboard" aria-current="page">
+                    <span class="nav-icon" aria-hidden="true">📊</span>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-section="users">
+                    <span class="nav-icon" aria-hidden="true">👥</span>
+                    <span>Users</span>
+                </button>
+                <button class="nav-item" data-section="activity">
+                    <span class="nav-icon" aria-hidden="true">📋</span>
+                    <span>Activity Log</span>
+                </button>
+                <button class="nav-item" data-section="settings">
+                    <span class="nav-icon" aria-hidden="true">⚙️</span>
+                    <span>Settings</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="admin-badge" id="adminBadge">
+                    <span class="badge-avatar" aria-hidden="true">👑</span>
+                    <div>
+                        <strong id="sidebarUsername">Admin</strong>
+                        <small id="sidebarEmail">—</small>
+                    </div>
+                </div>
+                <button class="sidebar-logout" id="logoutBtn" aria-label="Logout">
+                    🚪 Logout
+                </button>
+                <a href="index.html" class="sidebar-game-link">🎮 Back to Game</a>
+            </div>
+
+        </aside>
+
+        <!-- ── MAIN CONTENT ──────────────────────────────── -->
+        <main class="main-content" id="mainContent">
+
+            <!-- TOP BAR -->
+            <header class="topbar">
+                <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+                <h1 class="topbar-title" id="topbarTitle">Dashboard</h1>
+                <div class="topbar-right">
+                    <span class="topbar-time" id="topbarTime"></span>
+                    <span class="topbar-role-badge">ADMIN</span>
+                </div>
+            </header>
+
+            <!-- TOAST NOTIFICATION -->
+            <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+            <!-- ════════════════════════════════════════════
+                 SECTION: DASHBOARD
+            ═══════════════════════════════════════════════ -->
+            <section class="section active" id="section-dashboard" aria-label="Dashboard">
+
+                <div class="stats-grid">
+
+                    <div class="stat-card" id="statTotalUsers">
+                        <div class="stat-icon" aria-hidden="true">👥</div>
+                        <div class="stat-body">
+                            <span class="stat-label">Total Users</span>
+                            <strong class="stat-value" id="statValTotal">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" aria-hidden="true">👑</div>
+                        <div class="stat-body">
+                            <span class="stat-label">Admins</span>
+                            <strong class="stat-value" id="statValAdmins">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" aria-hidden="true">🚫</div>
+                        <div class="stat-body">
+                            <span class="stat-label">Banned</span>
+                            <strong class="stat-value" id="statValBanned">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" aria-hidden="true">🕐</div>
+                        <div class="stat-body">
+                            <span class="stat-label">Active Today</span>
+                            <strong class="stat-value" id="statValToday">0</strong>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Recent registrations -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Recent Registrations</h2>
+                        <button class="panel-action" id="dashGoUsers">View All →</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="data-table" id="recentTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Joined</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentBody">
+                                <tr><td colspan="5" class="empty-row">No users yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ════════════════════════════════════════════
+                 SECTION: USERS
+            ═══════════════════════════════════════════════ -->
+            <section class="section" id="section-users" aria-label="User Management">
+
+                <div class="users-toolbar">
+
+                    <div class="search-wrap">
+                        <span class="search-icon" aria-hidden="true">🔍</span>
+                        <input
+                            type="search"
+                            id="userSearch"
+                            placeholder="Search username or email…"
+                            aria-label="Search users"
+                            autocomplete="off">
+                    </div>
+
+                    <div class="filter-group" role="group" aria-label="Filter users">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="admin">Admins</button>
+                        <button class="filter-btn" data-filter="user">Users</button>
+                        <button class="filter-btn" data-filter="banned">Banned</button>
+                    </div>
+
+                    <button class="export-btn" id="exportBtn" aria-label="Export users as CSV">
+                        ⬇ Export CSV
+                    </button>
+
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">All Users</h2>
+                        <span class="user-count-badge" id="userCountBadge">0 users</span>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="data-table" id="usersTable" aria-label="Users list">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Last Login</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersBody">
+                                <tr><td colspan="8" class="empty-row">No users found.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ════════════════════════════════════════════
+                 SECTION: ACTIVITY LOG
+            ═══════════════════════════════════════════════ -->
+            <section class="section" id="section-activity" aria-label="Activity Log">
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Activity Log</h2>
+                        <button class="panel-action danger-action" id="clearLogBtn">🗑 Clear Log</button>
+                    </div>
+                    <div class="log-wrap" id="activityLog" aria-live="polite">
+                        <p class="empty-row">No activity recorded yet.</p>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ════════════════════════════════════════════
+                 SECTION: SETTINGS
+            ═══════════════════════════════════════════════ -->
+            <section class="section" id="section-settings" aria-label="Settings">
+
+                <div class="panel settings-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Admin Settings</h2>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3 class="settings-heading">Danger Zone</h3>
+
+                        <div class="setting-row">
+                            <div>
+                                <strong>Reset All Game Stats</strong>
+                                <p>Clears all stored win/score data for every player. Does NOT delete accounts.</p>
+                            </div>
+                            <button class="danger-btn" id="resetStatsBtn">Reset Stats</button>
+                        </div>
+
+                        <div class="setting-row">
+                            <div>
+                                <strong>Delete ALL Users</strong>
+                                <p>Permanently removes every user account including your own. This cannot be undone.</p>
+                            </div>
+                            <button class="danger-btn" id="nukeUsersBtn">Nuke Users</button>
+                        </div>
+
+                        <div class="setting-row">
+                            <div>
+                                <strong>Clear Activity Log</strong>
+                                <p>Wipes the entire admin activity log from storage.</p>
+                            </div>
+                            <button class="danger-btn" id="clearLogBtn2">Clear Log</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3 class="settings-heading">Data Export</h3>
+                        <div class="setting-row">
+                            <div>
+                                <strong>Export User Data (CSV)</strong>
+                                <p>Download all registered users as a CSV file.</p>
+                            </div>
+                            <button class="export-btn" id="exportBtn2">⬇ Export</button>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <strong>Export Activity Log (JSON)</strong>
+                                <p>Download the full activity log as a JSON file.</p>
+                            </div>
+                            <button class="export-btn" id="exportLogBtn">⬇ Export</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3 class="settings-heading">Storage Info</h3>
+                        <div class="storage-info" id="storageInfo">Loading…</div>
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
