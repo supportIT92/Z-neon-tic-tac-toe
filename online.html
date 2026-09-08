@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Gaming — Online Play</title>
+    <link rel="stylesheet" href="online.css">
+</head>
+<body>
+
+    <!-- BACKGROUND -->
+    <div class="bg" aria-hidden="true">
+        <div class="bg-grid"></div>
+        <div class="glow glow-a"></div>
+        <div class="glow glow-b"></div>
+        <div class="glow glow-c"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         SCREEN 1 — LOBBY (Create / Join)
+    ═══════════════════════════════════════ -->
+    <div class="screen active" id="lobbyScreen">
+        <div class="card lobby-card">
+
+            <a href="index.html" class="back-btn" aria-label="Back to home">← BACK</a>
+
+            <div class="logo" aria-hidden="true">
+                <span class="logo-x">✕</span>
+                <span class="logo-o">○</span>
+            </div>
+
+            <h1 class="page-title">ONLINE <span>BATTLE</span></h1>
+            <p class="page-sub">Challenge a friend anywhere in the world</p>
+
+            <!-- Player name -->
+            <div class="input-wrap">
+                <label for="lobbyName" class="input-label">YOUR NAME</label>
+                <input type="text" id="lobbyName" maxlength="15"
+                    placeholder="Enter your name" autocomplete="off" spellcheck="false">
+            </div>
+
+            <div class="lobby-divider">
+                <span class="ld-line"></span>
+                <span class="ld-text">CHOOSE ACTION</span>
+                <span class="ld-line"></span>
+            </div>
+
+            <!-- Create Room -->
+            <button class="action-btn create-btn" id="createRoomBtn">
+                <span class="ab-icon" aria-hidden="true">🎮</span>
+                <div>
+                    <strong>CREATE ROOM</strong>
+                    <small>Get a room code to share</small>
+                </div>
+            </button>
+
+            <!-- Join Room -->
+            <div class="join-wrap">
+                <div class="input-wrap">
+                    <label for="joinCodeInput" class="input-label">ROOM CODE</label>
+                    <input type="text" id="joinCodeInput" maxlength="6"
+                        placeholder="Enter 6-digit code"
+                        autocomplete="off" spellcheck="false"
+                        style="text-transform:uppercase;letter-spacing:6px;font-size:20px;text-align:center">
+                </div>
+                <button class="action-btn join-btn" id="joinRoomBtn">
+                    <span class="ab-icon" aria-hidden="true">🔗</span>
+                    <div>
+                        <strong>JOIN ROOM</strong>
+                        <small>Enter a friend's room code</small>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Alert -->
+            <div class="alert" id="lobbyAlert" role="alert" aria-live="polite"></div>
+
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         SCREEN 2 — WAITING (Room Created)
+    ═══════════════════════════════════════ -->
+    <div class="screen" id="waitingScreen">
+        <div class="card waiting-card">
+
+            <div class="waiting-icon" aria-hidden="true">⏳</div>
+            <h2 class="waiting-title">WAITING FOR OPPONENT</h2>
+            <p class="waiting-sub">Share this code with your friend:</p>
+
+            <div class="room-code-display" id="roomCodeDisplay" aria-label="Room code">
+                ------
+            </div>
+
+            <button class="copy-btn" id="copyCodeBtn" aria-label="Copy room code">
+                📋 COPY CODE
+            </button>
+
+            <div class="waiting-dots" aria-hidden="true">
+                <span></span><span></span><span></span>
+            </div>
+
+            <p class="waiting-hint">Waiting for player 2 to join…</p>
+
+            <button class="cancel-btn" id="cancelWaitBtn">✕ Cancel</button>
+
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         SCREEN 3 — ONLINE GAME
+    ═══════════════════════════════════════ -->
+    <div class="screen" id="gameScreen">
+
+        <!-- Top bar -->
+        <div class="game-topbar">
+            <div class="game-room-info">
+                <span class="room-label">ROOM</span>
+                <span class="room-code-small" id="gameRoomCode">——</span>
+            </div>
+            <div class="conn-status" id="connStatus">
+                <span class="conn-dot"></span>
+                <span id="connText">Connected</span>
+            </div>
+            <button class="quit-btn" id="quitBtn">✕ QUIT</button>
+        </div>
+
+        <!-- Players -->
+        <div class="online-players">
+            <div class="oplayer oplayer-x" id="oPlayerX">
+                <div class="op-symbol">X</div>
+                <div class="op-info">
+                    <span class="op-name" id="oNameX">Player X</span>
+                    <strong class="op-score" id="oScoreX">0</strong>
+                </div>
+                <div class="op-turn-indicator" id="oTurnX" aria-hidden="true"></div>
+            </div>
+
+            <div class="vs-badge">VS</div>
+
+            <div class="oplayer oplayer-o" id="oPlayerO">
+                <div class="op-symbol">O</div>
+                <div class="op-info">
+                    <span class="op-name" id="oNameO">Player O</span>
+                    <strong class="op-score" id="oScoreO">0</strong>
+                </div>
+                <div class="op-turn-indicator" id="oTurnO" aria-hidden="true"></div>
+            </div>
+        </div>
+
+        <!-- Turn indicator -->
+        <div class="online-turn" id="onlineTurn" role="status" aria-live="polite">
+            Your turn
+        </div>
+
+        <!-- Board -->
+        <div class="online-board" id="onlineBoard" role="grid" aria-label="Tic Tac Toe board">
+            <button class="ocell" data-index="0" role="gridcell" aria-label="Row 1, Column 1"></button>
+            <button class="ocell" data-index="1" role="gridcell" aria-label="Row 1, Column 2"></button>
+            <button class="ocell" data-index="2" role="gridcell" aria-label="Row 1, Column 3"></button>
+            <button class="ocell" data-index="3" role="gridcell" aria-label="Row 2, Column 1"></button>
+            <button class="ocell" data-index="4" role="gridcell" aria-label="Row 2, Column 2"></button>
+            <button class="ocell" data-index="5" role="gridcell" aria-label="Row 2, Column 3"></button>
+            <button class="ocell" data-index="6" role="gridcell" aria-label="Row 3, Column 1"></button>
+            <button class="ocell" data-index="7" role="gridcell" aria-label="Row 3, Column 2"></button>
+            <button class="ocell" data-index="8" role="gridcell" aria-label="Row 3, Column 3"></button>
+        </div>
+
+        <!-- Game message -->
+        <div class="online-message" id="onlineMessage" role="status" aria-live="polite"></div>
+
+        <!-- Round buttons -->
+        <div class="online-btns">
+            <button class="online-action-btn" id="rematchBtn" style="display:none">🔄 REMATCH</button>
+            <button class="online-action-btn secondary" id="leaveBtn">🚪 LEAVE</button>
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         RESULT OVERLAY
+    ═══════════════════════════════════════ -->
+    <div class="result-overlay" id="resultOverlay" aria-hidden="true">
+        <div class="result-card">
+            <div class="result-icon" id="resultIcon">🏆</div>
+            <h2 class="result-title" id="resultTitle">YOU WIN!</h2>
+            <p class="result-msg"  id="resultMsg">Amazing!</p>
+            <div class="result-btns">
+                <button class="online-action-btn" id="resultRematch">🔄 REMATCH</button>
+                <button class="online-action-btn secondary" id="resultLeave">🏠 HOME</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (single load) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="online.js"></script>
+
+</body>
+</html>
