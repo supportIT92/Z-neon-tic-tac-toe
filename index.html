@@ -139,6 +139,16 @@
                 </div>
             </button>
 
+            <button id="onlineButton" class="mode-button">
+                <div class="mode-icon" aria-hidden="true" style="background:rgba(139,92,246,.12)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                </div>
+                <div class="mode-content">
+                    <strong>ONLINE MULTIPLAYER</strong>
+                    <small>Play with friends online</small>
+                </div>
+            </button>
+
             <button id="backHomeButton" class="back-button">← BACK</button>
 
         </div>
@@ -371,8 +381,146 @@
         })();
     </script>
 
+    <!-- =========================
+         ONLINE LOBBY SCREEN
+    ========================== -->
+    <section class="mode-screen" id="onlineLobbyScreen" aria-label="Online Multiplayer Lobby">
+        <div class="mode-card online-lobby-card">
+            <p class="brand">ONLINE MULTIPLAYER</p>
+            <h2>BATTLE A <span>FRIEND ONLINE</span></h2>
+            <div class="input-group">
+                <label for="onlineLobbyName">YOUR NAME</label>
+                <input type="text" id="onlineLobbyName" maxlength="15" placeholder="Enter your name" autocomplete="off" spellcheck="false">
+            </div>
+            <button class="mode-button" id="createRoomBtn">
+                <div class="mode-icon" style="background:rgba(0,247,255,.1)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                </div>
+                <div class="mode-content">
+                    <strong>CREATE ROOM</strong>
+                    <small>Get a room code to share</small>
+                </div>
+            </button>
+            <div class="input-group" style="margin-top:6px">
+                <label for="joinCodeInput">ROOM CODE</label>
+                <input type="text" id="joinCodeInput" maxlength="6" placeholder="ENTER 6-DIGIT CODE" autocomplete="off" spellcheck="false" style="text-transform:uppercase;letter-spacing:6px;font-size:18px;text-align:center">
+            </div>
+            <button class="mode-button" id="joinRoomBtn" style="margin-top:4px">
+                <div class="mode-icon" style="background:rgba(255,43,214,.1)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                </div>
+                <div class="mode-content">
+                    <strong>JOIN ROOM</strong>
+                    <small>Enter a friend's room code</small>
+                </div>
+            </button>
+            <div class="online-alert" id="onlineLobbyAlert" role="alert" aria-live="polite"></div>
+            <button id="backOnlineLobbyBtn" class="back-button">← BACK</button>
+        </div>
+    </section>
+
+    <!-- =========================
+         ONLINE WAITING SCREEN
+    ========================== -->
+    <section class="mode-screen" id="onlineWaitingScreen" aria-label="Waiting for opponent">
+        <div class="mode-card" style="text-align:center">
+            <p class="brand">ROOM CREATED</p>
+            <div class="waiting-spinner" aria-hidden="true">⏳</div>
+            <h2>WAITING FOR <span>OPPONENT</span></h2>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Share this code with your friend:</p>
+            <div class="room-code-box" id="roomCodeDisplay" aria-label="Room code">------</div>
+            <button class="primary-button" id="copyCodeBtn" style="margin-bottom:24px">📋 COPY CODE</button>
+            <div class="waiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+            <p style="color:var(--muted);font-size:12px;margin:12px 0 20px">Waiting for player 2 to join…</p>
+            <button class="back-button" id="cancelWaitBtn">✕ Cancel</button>
+        </div>
+    </section>
+
+    <!-- =========================
+         ONLINE GAME SCREEN
+    ========================== -->
+    <section class="game-screen" id="onlineGameScreen" aria-label="Online Game">
+        <div class="header-row">
+            <div class="online-room-info">
+                <span style="color:var(--muted);font-size:9px;letter-spacing:2px">ROOM</span>
+                <span class="online-room-code" id="onlineRoomCodeLabel">——</span>
+            </div>
+            <div class="online-conn-status" id="onlineConnStatus">
+                <span class="online-conn-dot"></span>
+                <span id="onlineConnText">Connected</span>
+            </div>
+            <button class="back-game-button" id="onlineQuitBtn">✕ QUIT</button>
+        </div>
+        <header class="top-bar">
+            <div>
+                <p class="brand">ONLINE BATTLE</p>
+                <h2>TIC TAC TOE</h2>
+            </div>
+            <button id="onlineSoundBtn" class="sound-button" aria-label="Mute sound">🔊</button>
+        </header>
+        <section class="players" aria-label="Online players">
+            <div class="player player-x" id="onlinePlayerX">
+                <div class="symbol" aria-hidden="true">X</div>
+                <div>
+                    <small id="onlineNameX">Player X</small>
+                    <strong id="onlineScoreX">0</strong>
+                    <div class="player-stats"><span>ROLE</span><strong id="onlineRoleX"></strong></div>
+                </div>
+            </div>
+            <div class="versus" aria-hidden="true">VS</div>
+            <div class="player player-o" id="onlinePlayerO">
+                <div class="symbol" aria-hidden="true">O</div>
+                <div>
+                    <small id="onlineNameO">Player O</small>
+                    <strong id="onlineScoreO">0</strong>
+                    <div class="player-stats"><span>ROLE</span><strong id="onlineRoleO"></strong></div>
+                </div>
+            </div>
+        </section>
+        <div class="turn" role="status" aria-live="polite" aria-atomic="true">
+            <span id="onlineTurnSymbol" aria-hidden="true">X</span>
+            <span id="onlineTurnText">Connecting…</span>
+        </div>
+        <section class="board" id="onlineBoard" role="grid" aria-label="Online Tic Tac Toe board">
+            <button class="cell" data-oidx="0" role="gridcell" aria-label="Row 1, Column 1"></button>
+            <button class="cell" data-oidx="1" role="gridcell" aria-label="Row 1, Column 2"></button>
+            <button class="cell" data-oidx="2" role="gridcell" aria-label="Row 1, Column 3"></button>
+            <button class="cell" data-oidx="3" role="gridcell" aria-label="Row 2, Column 1"></button>
+            <button class="cell" data-oidx="4" role="gridcell" aria-label="Row 2, Column 2"></button>
+            <button class="cell" data-oidx="5" role="gridcell" aria-label="Row 2, Column 3"></button>
+            <button class="cell" data-oidx="6" role="gridcell" aria-label="Row 3, Column 1"></button>
+            <button class="cell" data-oidx="7" role="gridcell" aria-label="Row 3, Column 2"></button>
+            <button class="cell" data-oidx="8" role="gridcell" aria-label="Row 3, Column 3"></button>
+        </section>
+        <div id="onlineMessage" class="message" role="status" aria-live="polite">Connecting…</div>
+        <div class="game-buttons">
+            <button id="onlineRematchBtn" class="game-button" style="display:none">🔄 REMATCH</button>
+            <button id="onlineLeaveBtn" class="game-button secondary">🚪 LEAVE</button>
+        </div>
+        <footer>⚡ NEON ARCADE ⚡</footer>
+    </section>
+
+    <!-- =========================
+         ONLINE RESULT OVERLAY
+    ========================== -->
+    <div class="victory-overlay" id="onlineResultOverlay" role="dialog" aria-modal="true" aria-labelledby="onlineResultTitle" aria-hidden="true">
+        <div class="victory-card">
+            <div class="victory-icon" id="onlineResultIcon" aria-hidden="true">🏆</div>
+            <p class="victory-label" id="onlineResultLabel">RESULT</p>
+            <h2 id="onlineResultTitle">YOU WIN!</h2>
+            <p class="victory-message" id="onlineResultMsg">Great move!</p>
+            <div class="victory-buttons">
+                <button class="primary-button" id="onlineResultRematch">🔄 REMATCH</button>
+                <button class="back-button" id="onlineResultLeave">🏠 HOME</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
+    <!-- Firebase SDK for Online Multiplayer -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="online.js"></script>
 
 </body>
-
 </html>
