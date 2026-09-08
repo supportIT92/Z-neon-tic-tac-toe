@@ -987,20 +987,35 @@ function playWin() {
 
 soundButton.addEventListener("click", () => {
     soundOn = !soundOn;
-
-    // Persist preference
     lsSet("neonTicSound", String(soundOn));
-
-    if (soundOn) {
-        soundButton.textContent = "🔊";
-        soundButton.setAttribute("aria-label", "Mute sound");
-        backgroundMusic.play().catch(() => {});
-    } else {
-        soundButton.textContent = "🔇";
-        soundButton.setAttribute("aria-label", "Unmute sound");
-        backgroundMusic.pause();
-    }
+    _updateSoundUI(soundButton, soundOn);
+    if (soundOn) backgroundMusic.play().catch(() => {});
+    else         backgroundMusic.pause();
 });
+
+// Online game sound button — same behaviour
+(function() {
+    const onlineSoundBtn = document.getElementById("onlineSoundBtn");
+    if (!onlineSoundBtn) return;
+    // Set initial icon to match current soundOn state
+    _updateSoundUI(onlineSoundBtn, soundOn);
+    onlineSoundBtn.addEventListener("click", () => {
+        soundOn = !soundOn;
+        lsSet("neonTicSound", String(soundOn));
+        _updateSoundUI(soundButton, soundOn);
+        _updateSoundUI(onlineSoundBtn, soundOn);
+        if (soundOn) backgroundMusic.play().catch(() => {});
+        else         backgroundMusic.pause();
+    });
+}());
+
+function _updateSoundUI(btn, on) {
+    if (!btn) return;
+    btn.innerHTML = on
+        ? SVG_ICONS.soundOn
+        : SVG_ICONS.soundOff;
+    btn.setAttribute("aria-label", on ? "Mute sound" : "Unmute sound");
+}
 
 // =============================
 // MATCH WINNER OVERLAY
@@ -1110,10 +1125,7 @@ _memBestScore = getBestScore();
 updateQuickStats();
 
 // Apply persisted sound icon on load
-if (!soundOn) {
-    soundButton.textContent = "🔇";
-    soundButton.setAttribute("aria-label", "Unmute sound");
-}
+_updateSoundUI(soundButton, soundOn);
 
 // =============================
 // AUTH — SESSION & LOGOUT

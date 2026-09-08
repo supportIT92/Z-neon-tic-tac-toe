@@ -42,11 +42,11 @@ const oWinPatterns = [
 ];
 
 // ── WebRTC Voice State ───────────────────────────────────────
-let vcPeer        = null;   // RTCPeerConnection
-let vcLocalStream = null;   // my mic stream
-let vcMuted       = false;  // am I muted?
-let vcEnabled     = false;  // voice chat active?
-let vcSignalRef   = null;   // Firebase signaling ref
+let vcPeer        = null;
+let vcLocalStream = null;
+let vcMuted       = false;
+let vcEnabled     = false;
+let vcSignalRef   = null;
 
 const VC_CONFIG = {
     iceServers: [
@@ -106,6 +106,8 @@ const vcMuteBtn     = document.getElementById("vcMuteBtn");
 const vcStatusEl    = document.getElementById("vcStatus");
 const vcPanel       = document.getElementById("vcPanel");
 const vcRemoteAudio = document.getElementById("vcRemoteAudio");
+const vcMuteBadgeX  = document.getElementById("vcMuteBadgeX");
+const vcMuteBadgeO  = document.getElementById("vcMuteBadgeO");
 
 // ── DOM — Result ─────────────────────────────────────────────
 const oResultIcon    = document.getElementById("onlineResultIcon");
@@ -332,6 +334,9 @@ function oListenToGame() {
         oScoreXEl.textContent = oScoreX;
         oScoreOEl.textContent = oScoreO;
 
+        // Sync mute badges for both players
+        vcUpdateBadges(data);
+
         oRenderBoard();
         oUpdateTurnUI();
 
@@ -532,23 +537,47 @@ function oCleanup() {
 // ── Status helper ────────────────────────────────────────────
 function vcSetStatus(state) {
     if (!vcStatusEl) return;
-    const states = {
-        idle:        { icon: "🎙️", text: "Voice Chat",      cls: "vc-idle"        },
-        requesting:  { icon: "⏳", text: "Connecting mic…", cls: "vc-requesting"   },
-        connecting:  { icon: "📡", text: "Connecting…",     cls: "vc-connecting"   },
-        connected:   { icon: "🟢", text: "Connected",       cls: "vc-connected"    },
-        muted:       { icon: "🔇", text: "Muted",           cls: "vc-muted"        },
-        error:       { icon: "❌", text: "Not available",   cls: "vc-error"        }
+    const labels = {
+        idle:       "🎙️ Voice",
+        requesting: "⏳ Connecting…",
+        connecting: "📡 Connecting…",
+        connected:  "🟢 Connected",
+        muted:      "🔇 Muted",
+        error:      "❌ No mic"
     };
-    const s = states[state] || states.idle;
-    vcStatusEl.textContent = s.icon + " " + s.text;
-    vcStatusEl.className   = "vc-status " + s.cls;
+    vcStatusEl.textContent = labels[state] || labels.idle;
+    vcStatusEl.className   = "vc-status vc-" + (state || "idle");
 
     // Show/hide mute button
-    if (vcMuteBtn) {
-        vcMuteBtn.style.display = (state === "connected" || state === "muted") ? "" : "none";
-    }
-    vcEnabled = (state === "connected" || state === "muted");
+    const active = (state === "connected" || state === "muted");
+    if (vcMuteBtn) vcMuteBtn.style.display = active ? "" : "none";
+    if (vcMicBtn)  vcMicBtn.style.display  = active ? "none" : "";
+    vcEnabled = active;
+}
+
+// ── Update mute button icons ──────────────────────────────────
+function vcUpdateMuteIcon() {
+    if (!vcMuteBtn) return;
+    const unmutedSvg = vcMuteBtn.querySelector(".vc-icon-unmuted");
+    const mutedSvg   = vcMuteBtn.querySelector(".vc-icon-muted");
+    if (unmutedSvg) unmutedSvg.style.display = vcMuted ? "none" : "";
+    if (mutedSvg)   mutedSvg.style.display   = vcMuted ? "" : "none";
+    vcMuteBtn.setAttribute("aria-label", vcMuted ? "Unmute microphone" : "Mute microphone");
+    vcMuteBtn.setAttribute("title",      vcMuted ? "Unmute mic" : "Mute mic");
+    vcMuteBtn.classList.toggle("vc-muted-btn", vcMuted);
+}
+
+// ── Sync my mute state to Firebase (opponent sees it) ─────────
+function vcSyncMuteState() {
+    if (!oRoomRef || !oMyRole) return;
+    const key = oMyRole === "X" ? "mutedX" : "mutedO";
+    oRoomRef.update({ [key]: vcMuted });
+}
+
+// ── Update mute badges from Firebase data ─────────────────────
+function vcUpdateBadges(data) {
+    if (vcMuteBadgeX) vcMuteBadgeX.style.display = data.mutedX ? "" : "none";
+    if (vcMuteBadgeO) vcMuteBadgeO.style.display = data.mutedO ? "" : "none";
 }
 
 // ── Get mic ──────────────────────────────────────────────────
@@ -683,10 +712,9 @@ if (vcMuteBtn) {
         if (!vcLocalStream) return;
         vcMuted = !vcMuted;
         vcLocalStream.getAudioTracks().forEach(t => { t.enabled = !vcMuted; });
-        vcMuteBtn.textContent     = vcMuted ? "🔇 UNMUTE" : "🎙️ MUTE";
-        vcMuteBtn.setAttribute("aria-label", vcMuted ? "Unmute microphone" : "Mute microphone");
-        vcMuteBtn.classList.toggle("vc-muted-btn", vcMuted);
+        vcUpdateMuteIcon();
         vcSetStatus(vcMuted ? "muted" : "connected");
+        vcSyncMuteState(); // tell opponent via Firebase
     });
     vcMuteBtn.style.display = "none"; // hidden until connected
 }
