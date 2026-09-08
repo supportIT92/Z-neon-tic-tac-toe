@@ -1450,3 +1450,149 @@ body.light-theme .info-card h3 {
         transition-duration:  0.01ms !important;
     }
 }
+
+/* =========================================
+   VOICE CHAT PANEL
+   WebRTC mic / mute / status
+========================================= */
+
+.vc-panel {
+    width:           100%;
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    gap:             10px;
+    padding:         8px 12px;
+    margin:          4px 0 6px;
+    background:      rgba(255, 255, 255, .04);
+    border:          1px solid rgba(255, 255, 255, .08);
+    border-radius:   12px;
+}
+
+.vc-left {
+    display:     flex;
+    align-items: center;
+    gap:         8px;
+}
+
+/* MIC button — start voice chat */
+.vc-mic-btn {
+    display:         inline-flex;
+    align-items:     center;
+    gap:             6px;
+    padding:         7px 14px;
+    border-radius:   9px;
+    border:          1px solid rgba(139, 92, 246, .4);
+    background:      rgba(139, 92, 246, .1);
+    color:           var(--purple);
+    font-size:       11px;
+    font-weight:     700;
+    letter-spacing:  .06em;
+    cursor:          pointer;
+    transition:      .2s;
+}
+
+.vc-mic-btn svg {
+    width:    16px;
+    height:   16px;
+    display:  block;
+    flex-shrink: 0;
+}
+
+.vc-mic-btn:hover {
+    background:   rgba(139, 92, 246, .22);
+    border-color: var(--purple);
+    box-shadow:   0 0 14px rgba(139, 92, 246, .25);
+    transform:    translateY(-1px);
+}
+
+.vc-mic-btn:active {
+    transform: translateY(0);
+}
+
+/* MUTE button — shown after connecting */
+.vc-mute-btn {
+    padding:        7px 14px;
+    border-radius:  9px;
+    border:         1px solid rgba(0, 247, 255, .35);
+    background:     rgba(0, 247, 255, .08);
+    color:          var(--cyan);
+    font-size:      11px;
+    font-weight:    700;
+    letter-spacing: .06em;
+    cursor:         pointer;
+    transition:     .2s;
+}
+
+.vc-mute-btn:hover {
+    background:   rgba(0, 247, 255, .18);
+    border-color: var(--cyan);
+}
+
+/* Muted state */
+.vc-muted-btn {
+    border-color: rgba(255, 68, 68, .4);
+    background:   rgba(255, 68, 68, .1);
+    color:        #ff6b6b;
+}
+
+.vc-muted-btn:hover {
+    background:   rgba(255, 68, 68, .2);
+    border-color: #ff6b6b;
+}
+
+/* STATUS label */
+.vc-status {
+    font-size:      11px;
+    font-weight:    600;
+    letter-spacing: .04em;
+    padding:        4px 10px;
+    border-radius:  20px;
+    transition:     .3s;
+}
+
+.vc-idle       { color: var(--muted);  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+.vc-requesting { color: #fbbf24;       background: rgba(251,191,36,.08);  border: 1px solid rgba(251,191,36,.2); animation: vcPulse 1s ease-in-out infinite; }
+.vc-connecting { color: var(--purple); background: rgba(139,92,246,.08);  border: 1px solid rgba(139,92,246,.2); animation: vcPulse 1s ease-in-out infinite; }
+.vc-connected  { color: #00ff88;       background: rgba(0,255,136,.08);   border: 1px solid rgba(0,255,136,.2); }
+.vc-muted      { color: #ff6b6b;       background: rgba(255,68,68,.08);   border: 1px solid rgba(255,68,68,.2); }
+.vc-error      { color: var(--muted);  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); }
+
+@keyframes vcPulse {
+    0%, 100% { opacity: 1;   }
+    50%      { opacity: .55; }
+}
+
+/* Light theme adjustments */
+body.light-theme .vc-panel {
+    background:   rgba(255, 255, 255, .55);
+    border-color: rgba(15, 23, 42, .1);
+}
+
+body.light-theme .vc-mic-btn {
+    background:   rgba(139, 92, 246, .08);
+    border-color: rgba(139, 92, 246, .3);
+}
+
+body.light-theme .vc-mute-btn {
+    background:   rgba(0, 247, 255, .06);
+    border-color: rgba(0, 247, 255, .25);
+    color:        #0891b2;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    .vc-panel {
+        padding:   7px 10px;
+        flex-wrap: wrap;
+        gap:       6px;
+    }
+
+    .vc-mic-btn,
+    .vc-mute-btn {
+        padding:   6px 10px;
+        font-size: 10px;
+    }
+
+    .vc-status { font-size: 10px; padding: 3px 8px; }
+}
