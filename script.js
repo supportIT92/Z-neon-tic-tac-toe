@@ -985,36 +985,30 @@ function playWin() {
 // SOUND BUTTON
 // =============================
 
-soundButton.addEventListener("click", () => {
-    soundOn = !soundOn;
-    lsSet("neonTicSound", String(soundOn));
-    _updateSoundUI(soundButton, soundOn);
-    if (soundOn) backgroundMusic.play().catch(() => {});
-    else         backgroundMusic.pause();
-});
-
-// Online game sound button — same behaviour
-(function() {
-    const onlineSoundBtn = document.getElementById("onlineSoundBtn");
-    if (!onlineSoundBtn) return;
-    // Set initial icon to match current soundOn state
-    _updateSoundUI(onlineSoundBtn, soundOn);
-    onlineSoundBtn.addEventListener("click", () => {
-        soundOn = !soundOn;
-        lsSet("neonTicSound", String(soundOn));
-        _updateSoundUI(soundButton, soundOn);
-        _updateSoundUI(onlineSoundBtn, soundOn);
-        if (soundOn) backgroundMusic.play().catch(() => {});
-        else         backgroundMusic.pause();
-    });
-}());
-
+// ── Sound UI helper ───────────────────────────────────────────
 function _updateSoundUI(btn, on) {
     if (!btn) return;
-    btn.innerHTML = on
-        ? SVG_ICONS.soundOn
-        : SVG_ICONS.soundOff;
+    btn.innerHTML = on ? SVG_ICONS.soundOn : SVG_ICONS.soundOff;
     btn.setAttribute("aria-label", on ? "Mute sound" : "Unmute sound");
+}
+
+// ── Toggle sound (shared by both main + online buttons) ───────
+function _toggleSound() {
+    soundOn = !soundOn;
+    lsSet("neonTicSound", String(soundOn));
+    // Update both buttons
+    _updateSoundUI(soundButton, soundOn);
+    _updateSoundUI(document.getElementById("onlineSoundBtn"), soundOn);
+    if (soundOn) backgroundMusic.play().catch(() => {});
+    else         backgroundMusic.pause();
+}
+
+soundButton.addEventListener("click", _toggleSound);
+
+// Online sound button — wired up here, no IIFE needed
+const onlineSoundBtn = document.getElementById("onlineSoundBtn");
+if (onlineSoundBtn) {
+    onlineSoundBtn.addEventListener("click", _toggleSound);
 }
 
 // =============================
@@ -1126,6 +1120,7 @@ updateQuickStats();
 
 // Apply persisted sound icon on load
 _updateSoundUI(soundButton, soundOn);
+_updateSoundUI(document.getElementById("onlineSoundBtn"), soundOn);
 
 // =============================
 // AUTH — SESSION & LOGOUT
