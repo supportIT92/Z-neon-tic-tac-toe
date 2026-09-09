@@ -436,16 +436,27 @@ function oCheckWinner() {
 //  RESULT
 // ══════════════════════════════════════════════════════════════
 
+// SVG icons for result overlay
+const _SVG_WIN   = `<svg viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h8c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34"/><path d="M6 4h12v4a6 6 0 0 1-12 0V4z" fill="rgba(255,215,0,0.2)"/></svg>`;
+const _SVG_DRAW  = `<svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l-5-5a2.83 2.83 0 0 1 4-4l1 1"/><path d="M13 7l5 5a2.83 2.83 0 0 1-4 4l-1-1"/><path d="M8 14l-2 2a2 2 0 0 0 3 3l2-2"/><path d="M16 10l2-2a2 2 0 0 0-3-3l-2 2"/></svg>`;
+const _SVG_LOSS  = `<svg viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+
 function oShowResult(result) {
     if (result === oMyRole) {
-        oResultIcon.textContent  = "🏆"; oResultLabel.textContent = "VICTORY";
-        oResultTitle.textContent = "YOU WIN!"; oResultMsg.textContent = "Excellent move!";
+        oResultIcon.innerHTML  = _SVG_WIN;
+        oResultLabel.textContent = "VICTORY";
+        oResultTitle.textContent = "YOU WIN!";
+        oResultMsg.textContent   = "Excellent move!";
     } else if (result === "draw") {
-        oResultIcon.textContent  = "🤝"; oResultLabel.textContent = "DRAW";
-        oResultTitle.textContent = "IT'S A DRAW!"; oResultMsg.textContent = "Well played!";
+        oResultIcon.innerHTML  = _SVG_DRAW;
+        oResultLabel.textContent = "DRAW";
+        oResultTitle.textContent = "IT'S A DRAW!";
+        oResultMsg.textContent   = "Well played!";
     } else {
-        oResultIcon.textContent  = "💀"; oResultLabel.textContent = "DEFEAT";
-        oResultTitle.textContent = "YOU LOST"; oResultMsg.textContent = "Better luck next time!";
+        oResultIcon.innerHTML  = _SVG_LOSS;
+        oResultLabel.textContent = "DEFEAT";
+        oResultTitle.textContent = "YOU LOST";
+        oResultMsg.textContent   = "Better luck next time!";
     }
     oResultOverlay.setAttribute("aria-hidden", "false");
     oResultOverlay.classList.add("active");
@@ -538,17 +549,16 @@ function oCleanup() {
 function vcSetStatus(state) {
     if (!vcStatusEl) return;
     const labels = {
-        idle:       "🎙️ Voice",
-        requesting: "⏳ Connecting…",
-        connecting: "📡 Connecting…",
-        connected:  "🟢 Connected",
-        muted:      "🔇 Muted",
-        error:      "❌ No mic"
+        idle:       "",
+        requesting: "Connecting…",
+        connecting: "Connecting…",
+        connected:  "Live",
+        muted:      "Muted",
+        error:      "No mic"
     };
-    vcStatusEl.textContent = labels[state] || labels.idle;
+    vcStatusEl.textContent = labels[state] ?? "";
     vcStatusEl.className   = "vc-status vc-" + (state || "idle");
 
-    // Show/hide mute button
     const active = (state === "connected" || state === "muted");
     if (vcMuteBtn) vcMuteBtn.style.display = active ? "" : "none";
     if (vcMicBtn)  vcMicBtn.style.display  = active ? "none" : "";
