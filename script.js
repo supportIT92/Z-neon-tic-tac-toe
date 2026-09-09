@@ -986,9 +986,12 @@ function playWin() {
 // =============================
 
 // ── Sound UI helper ───────────────────────────────────────────
+const _SVG_SOUND_ON  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
+const _SVG_SOUND_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+
 function _updateSoundUI(btn, on) {
     if (!btn) return;
-    btn.innerHTML = on ? SVG_ICONS.soundOn : SVG_ICONS.soundOff;
+    btn.innerHTML = on ? _SVG_SOUND_ON : _SVG_SOUND_OFF;
     btn.setAttribute("aria-label", on ? "Mute sound" : "Unmute sound");
 }
 
@@ -1001,7 +1004,7 @@ function _toggleSound() {
     if (soundOn) backgroundMusic.play().catch(() => {});
     else         backgroundMusic.pause();
 }
-window._toggleSound = _toggleSound;   // expose for onclick attribute
+window._toggleSound = _toggleSound;
 
 soundButton.addEventListener("click", _toggleSound);
 
