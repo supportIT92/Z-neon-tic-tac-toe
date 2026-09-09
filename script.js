@@ -78,7 +78,6 @@ const playerOLabel      = document.getElementById("playerOLabel");
 const difficultyBox     = document.getElementById("difficultyBox");
 const difficultyButtons = document.querySelectorAll(".difficulty-button");
 const formatButtons     = document.querySelectorAll(".format-button");
-const soundButton       = document.getElementById("soundButton");
 const themeButton       = document.getElementById("themeButton");
 const rulesButton       = document.getElementById("rulesButton");
 const rulesButtonGame   = document.getElementById("rulesButtonGame");
@@ -111,8 +110,22 @@ const backgroundMusic = document.getElementById("backgroundMusic");
 const clickSound      = document.getElementById("clickSound");
 const winSound        = document.getElementById("winSound");
 
-// Restore persisted sound preference (default: on)
-let soundOn = lsGet("neonTicSound") !== "false";
+// Restore persisted audio preferences (default: on)
+let musicOn = lsGet("neonTicMusic") !== "false";
+let sfxOn   = lsGet("neonTicSfx")   !== "false";
+
+// Legacy: if old "neonTicSound" key exists, migrate it
+(function _migrateOldSound() {
+    const old = lsGet("neonTicSound");
+    if (old !== null) {
+        const val = old !== "false";
+        if (lsGet("neonTicMusic") === null) lsSet("neonTicMusic", String(val));
+        if (lsGet("neonTicSfx")   === null) lsSet("neonTicSfx",   String(val));
+        try { localStorage.removeItem("neonTicSound"); } catch(e) {}
+        musicOn = lsGet("neonTicMusic") !== "false";
+        sfxOn   = lsGet("neonTicSfx")   !== "false";
+    }
+}());
 
 // In-memory best score fallback (works even if localStorage is blocked)
 let _memBestScore = 0;
@@ -451,7 +464,7 @@ function startMatch() {
     updateRoundProgress();
 
     // Start background music only if not already playing
-    if (soundOn && backgroundMusic.paused) {
+    if (musicOn && backgroundMusic.paused) {
         backgroundMusic.volume = 0.2;
         backgroundMusic.play().catch(() => {});
     }
@@ -968,14 +981,14 @@ function updateTurn() {
 // =============================
 
 function playClick() {
-    if (!soundOn) return;
+    if (!sfxOn) return;
     clickSound.currentTime = 0;
     clickSound.volume      = 0.5;
     clickSound.play().catch(() => {});
 }
 
 function playWin() {
-    if (!soundOn) return;
+    if (!sfxOn) return;
     winSound.currentTime = 0;
     winSound.volume      = 0.7;
     winSound.play().catch(() => {});
@@ -985,28 +998,70 @@ function playWin() {
 // SOUND BUTTON
 // =============================
 
-// ── Sound UI helper ───────────────────────────────────────────
-const _SVG_SOUND_ON  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
-const _SVG_SOUND_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+// =============================
+// AUDIO CONTROLS
+// =============================
 
-function _updateSoundUI(btn, on) {
+// ── SVG icons ────────────────────────────────────────────────
+const _SVG_MUSIC_ON  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+const _SVG_MUSIC_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+const _SVG_SFX_ON    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`;
+const _SVG_SFX_OFF   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`;
+
+// ── UI update helpers ─────────────────────────────────────────
+function _updateMusicUI(btn, on) {
     if (!btn) return;
-    btn.innerHTML = on ? _SVG_SOUND_ON : _SVG_SOUND_OFF;
-    btn.setAttribute("aria-label", on ? "Mute sound" : "Unmute sound");
+    btn.innerHTML = on ? _SVG_MUSIC_ON : _SVG_MUSIC_OFF;
+    btn.setAttribute("aria-label", on ? "Mute music" : "Unmute music");
+    btn.classList.toggle("audio-btn-off", !on);
 }
 
-// ── Toggle sound — exposed on window so onclick= works too ───
-function _toggleSound() {
-    soundOn = !soundOn;
-    lsSet("neonTicSound", String(soundOn));
-    _updateSoundUI(soundButton, soundOn);
-    _updateSoundUI(document.getElementById("onlineSoundBtn"), soundOn);
-    if (soundOn) backgroundMusic.play().catch(() => {});
+function _updateSfxUI(btn, on) {
+    if (!btn) return;
+    btn.innerHTML = on ? _SVG_SFX_ON : _SVG_SFX_OFF;
+    btn.setAttribute("aria-label", on ? "Mute sound effects" : "Unmute sound effects");
+    btn.classList.toggle("audio-btn-off", !on);
+}
+
+function _syncAllMusicBtns() {
+    _updateMusicUI(document.getElementById("musicBtn"),       musicOn);
+    _updateMusicUI(document.getElementById("onlineMusicBtn"), musicOn);
+}
+
+function _syncAllSfxBtns() {
+    _updateSfxUI(document.getElementById("sfxBtn"),       sfxOn);
+    _updateSfxUI(document.getElementById("onlineSfxBtn"), sfxOn);
+}
+
+// ── Toggle music ──────────────────────────────────────────────
+function _toggleMusic() {
+    musicOn = !musicOn;
+    lsSet("neonTicMusic", String(musicOn));
+    _syncAllMusicBtns();
+    if (musicOn) backgroundMusic.play().catch(() => {});
     else         backgroundMusic.pause();
 }
-window._toggleSound = _toggleSound;
+window._toggleMusic = _toggleMusic;
 
-soundButton.addEventListener("click", _toggleSound);
+// ── Toggle SFX ────────────────────────────────────────────────
+function _toggleSfx() {
+    sfxOn = !sfxOn;
+    lsSet("neonTicSfx", String(sfxOn));
+    _syncAllSfxBtns();
+}
+window._toggleSfx = _toggleSfx;
+
+// ── Wire buttons ──────────────────────────────────────────────
+(function _wireAudioBtns() {
+    ["musicBtn", "onlineMusicBtn"].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener("click", _toggleMusic);
+    });
+    ["sfxBtn", "onlineSfxBtn"].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener("click", _toggleSfx);
+    });
+}());
 
 // =============================
 // MATCH WINNER OVERLAY
@@ -1115,9 +1170,9 @@ applyTheme();
 _memBestScore = getBestScore();
 updateQuickStats();
 
-// Apply persisted sound icon on load
-_updateSoundUI(soundButton, soundOn);
-_updateSoundUI(document.getElementById("onlineSoundBtn"), soundOn);
+// Apply persisted audio icons on load
+_syncAllMusicBtns();
+_syncAllSfxBtns();
 
 // =============================
 // AUTH — SESSION & LOGOUT
