@@ -699,6 +699,17 @@ body.light-theme .info-card h3 {
     flex-shrink: 0;
 }
 
+/* Main game audio buttons — same small size as online */
+.audio-btns .mini-button {
+    width:  32px;
+    height: 32px;
+}
+
+.audio-btns .mini-button svg {
+    width:  14px;
+    height: 14px;
+}
+
 /* OFF state — muted/disabled look */
 .audio-btn-off {
     color:        var(--muted);
