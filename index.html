@@ -447,8 +447,9 @@
             <h2>WAITING FOR <span>OPPONENT</span></h2>
             <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Share this code with your friend:</p>
             <div class="room-code-box" id="roomCodeDisplay" aria-label="Room code">------</div>
-            <button class="primary-button" id="copyCodeBtn" style="margin-bottom:24px">
-                <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>COPY CODE
+            <button class="copy-code-btn" id="copyCodeBtn" style="margin-bottom:24px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                COPY CODE
             </button>
             <div class="waiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
             <p style="color:var(--muted);font-size:12px;margin:12px 0 20px">Waiting for player 2 to join…</p>
@@ -542,13 +543,15 @@
         <audio id="vcRemoteAudio" autoplay playsinline style="display:none"></audio>
 
         <div class="game-buttons">
-            <button id="onlineRematchBtn" class="game-button" style="display:none">
+            <button id="onlineRematchBtn" class="online-action-btn" style="display:none">
                 <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                 REMATCH
             </button>
-            <button id="onlineLeaveBtn" class="game-button secondary">
+            <button id="onlineLeaveBtn" class="online-action-btn online-leave-btn">
                 <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 LEAVE
+            </button>
+        </div>
             </button>
         </div>
         <footer>

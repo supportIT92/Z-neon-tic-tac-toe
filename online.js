@@ -299,6 +299,7 @@ function oStartGame(data) {
     oBoard  = data.board || ["","","","","","","","",""];
     oMyTurn = (data.turn === oMyRole);
     oRematchBtn.style.display = "none";
+    oMessageEl.textContent = ""; // clear "Connecting…"
 
     // Reset voice UI
     vcSetStatus("idle");
@@ -499,18 +500,22 @@ oQuitBtn.addEventListener("click", () => { if (confirm("Leave the game?")) oLeav
 // ══════════════════════════════════════════════════════════════
 
 oCopyBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(oRoomCode).then(() => {
-        oCopyBtn.textContent = "✅ COPIED!";
-        setTimeout(() => { oCopyBtn.textContent = "📋 COPY CODE"; }, 2000);
-    }).catch(() => {
+    const original = oCopyBtn.innerHTML;
+    const copied   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px;height:16px;display:block"><polyline points="20 6 9 17 4 12"/></svg> COPIED!`;
+
+    const doCopy = () => {
+        oCopyBtn.innerHTML = copied;
+        setTimeout(() => { oCopyBtn.innerHTML = original; }, 2000);
+    };
+
+    navigator.clipboard.writeText(oRoomCode).then(doCopy).catch(() => {
         try {
             const t = document.createElement("input");
             t.value = oRoomCode;
             document.body.appendChild(t); t.select();
             document.execCommand("copy");
             document.body.removeChild(t);
-            oCopyBtn.textContent = "✅ COPIED!";
-            setTimeout(() => { oCopyBtn.textContent = "📋 COPY CODE"; }, 2000);
+            doCopy();
         } catch(e) {}
     });
 });

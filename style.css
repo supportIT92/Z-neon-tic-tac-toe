@@ -1602,3 +1602,88 @@ body.light-theme .info-card h3 {
     .quit-mini-btn svg { width: 12px; height: 12px; }
     .vc-status { font-size: 9px; }
 }
+
+/* =========================================
+   ONLINE GAME — Action Buttons & Copy Code
+========================================= */
+
+/* COPY CODE — compact pill button, not huge primary */
+.copy-code-btn {
+    display:         inline-flex;
+    align-items:     center;
+    justify-content: center;
+    gap:             8px;
+    padding:         10px 22px;
+    border:          none;
+    border-radius:   50px;
+    background:      linear-gradient(90deg, var(--cyan), var(--purple));
+    color:           #020617;
+    font-weight:     700;
+    font-size:       13px;
+    letter-spacing:  1px;
+    cursor:          pointer;
+    transition:      .2s;
+    box-shadow:      0 0 18px rgba(0, 247, 255, .25);
+}
+
+.copy-code-btn svg {
+    width:    16px;
+    height:   16px;
+    display:  block;
+    flex-shrink: 0;
+}
+
+.copy-code-btn:hover {
+    transform:  translateY(-2px);
+    box-shadow: 0 0 28px rgba(0, 247, 255, .4);
+}
+
+/* ONLINE ACTION BUTTONS — rematch / leave, compact */
+.online-action-btn {
+    display:        inline-flex;
+    align-items:    center;
+    justify-content: center;
+    gap:            7px;
+    min-width:      110px;
+    min-height:     38px;
+    padding:        8px 16px;
+    border-radius:  10px;
+    border:         1px solid var(--cyan);
+    background:     rgba(0, 247, 255, .07);
+    color:          white;
+    font-weight:    700;
+    font-size:      11px;
+    letter-spacing: .06em;
+    cursor:         pointer;
+    transition:     .2s;
+}
+
+.online-action-btn svg {
+    width:    14px;
+    height:   14px;
+    display:  block;
+    flex-shrink: 0;
+}
+
+.online-action-btn:hover {
+    background: rgba(0, 247, 255, .15);
+    box-shadow: 0 0 16px rgba(0, 247, 255, .2);
+}
+
+/* Leave variant — pink/red */
+.online-leave-btn {
+    border-color: rgba(255, 43, 214, .4);
+    background:   rgba(255, 43, 214, .06);
+}
+
+.online-leave-btn:hover {
+    background:   rgba(255, 43, 214, .15);
+    border-color: var(--pink);
+    box-shadow:   0 0 16px rgba(255, 43, 214, .2);
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    .copy-code-btn     { padding: 9px 18px; font-size: 12px; }
+    .online-action-btn { min-width: 90px; min-height: 34px; font-size: 10px; padding: 7px 12px; }
+}
