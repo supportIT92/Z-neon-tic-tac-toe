@@ -86,7 +86,7 @@ const rulesModal        = document.getElementById("rulesModal");
 const closeRulesButton  = document.getElementById("closeRulesButton");
 const bestScoreLabel    = document.getElementById("bestScoreLabel");
 const activeModeLabel   = document.getElementById("activeModeLabel");
-const cells             = document.querySelectorAll(".cell");
+const cells             = document.querySelectorAll("#board .cell");
 const turnSymbol        = document.getElementById("turnSymbol");
 const turnText          = document.getElementById("turnText");
 const message           = document.getElementById("message");
@@ -992,24 +992,18 @@ function _updateSoundUI(btn, on) {
     btn.setAttribute("aria-label", on ? "Mute sound" : "Unmute sound");
 }
 
-// ── Toggle sound (shared by both main + online buttons) ───────
+// ── Toggle sound — exposed on window so onclick= works too ───
 function _toggleSound() {
     soundOn = !soundOn;
     lsSet("neonTicSound", String(soundOn));
-    // Update both buttons
     _updateSoundUI(soundButton, soundOn);
     _updateSoundUI(document.getElementById("onlineSoundBtn"), soundOn);
     if (soundOn) backgroundMusic.play().catch(() => {});
     else         backgroundMusic.pause();
 }
+window._toggleSound = _toggleSound;   // expose for onclick attribute
 
 soundButton.addEventListener("click", _toggleSound);
-
-// Online sound button — wired up here, no IIFE needed
-const onlineSoundBtn = document.getElementById("onlineSoundBtn");
-if (onlineSoundBtn) {
-    onlineSoundBtn.addEventListener("click", _toggleSound);
-}
 
 // =============================
 // MATCH WINNER OVERLAY
