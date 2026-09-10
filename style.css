@@ -1035,15 +1035,24 @@ body.light-theme .info-card h3 {
     margin-top:      6px;
 }
 
+/* Global btn-svg — controls icon size inside ALL buttons */
+.btn-svg {
+    width:       14px;
+    height:      14px;
+    display:     inline-block;
+    flex-shrink: 0;
+    vertical-align: -0.15em;
+}
+
 .game-button {
     display:        inline-flex;
     align-items:    center;
     justify-content: center;
     gap:            5px;
-    min-width:      90px;
-    min-height:     34px;
-    padding:        6px 13px;
-    border-radius:  9px;
+    min-width:      80px;
+    min-height:     32px;
+    padding:        5px 12px;
+    border-radius:  8px;
     border:         1px solid var(--cyan);
     background:     rgba(0, 247, 255, .08);
     color:          white;
@@ -1055,9 +1064,10 @@ body.light-theme .info-card h3 {
 }
 
 .game-button .btn-svg {
-    width:    13px;
-    height:   13px;
+    width:    12px;
+    height:   12px;
     flex-shrink: 0;
+    vertical-align: 0;
 }
 
 .game-button:hover:not(:disabled) {
