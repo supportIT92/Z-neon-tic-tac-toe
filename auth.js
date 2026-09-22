@@ -460,13 +460,17 @@ function sendOTPEmail(toEmail, toName, otpCode, onSuccess, onError) {
             to_name:   toName,
             name:      toName,
             otp_code:  otpCode,
+            otpCode:   otpCode,   // alternate key in case template uses this
+            otp:       otpCode,   // alternate key
+            message:   "Your OTP is: " + otpCode,
             app_name:  "Neon Gaming"
         },
         { publicKey: EMAILJS_CONFIG.publicKey }
-    ).then(function () {
+    ).then(function (res) {
+        console.log("[OTP] Email sent OK:", res.status, res.text);
         if (onSuccess) onSuccess();
     }, function (err) {
-        console.error("EmailJS error:", err);
+        console.error("[OTP] EmailJS send failed — status:", err.status, "text:", err.text);
         if (onError) onError(err);
     });
 }
@@ -564,11 +568,17 @@ function initiateOTPFlow(userData) {
                 showAlert("📧 OTP sent to " + userData.email + ". Check your inbox!", "success");
             }
         },
-        function () {
-            showAlert("❌ Failed to send OTP email. Check your internet connection and try again.");
-            // Go back to signup on send failure
-            showPanel("signup");
-            clearOTPState();
+        function (err) {
+            // ── EMAIL SEND FAILED ──
+            // Do NOT go back — stay on OTP panel so user can try resending
+            var errMsg = (err && err.text) ? err.text : (err && err.status ? "Status " + err.status : "Unknown error");
+            console.error("[OTP] Email send failed:", errMsg);
+            showAlert(
+                "⚠️ Email delivery failed (" + errMsg + "). " +
+                "You can still enter the OTP if you received it, or click 'Resend OTP'.",
+                "error"
+            );
+            // Keep OTP panel visible — do NOT auto-navigate back
         }
     );
 }
