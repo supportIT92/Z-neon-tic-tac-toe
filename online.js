@@ -35,6 +35,9 @@ let oScoreO     = 0;
 let oRoomRef    = null;
 let oListener   = null;
 
+// ── Public Lobby State ───────────────────────────────────────
+let lobbyListener = null;  // Firebase listener for open rooms
+
 const oWinPatterns = [
     [0,1,2],[3,4,5],[6,7,8],
     [0,3,6],[1,4,7],[2,5,8],
@@ -133,20 +136,24 @@ function oShowLobby() {
     oHomeScreen.style.display = "none";
     oLobbyScreen.classList.add("active");
     oLobbyName.focus();
+    lobbyStartListening();  // start live rooms list
 }
 
 function oShowWaiting() {
+    lobbyStopListening();   // don't need list while waiting
     oHideAllScreens();
     oWaitingScreen.classList.add("active");
 }
 
 function oShowGame() {
+    lobbyStopListening();
     oHideAllScreens();
     oGameScreen.classList.add("active");
 }
 
 function oGoHome() {
     vcStop();
+    lobbyStopListening();
     oHideAllScreens();
     oResultOverlay.setAttribute("aria-hidden", "true");
     oResultOverlay.classList.remove("active");
@@ -156,6 +163,7 @@ function oGoHome() {
 
 function oGoMode() {
     vcStop();
+    lobbyStopListening();
     oHideAllScreens();
     oResultOverlay.setAttribute("aria-hidden", "true");
     oResultOverlay.classList.remove("active");
@@ -538,6 +546,141 @@ function oCleanup() {
     oBoard    = ["","","","","","","","",""];
     oMyRole   = "";
     oMyTurn   = false;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PUBLIC LOBBY — Live rooms list (Teen Patti style)
+//  db.ref("rooms") filtered by status === "waiting"
+// ══════════════════════════════════════════════════════════════
+
+const lobbyRoomsEl = document.getElementById("lobbyRooms");
+const lobbyEmptyEl = document.getElementById("lobbyEmpty");
+
+// ── Start listening for open rooms ───────────────────────────
+function lobbyStartListening() {
+    lobbyStopListening(); // clear any existing listener
+    lobbyRender({}); // show empty state immediately
+
+    lobbyListener = db.ref("rooms").on("value", (snap) => {
+        const all = snap.val() || {};
+        // Filter: only waiting rooms, not older than 10 min
+        const now     = Date.now();
+        const waiting = {};
+        Object.entries(all).forEach(([code, room]) => {
+            if (
+                room.status === "waiting" &&
+                room.playerX &&
+                !room.playerO &&
+                (now - (room.createdAt || 0)) < 10 * 60 * 1000
+            ) {
+                waiting[code] = room;
+            }
+        });
+        lobbyRender(waiting);
+    });
+}
+
+// ── Stop listening ────────────────────────────────────────────
+function lobbyStopListening() {
+    if (lobbyListener) {
+        db.ref("rooms").off("value", lobbyListener);
+        lobbyListener = null;
+    }
+}
+
+// ── Render room cards ─────────────────────────────────────────
+function lobbyRender(rooms) {
+    if (!lobbyRoomsEl) return;
+    // Remove old cards (keep #lobbyEmpty)
+    Array.from(lobbyRoomsEl.querySelectorAll(".lobby-room-card")).forEach(c => c.remove());
+
+    const codes = Object.keys(rooms);
+
+    // Show/hide empty state
+    if (lobbyEmptyEl) lobbyEmptyEl.style.display = codes.length ? "none" : "";
+
+    codes.forEach((code) => {
+        const room = rooms[code];
+        const ago  = lobbyTimeAgo(room.createdAt);
+        const card = document.createElement("div");
+        card.className = "lobby-room-card";
+        card.innerHTML = `
+            <div class="lrc-left">
+                <span class="lrc-host">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    ${_esc(room.playerX)}
+                </span>
+                <span class="lrc-code">${_esc(code)}</span>
+            </div>
+            <div class="lrc-right">
+                <span class="lrc-ago">${ago}</span>
+                <button class="lrc-join-btn" data-code="${_esc(code)}" aria-label="Join ${_esc(room.playerX)}'s room">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    JOIN
+                </button>
+            </div>
+        `;
+        // Wire join button
+        card.querySelector(".lrc-join-btn").addEventListener("click", () => {
+            lobbyQuickJoin(code);
+        });
+        lobbyRoomsEl.appendChild(card);
+    });
+}
+
+// ── Quick join from lobby card ────────────────────────────────
+function lobbyQuickJoin(code) {
+    const name = oSanitise(oLobbyName.value);
+    if (!name) {
+        oShowAlert("⚠️ Please enter your name first.");
+        oLobbyName.focus();
+        return;
+    }
+    // Reuse existing join logic by setting the input and triggering join
+    if (document.getElementById("joinCodeInput")) {
+        document.getElementById("joinCodeInput").value = code;
+    }
+    oMyName   = name;
+    oRoomCode = code;
+    oRoomRef  = db.ref("rooms/" + code);
+
+    oRoomRef.once("value").then((snap) => {
+        const data = snap.val();
+        if (!data)                     { oShowAlert("❌ Room no longer exists."); return; }
+        if (data.status !== "waiting") { oShowAlert("⚠️ Room is full or game started."); return; }
+
+        oMyRole = "O";
+        oMyTurn = false;
+
+        oRoomRef.update({ playerO: oMyName, status: "playing" }).then(() => {
+            oStartGame({
+                playerX: data.playerX,
+                playerO: oMyName,
+                turn:    "X",
+                board:   data.board || ["","","","","","","","",""],
+                scoreX:  data.scoreX || 0,
+                scoreO:  data.scoreO || 0
+            });
+        });
+    }).catch(() => oShowAlert("❌ Failed to join. Check connection."));
+}
+
+// ── Time ago helper ───────────────────────────────────────────
+function lobbyTimeAgo(ts) {
+    if (!ts) return "";
+    const sec = Math.floor((Date.now() - ts) / 1000);
+    if (sec < 60)  return `${sec}s ago`;
+    if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+    return `${Math.floor(sec / 3600)}h ago`;
+}
+
+// ── HTML escape helper ────────────────────────────────────────
+function _esc(str) {
+    return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
 }
 
 // ══════════════════════════════════════════════════════════════

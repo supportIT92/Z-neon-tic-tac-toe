@@ -402,36 +402,61 @@
     ========================== -->
     <section class="mode-screen" id="onlineLobbyScreen" aria-label="Online Multiplayer Lobby">
         <div class="mode-card online-lobby-card">
+
             <p class="brand">ONLINE MULTIPLAYER</p>
-            <h2>BATTLE A <span>FRIEND ONLINE</span></h2>
+            <h2>BATTLE <span>ONLINE</span></h2>
+
+            <!-- Player name -->
             <div class="input-group">
                 <label for="onlineLobbyName">YOUR NAME</label>
                 <input type="text" id="onlineLobbyName" maxlength="15" placeholder="Enter your name" autocomplete="off" spellcheck="false">
             </div>
+
+            <!-- Quick Create -->
             <button class="mode-button" id="createRoomBtn">
                 <div class="mode-icon" style="background:rgba(0,247,255,.1)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 </div>
                 <div class="mode-content">
                     <strong>CREATE ROOM</strong>
-                    <small>Get a room code to share</small>
+                    <small>Start a new game, share code</small>
                 </div>
             </button>
-            <div class="input-group" style="margin-top:6px">
-                <label for="joinCodeInput">ROOM CODE</label>
-                <input type="text" id="joinCodeInput" maxlength="6" placeholder="ENTER 6-DIGIT CODE" autocomplete="off" spellcheck="false" style="text-transform:uppercase;letter-spacing:6px;font-size:18px;text-align:center">
+
+            <!-- ── LIVE ROOMS LOBBY ────────────────── -->
+            <div class="lobby-divider" aria-hidden="true">
+                <span></span><span class="lobby-divider-text">OR JOIN A ROOM</span><span></span>
             </div>
-            <button class="mode-button" id="joinRoomBtn" style="margin-top:4px">
-                <div class="mode-icon" style="background:rgba(255,43,214,.1)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+
+            <!-- Live room list -->
+            <div class="lobby-rooms" id="lobbyRooms" aria-label="Open rooms" aria-live="polite">
+                <div class="lobby-empty" id="lobbyEmpty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span>No open rooms yet</span>
                 </div>
-                <div class="mode-content">
-                    <strong>JOIN ROOM</strong>
-                    <small>Enter a friend's room code</small>
+            </div>
+
+            <!-- Join by code (collapsible) -->
+            <details class="join-by-code">
+                <summary>Have a room code?</summary>
+                <div class="input-group" style="margin-top:8px">
+                    <label for="joinCodeInput">ROOM CODE</label>
+                    <input type="text" id="joinCodeInput" maxlength="6" placeholder="ENTER CODE" autocomplete="off" spellcheck="false" style="text-transform:uppercase;letter-spacing:6px;font-size:18px;text-align:center">
                 </div>
-            </button>
+                <button class="mode-button" id="joinRoomBtn" style="margin-top:4px">
+                    <div class="mode-icon" style="background:rgba(255,43,214,.1)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    </div>
+                    <div class="mode-content">
+                        <strong>JOIN BY CODE</strong>
+                        <small>Enter a friend's room code</small>
+                    </div>
+                </button>
+            </details>
+
             <div class="online-alert" id="onlineLobbyAlert" role="alert" aria-live="polite"></div>
             <button id="backOnlineLobbyBtn" class="back-button">← BACK</button>
+
         </div>
     </section>
 

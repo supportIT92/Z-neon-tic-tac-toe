@@ -1724,3 +1724,237 @@ body.light-theme .info-card h3 {
     .copy-code-btn     { padding: 9px 18px; font-size: 12px; }
     .online-action-btn { min-width: 90px; min-height: 34px; font-size: 10px; padding: 7px 12px; }
 }
+
+/* =========================================
+   PUBLIC LOBBY — Room cards (Teen Patti style)
+========================================= */
+
+/* Lobby divider — "OR JOIN A ROOM" */
+.lobby-divider {
+    display:     flex;
+    align-items: center;
+    gap:         10px;
+    margin:      14px 0 10px;
+    font-size:   9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color:       var(--muted);
+}
+
+.lobby-divider span:first-child,
+.lobby-divider span:last-child {
+    flex:        1;
+    height:      1px;
+    background:  rgba(255,255,255,.1);
+    display:     block;
+}
+
+.lobby-divider-text { white-space: nowrap; }
+
+/* Rooms scroll container */
+.lobby-rooms {
+    width:        100%;
+    max-height:   220px;
+    overflow-y:   auto;
+    display:      flex;
+    flex-direction: column;
+    gap:          7px;
+    padding:      2px 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,247,255,.2) transparent;
+}
+
+.lobby-rooms::-webkit-scrollbar       { width: 4px; }
+.lobby-rooms::-webkit-scrollbar-track { background: transparent; }
+.lobby-rooms::-webkit-scrollbar-thumb { background: rgba(0,247,255,.2); border-radius: 4px; }
+
+/* Empty state */
+.lobby-empty {
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    gap:             8px;
+    padding:         18px;
+    color:           var(--muted);
+    font-size:       12px;
+    border:          1px dashed rgba(255,255,255,.1);
+    border-radius:   12px;
+}
+
+.lobby-empty svg {
+    width:    18px;
+    height:   18px;
+    display:  block;
+    flex-shrink: 0;
+    opacity:  .5;
+}
+
+/* Individual room card */
+.lobby-room-card {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    gap:             10px;
+    padding:         10px 12px;
+    border-radius:   12px;
+    background:      rgba(255,255,255,.04);
+    border:          1px solid rgba(255,255,255,.09);
+    transition:      border-color .2s, background .2s;
+    animation:       lobbyCardIn .25s ease;
+}
+
+@keyframes lobbyCardIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.lobby-room-card:hover {
+    background:   rgba(0,247,255,.05);
+    border-color: rgba(0,247,255,.25);
+}
+
+/* Left side — host name + code */
+.lrc-left {
+    display:        flex;
+    flex-direction: column;
+    gap:            3px;
+    min-width:      0;
+}
+
+.lrc-host {
+    display:     flex;
+    align-items: center;
+    gap:         5px;
+    font-size:   13px;
+    font-weight: 700;
+    color:       var(--text);
+    white-space: nowrap;
+    overflow:    hidden;
+    text-overflow: ellipsis;
+}
+
+.lrc-host svg {
+    width:    14px;
+    height:   14px;
+    display:  block;
+    flex-shrink: 0;
+    color:    var(--cyan);
+}
+
+.lrc-code {
+    font-size:      10px;
+    letter-spacing: .18em;
+    color:          var(--muted);
+    font-weight:    600;
+}
+
+/* Right side — time + join button */
+.lrc-right {
+    display:     flex;
+    align-items: center;
+    gap:         8px;
+    flex-shrink: 0;
+}
+
+.lrc-ago {
+    font-size: 9px;
+    color:     var(--muted);
+    white-space: nowrap;
+}
+
+/* JOIN button */
+.lrc-join-btn {
+    display:     inline-flex;
+    align-items: center;
+    gap:         5px;
+    padding:     6px 13px;
+    border-radius: 8px;
+    border:      1px solid rgba(0,247,255,.4);
+    background:  rgba(0,247,255,.08);
+    color:       var(--cyan);
+    font-size:   11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    cursor:      pointer;
+    transition:  .2s;
+    white-space: nowrap;
+}
+
+.lrc-join-btn svg {
+    width:    12px;
+    height:   12px;
+    display:  block;
+    flex-shrink: 0;
+}
+
+.lrc-join-btn:hover {
+    background:   rgba(0,247,255,.18);
+    border-color: var(--cyan);
+    box-shadow:   0 0 14px rgba(0,247,255,.25);
+    transform:    translateY(-1px);
+}
+
+.lrc-join-btn:active { transform: translateY(0); }
+
+/* Join-by-code collapsible */
+.join-by-code {
+    width:      100%;
+    margin-top: 8px;
+}
+
+.join-by-code summary {
+    cursor:         pointer;
+    font-size:      11px;
+    color:          var(--muted);
+    letter-spacing: .05em;
+    padding:        6px 0;
+    list-style:     none;
+    display:        flex;
+    align-items:    center;
+    gap:            6px;
+    user-select:    none;
+    transition:     color .2s;
+}
+
+.join-by-code summary::-webkit-details-marker { display: none; }
+
+.join-by-code summary::before {
+    content:     "";
+    display:     inline-block;
+    width:       8px;
+    height:      8px;
+    border-right: 1.5px solid var(--muted);
+    border-bottom: 1.5px solid var(--muted);
+    transform:   rotate(-45deg);
+    transition:  transform .2s;
+    flex-shrink: 0;
+    margin-right: 2px;
+}
+
+.join-by-code[open] summary::before {
+    transform: rotate(45deg);
+}
+
+.join-by-code summary:hover { color: var(--cyan); }
+.join-by-code summary:hover::before {
+    border-color: var(--cyan);
+}
+
+/* Light theme */
+body.light-theme .lobby-room-card {
+    background:   rgba(255,255,255,.5);
+    border-color: rgba(15,23,42,.1);
+}
+
+body.light-theme .lobby-empty {
+    border-color: rgba(15,23,42,.12);
+    color:        var(--muted);
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    .lobby-rooms    { max-height: 170px; }
+    .lrc-host       { font-size: 12px; }
+    .lrc-join-btn   { padding: 5px 10px; font-size: 10px; }
+    .lrc-ago        { display: none; }
+}
