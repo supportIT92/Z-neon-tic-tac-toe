@@ -412,23 +412,38 @@
                 <input type="text" id="onlineLobbyName" maxlength="15" placeholder="Enter your name" autocomplete="off" spellcheck="false">
             </div>
 
-            <!-- Quick Create -->
+            <!-- ★ QUICK MATCH — main CTA ★ -->
+            <button class="quick-match-btn" id="quickMatchBtn" aria-label="Quick Match">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>QUICK MATCH</span>
+                <small>Auto-match with a random player</small>
+            </button>
+
+            <!-- Searching overlay (shown while in queue) -->
+            <div class="searching-box" id="searchingBox" style="display:none" aria-live="polite">
+                <div class="searching-ring" aria-hidden="true"></div>
+                <p class="searching-title">FINDING OPPONENT…</p>
+                <p class="searching-sub" id="searchingCount">Players in queue: <strong>1</strong></p>
+                <button class="back-button" id="cancelQueueBtn">✕ Cancel</button>
+            </div>
+
+            <!-- ── OTHER OPTIONS ────────────────── -->
+            <div class="lobby-divider" aria-hidden="true">
+                <span></span><span class="lobby-divider-text">OR</span><span></span>
+            </div>
+
+            <!-- Create private room -->
             <button class="mode-button" id="createRoomBtn">
                 <div class="mode-icon" style="background:rgba(0,247,255,.1)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 </div>
                 <div class="mode-content">
-                    <strong>CREATE ROOM</strong>
-                    <small>Start a new game, share code</small>
+                    <strong>CREATE PRIVATE ROOM</strong>
+                    <small>Share code with a specific friend</small>
                 </div>
             </button>
 
-            <!-- ── LIVE ROOMS LOBBY ────────────────── -->
-            <div class="lobby-divider" aria-hidden="true">
-                <span></span><span class="lobby-divider-text">OR JOIN A ROOM</span><span></span>
-            </div>
-
-            <!-- Live room list -->
+            <!-- Live public rooms list -->
             <div class="lobby-rooms" id="lobbyRooms" aria-label="Open rooms" aria-live="polite">
                 <div class="lobby-empty" id="lobbyEmpty">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>

@@ -37,6 +37,8 @@ let oListener   = null;
 
 // ── Public Lobby State ───────────────────────────────────────
 let lobbyListener = null;  // Firebase listener for open rooms
+let queueRef      = null;  // My entry in the matchmaking queue
+let queueListener = null;  // Listener watching queue for a match
 
 const oWinPatterns = [
     [0,1,2],[3,4,5],[6,7,8],
@@ -154,6 +156,7 @@ function oShowGame() {
 function oGoHome() {
     vcStop();
     lobbyStopListening();
+    queueCancel();
     oHideAllScreens();
     oResultOverlay.setAttribute("aria-hidden", "true");
     oResultOverlay.classList.remove("active");
@@ -164,6 +167,7 @@ function oGoHome() {
 function oGoMode() {
     vcStop();
     lobbyStopListening();
+    queueCancel();
     oHideAllScreens();
     oResultOverlay.setAttribute("aria-hidden", "true");
     oResultOverlay.classList.remove("active");
@@ -546,6 +550,214 @@ function oCleanup() {
     oBoard    = ["","","","","","","","",""];
     oMyRole   = "";
     oMyTurn   = false;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ⚡ QUICK MATCH — Auto Matchmaking Queue
+//  Flow:
+//   1. Player clicks QUICK MATCH → enters db/queue/{uid}
+//   2. Both players watch db/queue for 2+ entries
+//   3. First player (oldest) becomes X, creates room
+//   4. Second player joins as O → game starts
+// ══════════════════════════════════════════════════════════════
+
+const queuePath    = "queue";
+const searchingBox = document.getElementById("searchingBox");
+const searchingCnt = document.getElementById("searchingCount");
+const cancelQueueB = document.getElementById("cancelQueueBtn");
+const quickMatchB  = document.getElementById("quickMatchBtn");
+
+// ── Unique player ID (tab-session) ───────────────────────────
+function queueMyId() {
+    let id = sessionStorage.getItem("neon_qid");
+    if (!id) {
+        id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        sessionStorage.setItem("neon_qid", id);
+    }
+    return id;
+}
+
+// ── Enter queue ──────────────────────────────────────────────
+function queueEnter(name) {
+    const myId = queueMyId();
+    queueRef   = db.ref(queuePath + "/" + myId);
+
+    // Clean up on disconnect (browser close / tab close)
+    queueRef.onDisconnect().remove();
+
+    queueRef.set({
+        name:      name,
+        joinedAt:  Date.now(),
+        status:    "waiting"
+    }).then(() => {
+        queueShowSearching(true);
+        queueListen(myId, name);
+    }).catch(() => {
+        oShowAlert("❌ Failed to join queue. Check connection.");
+    });
+}
+
+// ── Show/hide searching UI ───────────────────────────────────
+function queueShowSearching(show) {
+    if (!searchingBox || !quickMatchB) return;
+    searchingBox.style.display = show ? "" : "none";
+    quickMatchB.style.display  = show ? "none" : "";
+}
+
+// ── Watch queue for a match ──────────────────────────────────
+function queueListen(myId, myName) {
+    const qRef = db.ref(queuePath);
+
+    queueListener = qRef.on("value", (snap) => {
+        const all = snap.val() || {};
+        const now = Date.now();
+
+        // Filter: only waiting entries, not older than 2 min
+        const waiting = Object.entries(all)
+            .filter(([, v]) => v.status === "waiting" && (now - v.joinedAt) < 120000)
+            .sort((a, b) => a[1].joinedAt - b[1].joinedAt); // oldest first
+
+        // Update queue count UI
+        if (searchingCnt) {
+            searchingCnt.innerHTML = `Players searching: <strong>${waiting.length}</strong>`;
+        }
+
+        if (waiting.length < 2) return; // wait for more players
+
+        // First player (oldest = index 0) is X, second is O
+        const [p1Id, p1Data] = waiting[0];
+        const [p2Id, p2Data] = waiting[1];
+
+        const iAmP1 = (p1Id === myId);
+        const iAmP2 = (p2Id === myId);
+
+        if (!iAmP1 && !iAmP2) return; // not my turn yet
+
+        // Only P1 creates the room (avoid race condition)
+        if (iAmP1) {
+            queueStopListening();
+            queueCreateMatch(myId, myName, p2Id, p2Data.name);
+        } else if (iAmP2) {
+            // P2 watches for room created by P1
+            queueWaitForRoom(myId, p1Id, myName, p1Data.name);
+        }
+    });
+}
+
+// ── P1: Create the match room ────────────────────────────────
+function queueCreateMatch(myId, myName, p2Id, p2Name) {
+    const code = oGenCode();
+    oRoomCode  = code;
+    oMyRole    = "X";
+    oMyTurn    = true;
+    oMyName    = myName;
+    oBoard     = ["","","","","","","","",""];
+
+    oRoomRef = db.ref("rooms/" + code);
+
+    // Write room + signal P2 via queue
+    oRoomRef.set({
+        playerX:   myName,
+        playerO:   p2Name,
+        turn:      "X",
+        board:     oBoard,
+        scoreX:    0,
+        scoreO:    0,
+        status:    "playing",
+        createdAt: Date.now()
+    }).then(() => {
+        // Tell P2 which room to join via their queue entry
+        db.ref(queuePath + "/" + p2Id).update({ matchedRoom: code });
+        // Remove P1 from queue
+        db.ref(queuePath + "/" + myId).remove();
+        // Start game as X
+        queueShowSearching(false);
+        oStartGame({
+            playerX: myName,
+            playerO: p2Name,
+            turn:    "X",
+            board:   oBoard,
+            scoreX:  0,
+            scoreO:  0
+        });
+    }).catch(() => oShowAlert("❌ Match creation failed."));
+}
+
+// ── P2: Watch own queue entry for matchedRoom ────────────────
+function queueWaitForRoom(myId, p1Id, myName, p1Name) {
+    const myQRef = db.ref(queuePath + "/" + myId);
+
+    myQRef.on("value", (snap) => {
+        const data = snap.val();
+        if (!data) return;
+        if (!data.matchedRoom) return;
+
+        // Got a room assignment!
+        myQRef.off("value");
+        myQRef.remove();
+
+        const code = data.matchedRoom;
+        oRoomCode  = code;
+        oMyRole    = "O";
+        oMyTurn    = false;
+        oMyName    = myName;
+        oRoomRef   = db.ref("rooms/" + code);
+
+        queueShowSearching(false);
+        oStartGame({
+            playerX: p1Name,
+            playerO: myName,
+            turn:    "X",
+            board:   ["","","","","","","","",""],
+            scoreX:  0,
+            scoreO:  0
+        });
+    });
+
+    // Store this listener so we can cancel it
+    queueRef = myQRef;
+}
+
+// ── Stop queue listener ──────────────────────────────────────
+function queueStopListening() {
+    if (queueListener) {
+        db.ref(queuePath).off("value", queueListener);
+        queueListener = null;
+    }
+}
+
+// ── Cancel queue (remove entry + stop listener) ──────────────
+function queueCancel() {
+    queueStopListening();
+    if (queueRef) {
+        queueRef.off("value");
+        queueRef.remove().catch(() => {});
+        queueRef.onDisconnect().cancel();
+        queueRef = null;
+    }
+    queueShowSearching(false);
+}
+
+// ── QUICK MATCH button click ──────────────────────────────────
+if (quickMatchB) {
+    quickMatchB.addEventListener("click", () => {
+        const name = oSanitise(oLobbyName.value);
+        if (!name) {
+            oShowAlert("⚠️ Please enter your name first.");
+            oLobbyName.focus();
+            return;
+        }
+        lobbyStopListening();
+        queueEnter(name);
+    });
+}
+
+// ── Cancel queue button ───────────────────────────────────────
+if (cancelQueueB) {
+    cancelQueueB.addEventListener("click", () => {
+        queueCancel();
+        lobbyStartListening();
+    });
 }
 
 // ══════════════════════════════════════════════════════════════
