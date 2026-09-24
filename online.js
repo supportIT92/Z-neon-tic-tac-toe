@@ -567,15 +567,10 @@ const searchingCnt = document.getElementById("searchingCount");
 const cancelQueueB = document.getElementById("cancelQueueBtn");
 const quickMatchB  = document.getElementById("quickMatchBtn");
 
-// ── Unique player ID (tab-session) ───────────────────────────
-function queueMyId() {
-    let id = sessionStorage.getItem("neon_qid");
-    if (!id) {
-        id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-        sessionStorage.setItem("neon_qid", id);
-    }
-    return id;
-}
+// ── Unique player ID (always fresh per page load — no sessionStorage sharing) ──
+const _MY_QUEUE_ID = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+
+function queueMyId() { return _MY_QUEUE_ID; }
 
 // ── Enter queue ──────────────────────────────────────────────
 function queueEnter(name) {
@@ -592,8 +587,9 @@ function queueEnter(name) {
     }).then(() => {
         queueShowSearching(true);
         queueListen(myId, name);
-    }).catch(() => {
-        oShowAlert("❌ Failed to join queue. Check connection.");
+    }).catch((err) => {
+        console.error("[Queue] Enter failed:", err);
+        oShowAlert("❌ Failed to join queue. Check Firebase Rules (queue path needs read/write).");
     });
 }
 
@@ -612,33 +608,36 @@ function queueListen(myId, myName) {
         const all = snap.val() || {};
         const now = Date.now();
 
-        // Filter: only waiting entries, not older than 2 min
+        // Filter: only "waiting" entries, not older than 2 min
         const waiting = Object.entries(all)
             .filter(([, v]) => v.status === "waiting" && (now - v.joinedAt) < 120000)
-            .sort((a, b) => a[1].joinedAt - b[1].joinedAt); // oldest first
+            .sort((a, b) => a[1].joinedAt - b[1].joinedAt); // oldest = P1
 
         // Update queue count UI
         if (searchingCnt) {
             searchingCnt.innerHTML = `Players searching: <strong>${waiting.length}</strong>`;
         }
 
-        if (waiting.length < 2) return; // wait for more players
+        if (waiting.length < 2) return;
 
-        // First player (oldest = index 0) is X, second is O
         const [p1Id, p1Data] = waiting[0];
         const [p2Id, p2Data] = waiting[1];
 
         const iAmP1 = (p1Id === myId);
         const iAmP2 = (p2Id === myId);
 
-        if (!iAmP1 && !iAmP2) return; // not my turn yet
+        if (!iAmP1 && !iAmP2) return; // I'm not in top 2 yet
 
-        // Only P1 creates the room (avoid race condition)
         if (iAmP1) {
+            // Stop listening immediately to avoid double-fire
             queueStopListening();
+            // Mark P1 as matched so no one else picks me up
+            db.ref(queuePath + "/" + myId).update({ status: "matched" });
             queueCreateMatch(myId, myName, p2Id, p2Data.name);
+
         } else if (iAmP2) {
-            // P2 watches for room created by P1
+            // P2: stop global listener, just watch own entry for matchedRoom
+            queueStopListening();
             queueWaitForRoom(myId, p1Id, myName, p1Data.name);
         }
     });
@@ -655,7 +654,6 @@ function queueCreateMatch(myId, myName, p2Id, p2Name) {
 
     oRoomRef = db.ref("rooms/" + code);
 
-    // Write room + signal P2 via queue
     oRoomRef.set({
         playerX:   myName,
         playerO:   p2Name,
@@ -666,11 +664,12 @@ function queueCreateMatch(myId, myName, p2Id, p2Name) {
         status:    "playing",
         createdAt: Date.now()
     }).then(() => {
-        // Tell P2 which room to join via their queue entry
-        db.ref(queuePath + "/" + p2Id).update({ matchedRoom: code });
+        // Signal P2 with the room code
+        return db.ref(queuePath + "/" + p2Id).update({ matchedRoom: code, status: "matched" });
+    }).then(() => {
         // Remove P1 from queue
         db.ref(queuePath + "/" + myId).remove();
-        // Start game as X
+        queueRef = null;
         queueShowSearching(false);
         oStartGame({
             playerX: myName,
@@ -680,21 +679,23 @@ function queueCreateMatch(myId, myName, p2Id, p2Name) {
             scoreX:  0,
             scoreO:  0
         });
-    }).catch(() => oShowAlert("❌ Match creation failed."));
+    }).catch((err) => {
+        console.error("[Queue] Match creation failed:", err);
+        oShowAlert("❌ Match creation failed. Try again.");
+    });
 }
 
 // ── P2: Watch own queue entry for matchedRoom ────────────────
 function queueWaitForRoom(myId, p1Id, myName, p1Name) {
+    // Use a separate ref for watching — don't overwrite global queueRef yet
     const myQRef = db.ref(queuePath + "/" + myId);
 
-    myQRef.on("value", (snap) => {
+    const p2WatchListener = myQRef.on("value", (snap) => {
         const data = snap.val();
-        if (!data) return;
-        if (!data.matchedRoom) return;
+        if (!data || !data.matchedRoom) return;
 
-        // Got a room assignment!
-        myQRef.off("value");
-        myQRef.remove();
+        // Got room assignment!
+        myQRef.off("value", p2WatchListener);
 
         const code = data.matchedRoom;
         oRoomCode  = code;
@@ -702,6 +703,10 @@ function queueWaitForRoom(myId, p1Id, myName, p1Name) {
         oMyTurn    = false;
         oMyName    = myName;
         oRoomRef   = db.ref("rooms/" + code);
+
+        // Clean up queue entry
+        myQRef.remove();
+        if (queueRef) { queueRef.onDisconnect().cancel(); queueRef = null; }
 
         queueShowSearching(false);
         oStartGame({
@@ -714,11 +719,11 @@ function queueWaitForRoom(myId, p1Id, myName, p1Name) {
         });
     });
 
-    // Store this listener so we can cancel it
+    // Store ref so cancel works
     queueRef = myQRef;
 }
 
-// ── Stop queue listener ──────────────────────────────────────
+// ── Stop global queue listener ───────────────────────────────
 function queueStopListening() {
     if (queueListener) {
         db.ref(queuePath).off("value", queueListener);
@@ -726,7 +731,7 @@ function queueStopListening() {
     }
 }
 
-// ── Cancel queue (remove entry + stop listener) ──────────────
+// ── Cancel queue entirely ────────────────────────────────────
 function queueCancel() {
     queueStopListening();
     if (queueRef) {
