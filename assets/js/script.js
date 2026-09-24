@@ -1182,7 +1182,9 @@ _syncAllSfxBtns();
     // Read current session
     let session = null;
     try {
-        session = JSON.parse(localStorage.getItem("neonGaming_session"));
+        // Try API session first, fallback to legacy localStorage
+        session = (window.API && window.API.getSession())
+               || JSON.parse(localStorage.getItem("neonGaming_session"));
     } catch { /* ignore */ }
 
     // Update user greeting on home screen
@@ -1217,6 +1219,7 @@ _syncAllSfxBtns();
     const logoutButton = document.getElementById("logoutButton");
     if (logoutButton) {
         logoutButton.addEventListener("click", () => {
+            if (window.API) window.API.clearSession();
             try { localStorage.removeItem("neonGaming_session"); } catch { /* ignore */ }
             window.location.href = "auth.html";
         });

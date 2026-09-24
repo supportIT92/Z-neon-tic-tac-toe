@@ -387,8 +387,9 @@
     <script>
         (function() {
             try {
+                var token   = localStorage.getItem("neonGaming_token");
                 var session = JSON.parse(localStorage.getItem("neonGaming_session"));
-                if (!session || !session.username) {
+                if ((!token && !session) || (session && !session.username)) {
                     window.location.replace("auth.html");
                 }
             } catch (e) {
@@ -624,7 +625,10 @@
     </div>
 
     <script src="assets/js/script.js"></script>
-    <!-- Firebase SDK for Online Multiplayer -->
+    <!-- Socket.io + API -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="assets/js/api.js"></script>
+    <!-- Firebase SDK for Online Multiplayer (kept for WebRTC signaling) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="assets/js/online.js"></script>

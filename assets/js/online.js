@@ -23,6 +23,121 @@ if (!firebase.apps.length) {
 }
 const db = firebase.database();
 
+// ── Socket.io connection ──────────────────────────────────────
+let socket = null;
+
+function getSocket() {
+    if (!socket || socket.disconnected) {
+        socket = io(window.BACKEND_URL || "http://localhost:5000", {
+            transports:      ["websocket", "polling"],
+            reconnection:    true,
+            reconnectionDelay: 1000,
+            timeout:         10000
+        });
+
+        socket.on("connect", () => {
+            console.log("[Socket] Connected:", socket.id);
+            if (oConnText) oConnText.textContent = "Connected";
+            if (oConnStatus) oConnStatus.classList.remove("disconnected");
+        });
+
+        socket.on("disconnect", () => {
+            console.log("[Socket] Disconnected");
+            if (oConnText) oConnText.textContent = "Reconnecting…";
+            if (oConnStatus) oConnStatus.classList.add("disconnected");
+        });
+
+        socket.on("error", ({ message }) => {
+            oShowAlert("❌ " + message);
+        });
+
+        // ── Game events from server ───────────────────────────
+        socket.on("room_created", ({ roomCode, role }) => {
+            oRoomCode = roomCode;
+            oMyRole   = role;
+            oCodeDisplay.textContent = roomCode;
+            oShowWaiting();
+        });
+
+        socket.on("game_start", (data) => {
+            oStartGameSocket(data);
+        });
+
+        socket.on("move_made", ({ board, currentTurn }) => {
+            oBoard  = board;
+            oMyTurn = (currentTurn === oMyRole);
+            oRenderBoard();
+            oUpdateTurnUI();
+        });
+
+        socket.on("round_over", ({ board, roundWinner, scoreX, scoreO }) => {
+            oBoard  = board;
+            oScoreX = scoreX;
+            oScoreO = scoreO;
+            oScoreXEl.textContent = scoreX;
+            oScoreOEl.textContent = scoreO;
+            oMyTurn = false;
+            oRenderBoard();
+            setTimeout(() => {
+                oBoard  = ["","","","","","","","",""];
+                oMyTurn = (oMyRole === "X");
+                oGameActive = true;
+                oRenderBoard();
+                oUpdateTurnUI();
+            }, 1200);
+        });
+
+        socket.on("game_over", ({ board, matchWinner, scoreX, scoreO }) => {
+            oBoard  = board;
+            oScoreX = scoreX;
+            oScoreO = scoreO;
+            oScoreXEl.textContent = scoreX;
+            oScoreOEl.textContent = scoreO;
+            oGameActive = false;
+            oRenderBoard();
+            oRematchBtn.style.display = "";
+            oShowResult(matchWinner === oMyRole ? oMyRole : matchWinner === "draw" ? "draw" : (oMyRole === "X" ? "O" : "X"));
+        });
+
+        socket.on("rematch_start", ({ board, currentTurn, scoreX, scoreO }) => {
+            oBoard  = board;
+            oMyTurn = (currentTurn === oMyRole);
+            oScoreX = scoreX; oScoreO = scoreO;
+            oScoreXEl.textContent = scoreX;
+            oScoreOEl.textContent = scoreO;
+            oGameActive = true;
+            oRematchBtn.style.display = "none";
+            oResultOverlay.setAttribute("aria-hidden", "true");
+            oResultOverlay.classList.remove("active");
+            oRenderBoard();
+            oUpdateTurnUI();
+        });
+
+        socket.on("opponent_left", ({ message }) => {
+            oMessageEl.textContent = message || "Opponent left the game.";
+            oGameActive = false;
+            oRematchBtn.style.display = "none";
+        });
+
+        socket.on("queue_joined", ({ position }) => {
+            if (searchingCnt) {
+                searchingCnt.innerHTML = `Players searching: <strong>${position}</strong>`;
+            }
+        });
+
+        socket.on("queue_count", ({ count }) => {
+            if (searchingCnt) {
+                searchingCnt.innerHTML = `Players searching: <strong>${count}</strong>`;
+            }
+        });
+
+        socket.on("queue_left", () => {
+            queueShowSearching(false);
+        });
+    }
+    return socket;
+}
+
 // ── Game State ───────────────────────────────────────────────
 let oMyName     = "";
 let oRoomCode   = "";
@@ -224,38 +339,24 @@ oCreateBtn.addEventListener("click", () => {
     oMyName = oSanitise(oLobbyName.value);
     if (!oMyName) { oShowAlert("⚠️ Please enter your name."); oLobbyName.focus(); return; }
 
-    oRoomCode = oGenCode();
-    oMyRole   = "X";
-    oMyTurn   = true;
-    oScoreX   = oScoreO = 0;
-    oBoard    = ["","","","","","","","",""];
+    const session = API ? API.getSession() : null;
+    oMyRole = "X";
+    oMyTurn = true;
+    oScoreX = oScoreO = 0;
+    oBoard  = ["","","","","","","","",""];
 
-    oRoomRef = db.ref("rooms/" + oRoomCode);
-    oRoomRef.set({
-        playerX: oMyName, playerO: null,
-        turn: "X", board: oBoard,
-        scoreX: 0, scoreO: 0,
-        status: "waiting", createdAt: Date.now()
-    }).then(() => {
-        oCodeDisplay.textContent = oRoomCode;
-        oShowWaiting();
-        oListenForOpponent();
-    }).catch(() => oShowAlert("❌ Failed to create room."));
+    getSocket().emit("create_room", {
+        username: oMyName,
+        userId:   session ? session.id : null
+    });
 });
 
 // ══════════════════════════════════════════════════════════════
-//  LISTEN FOR OPPONENT
+//  LISTEN FOR OPPONENT (Socket handles this via game_start event)
 // ══════════════════════════════════════════════════════════════
 
 function oListenForOpponent() {
-    oRoomRef.on("value", (snap) => {
-        const data = snap.val();
-        if (!data) { oShowLobby(); oShowAlert("⚠️ Room closed.", "info"); return; }
-        if (data.status === "playing" && data.playerO) {
-            oRoomRef.off("value");
-            oStartGame(data);
-        }
-    });
+    // handled by socket "game_start" event in getSocket()
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -263,36 +364,53 @@ function oListenForOpponent() {
 // ══════════════════════════════════════════════════════════════
 
 oJoinBtn.addEventListener("click", () => {
-    oMyName        = oSanitise(oLobbyName.value);
-    const code     = oJoinInput.value.trim().toUpperCase();
+    oMyName    = oSanitise(oLobbyName.value);
+    const code = oJoinInput.value.trim().toUpperCase();
 
     if (!oMyName) { oShowAlert("⚠️ Please enter your name."); oLobbyName.focus(); return; }
     if (!code || code.length !== 6) { oShowAlert("⚠️ Enter a valid 6-character room code."); oJoinInput.focus(); return; }
 
+    const session = API ? API.getSession() : null;
+    oMyRole   = "O";
+    oMyTurn   = false;
     oRoomCode = code;
-    oRoomRef  = db.ref("rooms/" + oRoomCode);
+    oMyName   = oMyName;
 
-    oRoomRef.once("value").then((snap) => {
-        const data = snap.val();
-        if (!data)                    { oShowAlert("❌ Room not found."); return; }
-        if (data.status !== "waiting"){ oShowAlert("⚠️ Room is full."); return; }
-
-        oMyRole = "O";
-        oMyTurn = false;
-
-        oRoomRef.update({ playerO: oMyName, status: "playing" }).then(() => {
-            oStartGame({
-                playerX: data.playerX, playerO: oMyName,
-                turn: "X", board: data.board || ["","","","","","","","",""],
-                scoreX: data.scoreX || 0, scoreO: data.scoreO || 0
-            });
-        });
-    }).catch(() => oShowAlert("❌ Failed to join."));
+    getSocket().emit("join_room", {
+        roomCode: code,
+        username: oMyName,
+        userId:   session ? session.id : null
+    });
 });
 
 // ══════════════════════════════════════════════════════════════
 //  START GAME
 // ══════════════════════════════════════════════════════════════
+
+// ── Socket.io game start (replaces Firebase oStartGame) ──────
+function oStartGameSocket(data) {
+    oShowGame();
+    oGameActive = true;
+
+    oNameXEl.textContent  = data.playerX;
+    oNameOEl.textContent  = data.playerO;
+    oScoreX = data.scoreX || 0;
+    oScoreO = data.scoreO || 0;
+    oScoreXEl.textContent = oScoreX;
+    oScoreOEl.textContent = oScoreO;
+    oRoleXEl.textContent  = oMyRole === "X" ? "(YOU)" : "";
+    oRoleOEl.textContent  = oMyRole === "O" ? "(YOU)" : "";
+    oRoomLabel.textContent = oRoomCode;
+
+    oBoard  = data.board || ["","","","","","","","",""];
+    oMyTurn = (data.currentTurn === oMyRole);
+    oRematchBtn.style.display = "none";
+    oMessageEl.textContent = "";
+
+    vcSetStatus("idle");
+    oRenderBoard();
+    oUpdateTurnUI();
+}
 
 function oStartGame(data) {
     oShowGame();
@@ -411,21 +529,16 @@ function oUpdateTurnUI() {
 oCells.forEach((cell, i) => {
     cell.addEventListener("click", () => {
         if (!oMyTurn || oBoard[i] !== "" || !oGameActive) return;
+
+        // Optimistic update
         oBoard[i] = oMyRole;
         cell.disabled = true;
+        cell.textContent = oMyRole;
+        cell.classList.add(oMyRole.toLowerCase());
+        oMyTurn = false; // prevent double-click
 
-        const winner = oCheckWinner();
-        const draw   = !winner && oBoard.every(v => v !== "");
-
-        if (winner || draw) {
-            oGameActive = false;
-            const result = draw ? "draw" : winner;
-            if (winner === "X") oScoreX++;
-            if (winner === "O") oScoreO++;
-            oRoomRef.update({ board: oBoard, scoreX: oScoreX, scoreO: oScoreO, result, turn: "none" });
-        } else {
-            oRoomRef.update({ board: oBoard, turn: oMyRole === "X" ? "O" : "X" });
-        }
+        // Send to server via Socket.io
+        getSocket().emit("make_move", { roomCode: oRoomCode, cellIndex: i });
     });
 });
 
@@ -485,7 +598,7 @@ function oRequestRematch() {
     oBoard = ["","","","","","","","",""];
     oGameActive = true;
     oRematchBtn.style.display = "none";
-    oRoomRef.update({ board: oBoard, turn: "X", result: null });
+    getSocket().emit("request_rematch", { roomCode: oRoomCode });
     oRenderBoard();
 }
 
@@ -497,9 +610,7 @@ oResultRematch.addEventListener("click", oRequestRematch);
 // ══════════════════════════════════════════════════════════════
 
 function oLeaveGame() {
-    if (oRoomRef) {
-        oMyRole === "X" ? oRoomRef.remove() : oRoomRef.update({ status: "left" });
-    }
+    getSocket().emit("leave_game", { roomCode: oRoomCode });
     oGoMode();
 }
 
@@ -572,24 +683,14 @@ const _MY_QUEUE_ID = Math.random().toString(36).slice(2, 10) + Date.now().toStri
 
 function queueMyId() { return _MY_QUEUE_ID; }
 
-// ── Enter queue ──────────────────────────────────────────────
+// ── Enter queue via Socket.io ────────────────────────────────
 function queueEnter(name) {
-    const myId = queueMyId();
-    queueRef   = db.ref(queuePath + "/" + myId);
-
-    // Clean up on disconnect (browser close / tab close)
-    queueRef.onDisconnect().remove();
-
-    queueRef.set({
-        name:      name,
-        joinedAt:  Date.now(),
-        status:    "waiting"
-    }).then(() => {
-        queueShowSearching(true);
-        queueListen(myId, name);
-    }).catch((err) => {
-        console.error("[Queue] Enter failed:", err);
-        oShowAlert("❌ Failed to join queue. Check Firebase Rules (queue path needs read/write).");
+    const session = API ? API.getSession() : null;
+    oMyName = name;
+    queueShowSearching(true);
+    getSocket().emit("join_queue", {
+        username: name,
+        userId:   session ? session.id : null
     });
 }
 
@@ -731,9 +832,10 @@ function queueStopListening() {
     }
 }
 
-// ── Cancel queue entirely ────────────────────────────────────
+// ── Cancel queue ─────────────────────────────────────────────
 function queueCancel() {
     queueStopListening();
+    if (socket) socket.emit("leave_queue");
     if (queueRef) {
         queueRef.off("value");
         queueRef.remove().catch(() => {});

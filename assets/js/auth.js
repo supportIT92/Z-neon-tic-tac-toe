@@ -557,30 +557,22 @@ function initiateOTPFlow(userData) {
     startOTPCountdown();
     startResendCooldown();
 
-    // Send the email
-    sendOTPEmail(
-        userData.email,
-        userData.username,
-        code,
-        function () {
-            // Only show "sent" message if real EmailJS (demo mode shows differently)
+    // Send the email via backend API (not EmailJS)
+    API.register({ username: userData.username, email: userData.email, password: userData.passwordHash || "" })
+        .then(function () {
             if (EMAILJS_CONFIG.publicKey !== "YOUR_PUBLIC_KEY") {
                 showAlert("📧 OTP sent to " + userData.email + ". Check your inbox!", "success");
             }
-        },
-        function (err) {
-            // ── EMAIL SEND FAILED ──
-            // Do NOT go back — stay on OTP panel so user can try resending
-            var errMsg = (err && err.text) ? err.text : (err && err.status ? "Status " + err.status : "Unknown error");
-            console.error("[OTP] Email send failed:", errMsg);
+        })
+        .catch(function (err) {
+            var errMsg = err.message || "Unknown error";
+            console.error("[OTP] Send failed:", errMsg);
             showAlert(
                 "⚠️ Email delivery failed (" + errMsg + "). " +
                 "You can still enter the OTP if you received it, or click 'Resend OTP'.",
                 "error"
             );
-            // Keep OTP panel visible — do NOT auto-navigate back
-        }
-    );
+        });
 }
 
 function clearOTPState() {
@@ -704,23 +696,30 @@ function verifyOTP() {
     otpBoxes.forEach(function (b) { b.style.borderColor = "#00ff88"; });
     setLoading("otpVerifyBtn", true);
 
-    // Save user to localStorage
-    var users    = getUsers();
+    // Verify OTP via backend API
+    var email    = _otpState.userData.email;
+    var entered  = getOTPInput();
     var userData = _otpState.userData;
-    users.push(userData);
-    saveUsers(users);
-    createSession(userData, false);
 
-    clearOTPState();
+    API.verifyOTP({ email: email, otp: entered })
+        .then(function (data) {
+            // Backend verified — save session
+            API.setSession(data.token, data.user);
+            clearOTPState();
+            setLoading("otpVerifyBtn", false);
 
-    setTimeout(function () {
-        setLoading("otpVerifyBtn", false);
-        if (userData.role === "admin") {
-            showSuccessScreen(userData.username + " (Admin)");
-        } else {
-            showSuccessScreen(userData.username);
-        }
-    }, 600);
+            if (data.user.role === "admin") {
+                showSuccessScreen(data.user.username + " (Admin)");
+            } else {
+                showSuccessScreen(data.user.username);
+            }
+        })
+        .catch(function (err) {
+            setLoading("otpVerifyBtn", false);
+            otpBoxes.forEach(function (b) { b.style.borderColor = "#ff4444"; b.value = ""; });
+            otpBoxes[0].focus();
+            showAlert("❌ " + (err.message || "OTP verification failed."));
+        });
 }
 
 // Verify button click
@@ -733,33 +732,21 @@ otpVerifyBtn.addEventListener("click", verifyOTP);
 otpResendBtn.addEventListener("click", function () {
     if (!_otpState || !_otpState.userData) return;
 
-    // Generate new OTP, reset expiry & attempts
-    var newCode         = generateOTP();
-    _otpState.code      = newCode;
-    _otpState.expiresAt = Date.now() + OTP_EXPIRY_MS;
-    _otpState.attempts  = 0;
-
     // Reset UI
     otpBoxes.forEach(function (b) { b.value = ""; b.style.borderColor = ""; b.disabled = false; });
-    otpVerifyBtn.disabled   = false;
+    otpVerifyBtn.disabled     = false;
     otpTimerCount.style.color = "";
-
     startOTPCountdown();
     startResendCooldown();
 
-    sendOTPEmail(
-        _otpState.userData.email,
-        _otpState.userData.username,
-        newCode,
-        function () {
-            if (EMAILJS_CONFIG.publicKey !== "YOUR_PUBLIC_KEY") {
-                showAlert("📧 New OTP sent to " + _otpState.userData.email, "success");
-            }
-        },
-        function () {
-            showAlert("❌ Failed to resend OTP. Check your connection.");
-        }
-    );
+    // Resend via backend API
+    API.resendOTP({ email: _otpState.userData.email })
+        .then(function () {
+            showAlert("📧 New OTP sent to " + _otpState.userData.email, "success");
+        })
+        .catch(function (err) {
+            showAlert("❌ Failed to resend OTP: " + (err.message || "Check connection."));
+        });
 });
 
 // OTP back button → return to signup (clear OTP state)
@@ -785,37 +772,25 @@ loginForm.addEventListener("submit", function (e) {
 
     setLoading("loginBtn", true);
 
-    setTimeout(function () {
-        var user = findByIdentifier(id);
-
-        if (!user) {
-            showAlert("❌ No account found with that email or username.");
-            setLoading("loginBtn", false); loginIdentifier.focus(); return;
-        }
-        if (user.banned) {
-            showAlert("🚫 This account has been banned. Contact support.");
-            setLoading("loginBtn", false); return;
-        }
-        if (user.passwordHash !== simpleHash(pw)) {
-            showAlert("❌ Incorrect password. Please try again.");
+    API.login({ identifier: id, password: pw })
+        .then(function (data) {
             setLoading("loginBtn", false);
-            loginPassword.value = ""; loginPassword.focus(); return;
-        }
+            API.setSession(data.token, data.user);
+            if (rem) { try { localStorage.setItem(SK.REMEMBER, id); } catch(e){} }
 
-        // Update last login
-        var users = getUsers();
-        users.forEach(function (u) { if (u.email === user.email) u.lastLogin = Date.now(); });
-        saveUsers(users);
-        createSession(user, rem);
-
-        if (user.role === "admin") {
-            showAlert("✅ Admin login successful! Redirecting…", "success");
-            setTimeout(function () { setLoading("loginBtn", false); goToAdmin(); }, 1000);
-        } else {
-            showAlert("✅ Welcome back, " + user.username + "! 🎮", "success");
-            setTimeout(function () { setLoading("loginBtn", false); goToGame(); }, 1000);
-        }
-    }, 500);
+            if (data.user.role === "admin") {
+                showAlert("✅ Admin login successful! Redirecting…", "success");
+                setTimeout(goToAdmin, 1000);
+            } else {
+                showAlert("✅ Welcome back, " + data.user.username + "! 🎮", "success");
+                setTimeout(goToGame, 1000);
+            }
+        })
+        .catch(function (err) {
+            setLoading("loginBtn", false);
+            showAlert("❌ " + (err.message || "Login failed."));
+            loginPassword.value = ""; loginPassword.focus();
+        });
 });
 
 // ════════════════════════════════════════════════════════════
@@ -867,36 +842,23 @@ signupForm.addEventListener("submit", function (e) {
     // Terms
     if (!agreed) { showAlert("⚠️ Please agree to the Terms & Conditions."); agreeTerms.focus(); return; }
 
-    // Duplicate check
-    if (findByUsername(username)) {
-        showAlert("❌ Username already taken."); signupUsername.focus(); return;
-    }
-    if (findByEmail(email)) {
-        showAlert("❌ An account with this email already exists. Try logging in.");
-        signupEmail.focus(); return;
-    }
-
-    // All validations passed — prepare user data & send OTP
+    // All validations passed — call backend API
     setLoading("signupBtn", true);
 
-    var users    = getUsers();
-    // Admin only if email is in ADMIN_EMAILS list — NOT first user anymore
-    var role     = ADMIN_EMAILS.indexOf(email.trim().toLowerCase()) !== -1 ? "admin" : "user";
-
-    var userData = {
-        username:     username,
-        email:        email.trim().toLowerCase(),
-        passwordHash: simpleHash(pw),
-        role:         role,
-        banned:       false,
-        createdAt:    Date.now(),
-        lastLogin:    Date.now()
-    };
-
-    setLoading("signupBtn", false);
-
-    // Start OTP flow — account saved ONLY after OTP verified
-    initiateOTPFlow(userData);
+    API.register({ username: username, email: email, password: pw })
+        .then(function () {
+            setLoading("signupBtn", false);
+            // Store pending email for OTP panel
+            window._pendingEmail = email.trim().toLowerCase();
+            window._pendingName  = username;
+            // Show OTP panel (existing UI)
+            var userData = { username: username, email: email.trim().toLowerCase() };
+            initiateOTPFlow(userData);
+        })
+        .catch(function (err) {
+            setLoading("signupBtn", false);
+            showAlert("❌ " + (err.message || "Registration failed. Try again."));
+        });
 });
 
 // ════════════════════════════════════════════════════════════
