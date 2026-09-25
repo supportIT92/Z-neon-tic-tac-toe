@@ -7,11 +7,10 @@ const mongoose = require("mongoose");
 const gameRoomSchema = new mongoose.Schema({
 
     roomCode: {
-        type:     String,
-        required: true,
-        unique:   true,
+        type:      String,
+        required:  true,
         uppercase: true,
-        trim:     true,
+        trim:      true,
         maxlength: 6
     },
 
