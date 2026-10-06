@@ -5,11 +5,13 @@
 
 "use strict";
 
+// ── Detect if running as a local file (no server) ────────────
+const IS_LOCAL_FILE = window.location.protocol === "file:";
+
 // ── Set this to your Render URL after deployment ─────────────
-// e.g. "https://neon-tictactoe-api.onrender.com"
 const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000"
-    : "https://neon-tictactoe-api.onrender.com"; // ← update after Render deploy
+    : "https://neon-tictactoe-api.onrender.com";
 
 // ── Auth token helpers ────────────────────────────────────────
 const API = {
@@ -27,7 +29,7 @@ const API = {
                 username:  user.username,
                 email:     user.email,
                 role:      user.role,
-                id:        user.id,
+                id:        user.id || user._id || "local_" + Date.now(),
                 loginTime: Date.now()
             }));
         } catch { /* ignore */ }
@@ -64,18 +66,79 @@ const API = {
         return data;
     },
 
-    // ── Auth endpoints ────────────────────────────────────────
-    register:   (body) => API.request("/api/auth/register",   { method: "POST", body }),
-    verifyOTP:  (body) => API.request("/api/auth/verify-otp", { method: "POST", body }),
-    resendOTP:  (body) => API.request("/api/auth/resend-otp", { method: "POST", body }),
-    login:      (body) => API.request("/api/auth/login",      { method: "POST", body }),
-    logout:     ()     => API.request("/api/auth/logout",     { method: "POST" }),
+    // ── Local (file://) user store ────────────────────────────
+    _getLocalUsers() {
+        try { return JSON.parse(localStorage.getItem("neonGaming_users") || "[]"); } catch { return []; }
+    },
+    _saveLocalUsers(users) {
+        try { localStorage.setItem("neonGaming_users", JSON.stringify(users)); } catch { /* ignore */ }
+    },
+
+    // ── Local register (file:// mode — no backend needed) ────
+    localRegister(body) {
+        return new Promise((resolve, reject) => {
+            const users    = this._getLocalUsers();
+            const email    = body.email.trim().toLowerCase();
+            const username = body.username.trim();
+
+            if (users.find(u => u.email === email)) {
+                return reject({ message: "Email already registered." });
+            }
+            if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+                return reject({ message: "Username already taken." });
+            }
+
+            const ADMIN_EMAILS = ["ztictactoe@outlook.com"];
+            const user = {
+                id:         "local_" + Date.now(),
+                username,
+                email,
+                password:   body.password,   // stored plain — local dev only
+                role:       ADMIN_EMAILS.includes(email) ? "admin" : "user",
+                isVerified: true,
+                createdAt:  new Date().toISOString()
+            };
+            users.push(user);
+            this._saveLocalUsers(users);
+
+            const token = "local_token_" + Date.now();
+            resolve({ success: true, token, user });
+        });
+    },
+
+    // ── Local login (file:// mode) ────────────────────────────
+    localLogin(body) {
+        return new Promise((resolve, reject) => {
+            const users = this._getLocalUsers();
+            const id    = body.identifier.trim().toLowerCase();
+            const user  = users.find(u => u.email === id || u.username.toLowerCase() === id);
+
+            if (!user)               return reject({ message: "No account found with that email or username." });
+            if (user.banned)         return reject({ message: "This account has been banned." });
+            if (user.password !== body.password) return reject({ message: "Incorrect password." });
+
+            const token = "local_token_" + Date.now();
+            resolve({ success: true, token, user });
+        });
+    },
+
+    // ── Auth endpoints (auto-switch local vs backend) ─────────
+    register(body) {
+        return IS_LOCAL_FILE ? this.localRegister(body) : this.request("/api/auth/register", { method: "POST", body });
+    },
+    login(body) {
+        return IS_LOCAL_FILE ? this.localLogin(body) : this.request("/api/auth/login", { method: "POST", body });
+    },
+    logout() {
+        if (IS_LOCAL_FILE) { this.clearSession(); return Promise.resolve({ success: true }); }
+        return this.request("/api/auth/logout", { method: "POST" });
+    },
 
     // ── User endpoints ────────────────────────────────────────
-    getMe:        ()     => API.request("/api/users/me"),
-    leaderboard:  ()     => API.request("/api/users/leaderboard"),
-    gameHistory:  ()     => API.request("/api/game/history"),
-    publicRooms:  ()     => API.request("/api/game/rooms"),
+    getMe:        ()     => IS_LOCAL_FILE ? Promise.resolve(API.getSession()) : API.request("/api/users/me"),
+    leaderboard:  ()     => IS_LOCAL_FILE ? Promise.resolve([]) : API.request("/api/users/leaderboard"),
+    gameHistory:  ()     => IS_LOCAL_FILE ? Promise.resolve([]) : API.request("/api/game/history"),
+    publicRooms:  ()     => IS_LOCAL_FILE ? Promise.resolve([]) : API.request("/api/game/rooms"),
 
     // ── Admin endpoints ───────────────────────────────────────
     adminStats:   ()     => API.request("/api/admin/stats"),
@@ -88,3 +151,4 @@ const API = {
 
 window.API         = API;
 window.BACKEND_URL = BACKEND_URL;
+window.IS_LOCAL_FILE = IS_LOCAL_FILE;

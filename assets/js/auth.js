@@ -1,24 +1,20 @@
 // ============================================================
 // NEON GAMING — Auth Script
 // Login · Signup (with OTP email verification) · Forgot Password
-// EmailJS v4 · localStorage user store · Admin role support
+// OTP sent via EmailJS (service_if0qmog) · Admin role support
 // ============================================================
 
 "use strict";
 
 // ════════════════════════════════════════════════════════════
-//  ⚙️  EMAILJS CONFIG  — Replace with your own credentials
-//  1. Sign up free at https://www.emailjs.com
-//  2. Add a Gmail/Outlook service  → copy Service ID
-//  3. Create an email template     → copy Template ID
-//     Template variables used:
-//       {{to_email}}   — recipient's email
-//       {{to_name}}    — recipient's username
-//       {{otp_code}}   — the 6-digit OTP
-//       {{app_name}}   — "Neon Gaming"
-//  4. Account page                 → copy Public Key
+//  ⚙️  EMAILJS CONFIG
+//  Service:  service_if0qmog   (your EmailJS Gmail service)
+//  Template variables used in your EmailJS template:
+//    {{to_name}}  — recipient username
+//    {{to_email}} — recipient email
+//    {{otp_code}} — the 6-digit OTP
+//    {{app_name}} — "Neon Gaming"
 // ════════════════════════════════════════════════════════════
-
 var EMAILJS_CONFIG = {
     publicKey:  "qbkefep6jKrjcyW_L",
     serviceId:  "service_if0qmog",
@@ -435,47 +431,6 @@ function generateOTP() {
 }
 
 // ════════════════════════════════════════════════════════════
-//  OTP — SEND VIA EMAILJS
-// ════════════════════════════════════════════════════════════
-
-function sendOTPEmail(toEmail, toName, otpCode, onSuccess, onError) {
-    // Check if EmailJS is configured
-    if (EMAILJS_CONFIG.publicKey === "YOUR_PUBLIC_KEY") {
-        // ── DEMO MODE — show OTP in alert (for testing without EmailJS) ──
-        console.log("[DEMO] OTP for " + toEmail + " → " + otpCode);
-        showAlert(
-            "📧 DEMO MODE: Your OTP is " + otpCode +
-            "\n(Configure EmailJS credentials in auth.js to send real emails.)",
-            "info"
-        );
-        if (onSuccess) onSuccess();
-        return;
-    }
-
-    emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId,
-        {
-            to_email:  toEmail,
-            to_name:   toName,
-            name:      toName,
-            otp_code:  otpCode,
-            otpCode:   otpCode,   // alternate key in case template uses this
-            otp:       otpCode,   // alternate key
-            message:   "Your OTP is: " + otpCode,
-            app_name:  "Neon Gaming"
-        },
-        { publicKey: EMAILJS_CONFIG.publicKey }
-    ).then(function (res) {
-        console.log("[OTP] Email sent OK:", res.status, res.text);
-        if (onSuccess) onSuccess();
-    }, function (err) {
-        console.error("[OTP] EmailJS send failed — status:", err.status, "text:", err.text);
-        if (onError) onError(err);
-    });
-}
-
-// ════════════════════════════════════════════════════════════
 //  OTP — COUNTDOWN TIMER
 // ════════════════════════════════════════════════════════════
 
@@ -557,22 +512,29 @@ function initiateOTPFlow(userData) {
     startOTPCountdown();
     startResendCooldown();
 
-    // Send the email via backend API (not EmailJS)
-    API.register({ username: userData.username, email: userData.email, password: userData.passwordHash || "" })
-        .then(function () {
-            if (EMAILJS_CONFIG.publicKey !== "YOUR_PUBLIC_KEY") {
-                showAlert("📧 OTP sent to " + userData.email + ". Check your inbox!", "success");
-            }
-        })
-        .catch(function (err) {
-            var errMsg = err.message || "Unknown error";
-            console.error("[OTP] Send failed:", errMsg);
-            showAlert(
-                "⚠️ Email delivery failed (" + errMsg + "). " +
-                "You can still enter the OTP if you received it, or click 'Resend OTP'.",
-                "error"
-            );
-        });
+    // Send OTP via EmailJS (frontend)
+    emailjs.send(
+        EMAILJS_CONFIG.serviceId,
+        EMAILJS_CONFIG.templateId,
+        {
+            to_name:  userData.username,
+            to_email: userData.email,
+            otp_code: code,
+            otpCode:  code,
+            otp:      code,
+            message:  "Your OTP is: " + code,
+            app_name: "Neon Gaming"
+        },
+        { publicKey: EMAILJS_CONFIG.publicKey }
+    ).then(function () {
+        showAlert("📧 OTP sent to " + userData.email + ". Check your inbox!", "success");
+    }).catch(function (err) {
+        console.error("[EmailJS] Send failed:", err);
+        showAlert(
+            "⚠️ Could not send OTP email. Check EmailJS config or internet connection.",
+            "error"
+        );
+    });
 }
 
 function clearOTPState() {
@@ -692,18 +654,18 @@ function verifyOTP() {
         return;
     }
 
-    // ✅ OTP Correct!
+    // ✅ OTP Correct — frontend verified, now register user on backend
     otpBoxes.forEach(function (b) { b.style.borderColor = "#00ff88"; });
     setLoading("otpVerifyBtn", true);
 
-    // Verify OTP via backend API
-    var email    = _otpState.userData.email;
-    var entered  = getOTPInput();
     var userData = _otpState.userData;
 
-    API.verifyOTP({ email: email, otp: entered })
+    API.register({
+        username: userData.username,
+        email:    userData.email,
+        password: userData.password
+    })
         .then(function (data) {
-            // Backend verified — save session
             API.setSession(data.token, data.user);
             clearOTPState();
             setLoading("otpVerifyBtn", false);
@@ -716,9 +678,7 @@ function verifyOTP() {
         })
         .catch(function (err) {
             setLoading("otpVerifyBtn", false);
-            otpBoxes.forEach(function (b) { b.style.borderColor = "#ff4444"; b.value = ""; });
-            otpBoxes[0].focus();
-            showAlert("❌ " + (err.message || "OTP verification failed."));
+            showAlert("❌ " + (err.message || "Registration failed. Please try again."));
         });
 }
 
@@ -739,14 +699,31 @@ otpResendBtn.addEventListener("click", function () {
     startOTPCountdown();
     startResendCooldown();
 
-    // Resend via backend API
-    API.resendOTP({ email: _otpState.userData.email })
-        .then(function () {
-            showAlert("📧 New OTP sent to " + _otpState.userData.email, "success");
-        })
-        .catch(function (err) {
-            showAlert("❌ Failed to resend OTP: " + (err.message || "Check connection."));
-        });
+    // Resend via EmailJS
+    var newCode = generateOTP();
+    _otpState.code      = newCode;
+    _otpState.expiresAt = Date.now() + OTP_EXPIRY_MS;
+    _otpState.attempts  = 0;
+
+    emailjs.send(
+        EMAILJS_CONFIG.serviceId,
+        EMAILJS_CONFIG.templateId,
+        {
+            to_name:  _otpState.userData.username,
+            to_email: _otpState.userData.email,
+            otp_code: newCode,
+            otpCode:  newCode,
+            otp:      newCode,
+            message:  "Your new OTP is: " + newCode,
+            app_name: "Neon Gaming"
+        },
+        { publicKey: EMAILJS_CONFIG.publicKey }
+    ).then(function () {
+        showAlert("📧 New OTP sent to " + _otpState.userData.email, "success");
+    }).catch(function (err) {
+        console.error("[EmailJS] Resend failed:", err);
+        showAlert("❌ Failed to resend OTP. Check your connection.", "error");
+    });
 });
 
 // OTP back button → return to signup (clear OTP state)
@@ -842,23 +819,21 @@ signupForm.addEventListener("submit", function (e) {
     // Terms
     if (!agreed) { showAlert("⚠️ Please agree to the Terms & Conditions."); agreeTerms.focus(); return; }
 
-    // All validations passed — call backend API
+    // All validations passed — go straight to OTP flow
+    // (backend /register does a final duplicate check after OTP is verified)
     setLoading("signupBtn", true);
 
-    API.register({ username: username, email: email, password: pw })
-        .then(function () {
-            setLoading("signupBtn", false);
-            // Store pending email for OTP panel
-            window._pendingEmail = email.trim().toLowerCase();
-            window._pendingName  = username;
-            // Show OTP panel (existing UI)
-            var userData = { username: username, email: email.trim().toLowerCase() };
-            initiateOTPFlow(userData);
-        })
-        .catch(function (err) {
-            setLoading("signupBtn", false);
-            showAlert("❌ " + (err.message || "Registration failed. Try again."));
-        });
+    var userData = {
+        username: username,
+        email:    email.trim().toLowerCase(),
+        password: pw
+    };
+
+    // Small delay for button feedback, then launch OTP
+    setTimeout(function () {
+        setLoading("signupBtn", false);
+        initiateOTPFlow(userData);
+    }, 300);
 });
 
 // ════════════════════════════════════════════════════════════
@@ -926,8 +901,8 @@ setupToggle(toggleConfirmPw, signupConfirm);
 // ════════════════════════════════════════════════════════════
 
 (function init() {
-    // Init EmailJS if configured
-    if (typeof emailjs !== "undefined" && EMAILJS_CONFIG.publicKey !== "YOUR_PUBLIC_KEY") {
+    // Initialise EmailJS with public key
+    if (typeof emailjs !== "undefined") {
         emailjs.init({ publicKey: EMAILJS_CONFIG.publicKey });
     }
 
