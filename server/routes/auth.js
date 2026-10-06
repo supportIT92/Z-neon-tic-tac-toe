@@ -1,0 +1,281 @@
+// ═══════════════════════════════════════════════════════════
+// ROUTE: /api/auth
+// POST /register    → validate + send OTP
+// POST /verify-otp  → verify OTP + create account + return JWT
+// POST /login       → login + return JWT
+// POST /logout      → client clears token (stateless)
+// POST /resend-otp  → resend OTP
+// ═══════════════════════════════════════════════════════════
+
+const express     = require("express");
+const rateLimit   = require("express-rate-limit");
+const User        = require("../models/User");
+const { sendOTPEmail } = require("../utils/email");
+const { signToken }    = require("../middleware/auth.middleware");
+
+const router = express.Router();
+
+// In-memory OTP store (per email) — cleared after verify/expiry
+// { email: { code, expiresAt, attempts, userData } }
+const otpStore = new Map();
+
+const OTP_EXPIRY  = 5 * 60 * 1000;  // 5 min
+const MAX_ATTEMPTS = 5;
+
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
+    .split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+
+// ── Rate limiters ─────────────────────────────────────────────
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max:      20,
+    message:  { success: false, message: "Too many requests, try again later" }
+});
+
+const otpLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max:      3,
+    message:  { success: false, message: "Too many OTP requests, wait 1 minute" }
+});
+
+// ── Generate 6-digit OTP ──────────────────────────────────────
+function generateOTP() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+// ── Validate email ────────────────────────────────────────────
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email).toLowerCase());
+}
+
+// ── Validate username ─────────────────────────────────────────
+function isValidUsername(name) {
+    return /^[A-Za-z][A-Za-z0-9_]{2,19}$/.test(name.trim());
+}
+
+// ── Password strength ─────────────────────────────────────────
+function isStrongPassword(pw) {
+    if (pw.length < 8) return false;
+    let score = 0;
+    if (/[a-z]/.test(pw)) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    return score >= 3;
+}
+
+// ══════════════════════════════════════════════════════════════
+// POST /api/auth/register
+// ══════════════════════════════════════════════════════════════
+router.post("/register", authLimiter, async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
+
+        // Validate
+        if (!username || !isValidUsername(username)) {
+            return res.status(400).json({ success: false, message: "Invalid username. Use 3-20 chars, start with letter." });
+        }
+        if (!email || !isValidEmail(email)) {
+            return res.status(400).json({ success: false, message: "Invalid email address." });
+        }
+        if (!password || !isStrongPassword(password)) {
+            return res.status(400).json({ success: false, message: "Password too weak. Use 8+ chars with uppercase, lowercase, number." });
+        }
+
+        // Check duplicates
+        const existing = await User.findOne({
+            $or: [
+                { email:    email.trim().toLowerCase() },
+                { username: { $regex: new RegExp(`^${username.trim()}$`, "i") } }
+            ]
+        });
+
+        if (existing) {
+            if (existing.email === email.trim().toLowerCase()) {
+                return res.status(409).json({ success: false, message: "Email already registered." });
+            }
+            return res.status(409).json({ success: false, message: "Username already taken." });
+        }
+
+        // Generate & store OTP
+        const code = generateOTP();
+        otpStore.set(email.toLowerCase(), {
+            code,
+            expiresAt: Date.now() + OTP_EXPIRY,
+            attempts:  0,
+            userData:  {
+                username: username.trim(),
+                email:    email.trim().toLowerCase(),
+                password,   // plain — hashed on User.save()
+                role:     ADMIN_EMAILS.includes(email.trim().toLowerCase()) ? "admin" : "user"
+            }
+        });
+
+        // Send OTP email
+        await sendOTPEmail(email, username, code);
+
+        res.json({
+            success: true,
+            message: `OTP sent to ${email}. Valid for 5 minutes.`
+        });
+
+    } catch (err) {
+        console.error("[register]", err);
+        res.status(500).json({ success: false, message: "Server error. Try again." });
+    }
+});
+
+// ══════════════════════════════════════════════════════════════
+// POST /api/auth/verify-otp
+// ══════════════════════════════════════════════════════════════
+router.post("/verify-otp", authLimiter, async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ success: false, message: "Email and OTP required." });
+        }
+
+        const entry = otpStore.get(email.toLowerCase());
+        if (!entry) {
+            return res.status(400).json({ success: false, message: "No OTP found. Please register again." });
+        }
+
+        // Check expiry
+        if (Date.now() > entry.expiresAt || !entry.code) {
+            otpStore.delete(email.toLowerCase());
+            return res.status(400).json({ success: false, message: "OTP expired. Please register again." });
+        }
+
+        // Check attempts
+        entry.attempts++;
+        if (entry.attempts > MAX_ATTEMPTS) {
+            otpStore.delete(email.toLowerCase());
+            return res.status(429).json({ success: false, message: "Too many attempts. Please register again." });
+        }
+
+        // Verify code
+        if (otp !== entry.code) {
+            const left = MAX_ATTEMPTS - entry.attempts;
+            return res.status(400).json({
+                success: false,
+                message: `Incorrect OTP. ${left} attempt${left !== 1 ? "s" : ""} remaining.`
+            });
+        }
+
+        // ✅ OTP correct — create user
+        const { userData } = entry;
+        otpStore.delete(email.toLowerCase());
+
+        const user = await User.create({
+            username:   userData.username,
+            email:      userData.email,
+            password:   userData.password,
+            role:       userData.role,
+            isVerified: true
+        });
+
+        const token = signToken(user._id);
+
+        res.status(201).json({
+            success: true,
+            message: "Account created successfully!",
+            token,
+            user:    user.toPublic()
+        });
+
+    } catch (err) {
+        console.error("[verify-otp]", err);
+        res.status(500).json({ success: false, message: "Server error. Try again." });
+    }
+});
+
+// ══════════════════════════════════════════════════════════════
+// POST /api/auth/resend-otp
+// ══════════════════════════════════════════════════════════════
+router.post("/resend-otp", otpLimiter, async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Email required." });
+        }
+
+        const entry = otpStore.get(email.toLowerCase());
+        if (!entry) {
+            return res.status(400).json({ success: false, message: "No pending registration for this email." });
+        }
+
+        // Generate new OTP
+        const code = generateOTP();
+        entry.code      = code;
+        entry.expiresAt = Date.now() + OTP_EXPIRY;
+        entry.attempts  = 0;
+
+        await sendOTPEmail(email, entry.userData.username, code);
+
+        res.json({ success: true, message: "New OTP sent." });
+
+    } catch (err) {
+        console.error("[resend-otp]", err);
+        res.status(500).json({ success: false, message: "Server error." });
+    }
+});
+
+// ══════════════════════════════════════════════════════════════
+// POST /api/auth/login
+// ══════════════════════════════════════════════════════════════
+router.post("/login", authLimiter, async (req, res) => {
+    try {
+        const { identifier, password } = req.body;
+        if (!identifier || !password) {
+            return res.status(400).json({ success: false, message: "Email/username and password required." });
+        }
+
+        // Find by email or username
+        const id = identifier.trim().toLowerCase();
+        const user = await User.findOne({
+            $or: [
+                { email:    id },
+                { username: { $regex: new RegExp(`^${id}$`, "i") } }
+            ]
+        }).select("+password");
+
+        if (!user) {
+            return res.status(401).json({ success: false, message: "No account found with that email or username." });
+        }
+        if (user.banned) {
+            return res.status(403).json({ success: false, message: "This account has been banned." });
+        }
+
+        const match = await user.comparePassword(password);
+        if (!match) {
+            return res.status(401).json({ success: false, message: "Incorrect password." });
+        }
+
+        // Update last login
+        user.lastLogin = new Date();
+        await user.save({ validateBeforeSave: false });
+
+        const token = signToken(user._id);
+
+        res.json({
+            success: true,
+            message: `Welcome back, ${user.username}!`,
+            token,
+            user:    user.toPublic()
+        });
+
+    } catch (err) {
+        console.error("[login]", err);
+        res.status(500).json({ success: false, message: "Server error." });
+    }
+});
+
+// ══════════════════════════════════════════════════════════════
+// POST /api/auth/logout  (stateless — client drops token)
+// ══════════════════════════════════════════════════════════════
+router.post("/logout", (req, res) => {
+    res.json({ success: true, message: "Logged out successfully." });
+});
+
+module.exports = router;
