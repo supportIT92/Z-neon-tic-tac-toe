@@ -1,14 +1,17 @@
 // ═══════════════════════════════════════════════════════════
-// UTIL: Email sender via Nodemailer
+// UTIL: Email sender via Brevo (Sendinblue) SMTP + Nodemailer
 // ═══════════════════════════════════════════════════════════
 
 const nodemailer = require("nodemailer");
 
+// Brevo SMTP transporter
 const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host:   "smtp-relay.brevo.com",
+    port:   587,
+    secure: false,
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS   // Gmail App Password (not account password)
+        user: process.env.BREVO_SMTP_USER,   // your login email
+        pass: process.env.BREVO_SMTP_KEY     // Brevo SMTP key (API key)
     }
 });
 
@@ -47,7 +50,7 @@ const sendOTPEmail = async (toEmail, toName, otpCode) => {
     </html>`;
 
     await transporter.sendMail({
-        from:    `"Neon Gaming" <${process.env.EMAIL_USER}>`,
+        from:    `"Neon Gaming" <${process.env.BREVO_FROM_EMAIL}>`,
         to:      toEmail,
         subject: `${otpCode} — Your Neon Gaming OTP`,
         html
