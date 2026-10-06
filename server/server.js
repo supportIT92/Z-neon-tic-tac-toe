@@ -75,6 +75,52 @@ app.get("/", (req, res) => {
     });
 });
 
+// ── ONE-TIME DB CLEANUP (remove after use!) ───────────────────
+// Hit: POST /cleanup-db  with header  x-cleanup-key: NeonClean2024!
+app.post("/cleanup-db", async (req, res) => {
+    const key = req.headers["x-cleanup-key"];
+    if (key !== "NeonClean2024!") {
+        return res.status(403).json({ success: false, message: "Forbidden." });
+    }
+    try {
+        const User        = require("./models/User");
+        const GameHistory = require("./models/GameHistory");
+        const GameRoom    = require("./models/GameRoom");
+        const bcrypt      = require("bcryptjs");
+
+        const users    = await User.deleteMany({});
+        const history  = await GameHistory.deleteMany({});
+        const rooms    = await GameRoom.deleteMany({});
+
+        // Create fresh admin
+        const admin = await User.create({
+            username:   "ZAdmin",
+            email:      (process.env.ADMIN_EMAILS || "ztictactoe@outlook.com").split(",")[0].trim(),
+            password:   "ZAdmin@Neon2024!",
+            role:       "admin",
+            isVerified: true,
+            avatarColor: "#ff00ff"
+        });
+
+        res.json({
+            success: true,
+            message: "✅ Database cleaned! Fresh start.",
+            deleted: {
+                users:    users.deletedCount,
+                history:  history.deletedCount,
+                rooms:    rooms.deletedCount
+            },
+            adminCreated: {
+                username: admin.username,
+                email:    admin.email,
+                password: "ZAdmin@Neon2024!"
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // ── 404 handler ──────────────────────────────────────────────
 app.use((req, res) => {
     res.status(404).json({ success: false, message: "Route not found" });
