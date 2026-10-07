@@ -332,8 +332,8 @@ function showSuccessScreen(username) {
     }, 1000);
 }
 
-function goToGame()  { window.location.href = "index.html"; }
-function goToAdmin() { window.location.href = "admin.html"; }
+function goToGame()  { window.location.href = "../"; }
+function goToAdmin() { window.location.href = "../admin/"; }
 
 // ════════════════════════════════════════════════════════════
 //  PASSWORD TOGGLE
