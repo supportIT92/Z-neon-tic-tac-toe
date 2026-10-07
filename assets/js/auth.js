@@ -906,8 +906,17 @@ setupToggle(toggleConfirmPw, signupConfirm);
         emailjs.init({ publicKey: EMAILJS_CONFIG.publicKey });
     }
 
+    // Validate existing session — clear if expired or invalid
     var session = getSession();
     if (session) {
+        // Check if session is not too old (7 days)
+        var maxAge = 7 * 24 * 60 * 60 * 1000;
+        var isExpired = !session.loginTime || (Date.now() - session.loginTime) > maxAge;
+        if (isExpired) {
+            API.clearSession();
+            showPanel("login");
+            return;
+        }
         if (session.role === "admin") { goToAdmin(); } else { goToGame(); }
         return;
     }

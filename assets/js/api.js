@@ -62,7 +62,11 @@ const API = {
         });
 
         const data = await res.json();
-        if (!res.ok) throw { status: res.status, message: data.message || "Request failed" };
+        if (!res.ok) {
+            // JWT expired or invalid — clear session
+            if (res.status === 401) { this.clearSession(); }
+            throw { status: res.status, message: data.message || "Request failed" };
+        }
         return data;
     },
 

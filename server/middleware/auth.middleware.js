@@ -14,7 +14,8 @@ const protect = async (req, res, next) => {
         }
 
         const token = header.split(" ")[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // clockTolerance: 5 min — handles PC time drift/changes
+        const decoded = jwt.verify(token, process.env.JWT_SECRET, { clockTolerance: 300 });
 
         const user = await User.findById(decoded.id).select("-password");
         if (!user) {
