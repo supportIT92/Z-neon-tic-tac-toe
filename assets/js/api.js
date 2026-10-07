@@ -11,7 +11,7 @@ const IS_LOCAL_FILE = window.location.protocol === "file:";
 // ── Set this to your Render URL after deployment ─────────────
 const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000"
-    : "https://neon-tictactoe-api.onrender.com";
+    : "https://z-neon-tic-tac-toe.onrender.com";
 
 // ── Auth token helpers ────────────────────────────────────────
 const API = {
