@@ -7,6 +7,20 @@
     <meta name="description" content="Neon Gaming — Login or create your account">
     <title>Neon Gaming — Login</title>
     <link rel="stylesheet" href="../assets/css/auth.css">
+    <!-- If already logged in, redirect to game -->
+    <script>
+        (function() {
+            try {
+                var s = JSON.parse(localStorage.getItem("neonGaming_session") || "null");
+                if (s && s.username) {
+                    var maxAge = 7 * 24 * 60 * 60 * 1000;
+                    if (!s.loginTime || (Date.now() - s.loginTime) < maxAge) {
+                        window.location.replace(s.role === "admin" ? "/admin" : "/");
+                    }
+                }
+            } catch(e) {}
+        }());
+    </script>
 </head>
 
 <body>
