@@ -68,29 +68,46 @@ morgan.token("status-color", (req, res) => {
     return `✅ ${s}`;
 });
 app.use(morgan((tokens, req, res) => {
-    // Skip static asset logs (css, js, images, sounds, fonts)
     const url = tokens.url(req, res) || "";
-    if (/\.(css|js|png|jpg|jpeg|gif|ico|mp3|mp4|woff|woff2|ttf|svg|webp)(\?|$)/.test(url)) return null;
-    const s = res.statusCode;
-    const method = tokens.method(req, res);
-    const ms = parseFloat(tokens["response-time"](req, res)).toFixed(1);
+    // Only log API calls and main page loads — skip all static assets
+    const skip = /\.(css|js|png|jpg|jpeg|gif|ico|mp3|mp4|woff|woff2|ttf|svg|webp)(\?|$)/i;
+    const skipPaths = /^\/(\.env|\.git|server\/|node_modules)/i;
+    if (skip.test(url) || skipPaths.test(url)) return null;
+
+    const s    = res.statusCode;
+    const ms   = parseFloat(tokens["response-time"](req, res)).toFixed(1);
     const time = tokens.time(req, res);
+    const method = (tokens.method(req, res) || "").padEnd(6);
     const icon = s >= 500 ? "❌" : s >= 400 ? "⚠️ " : s >= 300 ? "↪ " : "✅";
-    return `${time} │ ${icon} ${method.padEnd(6)} ${s} │ ${url.padEnd(30)} │ ${ms}ms`;
+    return `${time} │ ${icon} ${method} ${s} │ ${url.padEnd(35)} │ ${ms}ms`;
 }));
 
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // ── Frontend static files ─────────────────────────────────────
-// Serve the entire project root (one level up from server/)
 const FRONTEND_DIR = path.join(__dirname, "..");
-app.use(express.static(FRONTEND_DIR));
+
+// Block sensitive files BEFORE static middleware
+app.use((req, res, next) => {
+    const blocked = /^\/(\.|server\/|\.env|\.git|\.gitignore|package|node_modules)/i;
+    if (blocked.test(req.path)) {
+        return res.status(404).json({ success: false, message: "Not found" });
+    }
+    next();
+});
+
+// Serve only safe static files
+app.use(express.static(FRONTEND_DIR, {
+    dotfiles: "deny",   // block .env, .git etc
+    index:    false     // don't auto-serve index.html (we handle it manually)
+}));
 
 // Clean URLs — serve index.html for /auth, /online, /admin
-app.get("/auth",   (req, res) => res.sendFile(path.join(FRONTEND_DIR, "auth.html")));
-app.get("/online", (req, res) => res.sendFile(path.join(FRONTEND_DIR, "online.html")));
-app.get("/admin",  (req, res) => res.sendFile(path.join(FRONTEND_DIR, "admin.html")));
+app.get("/auth",   (req, res) => res.sendFile(path.join(FRONTEND_DIR, "auth/index.html")));
+app.get("/online", (req, res) => res.sendFile(path.join(FRONTEND_DIR, "online/index.html")));
+app.get("/admin",  (req, res) => res.sendFile(path.join(FRONTEND_DIR, "admin/index.html")));
+app.get("/",       (req, res) => res.sendFile(path.join(FRONTEND_DIR, "index.html")));
 
 // ── Routes ───────────────────────────────────────────────────
 app.use("/api/auth",  authRoutes);
