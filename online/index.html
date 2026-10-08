@@ -4,8 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neon Gaming — Online Play</title>
+    <!-- Inline Auth Guard -->
+    <script>
+        (function(){
+            try {
+                var s = JSON.parse(localStorage.getItem('neonGaming_session')||'null');
+                var maxAge = 7*24*60*60*1000;
+                var valid = s && s.username && (!s.loginTime || (Date.now()-s.loginTime) < maxAge);
+                if(!valid) { window.location.replace('/auth'); }
+            } catch(e) { window.location.replace('/auth'); }
+        })();
+    </script>
     <link rel="stylesheet" href="../assets/css/online.css">
-    <!-- Auth Guard — must be first script -->
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/auth-guard.js"></script>
 </head>

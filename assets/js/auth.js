@@ -332,8 +332,19 @@ function showSuccessScreen(username) {
     }, 1000);
 }
 
-function goToGame()  { window.location.href = "../"; }
-function goToAdmin() { window.location.href = "../admin/"; }
+function goToGame()  {
+    // After login, check if user was trying to visit a specific page
+    try {
+        var redirect = sessionStorage.getItem("neonGaming_redirect");
+        if (redirect && redirect.indexOf("/auth") === -1) {
+            sessionStorage.removeItem("neonGaming_redirect");
+            window.location.href = redirect;
+            return;
+        }
+    } catch(e) {}
+    window.location.href = "/";
+}
+function goToAdmin() { window.location.href = "/admin/"; }
 
 // ════════════════════════════════════════════════════════════
 //  PASSWORD TOGGLE
