@@ -105,6 +105,10 @@ async function dispatchEmail({ toEmail, toName, subject, html }) {
 
 // ── Send OTP email ────────────────────────────────────────────
 const sendOTPEmail = async (toEmail, toName, otpCode) => {
+    const now = new Date();
+    const istTime = now.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true });
+    const istExpire = new Date(now.getTime() + 5 * 60 * 1000).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true });
+
     const html = `
     <!DOCTYPE html>
     <html>
@@ -113,7 +117,9 @@ const sendOTPEmail = async (toEmail, toName, otpCode) => {
         body { font-family: Arial, sans-serif; background: #050816; color: #fff; margin: 0; padding: 0; }
         .container { max-width: 480px; margin: 40px auto; padding: 32px; background: rgba(255,255,255,0.06); border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); }
         .logo { text-align: center; font-size: 28px; font-weight: 900; letter-spacing: 4px; color: #00f7ff; margin-bottom: 8px; }
-        .subtitle { text-align: center; color: #94a3b8; font-size: 12px; letter-spacing: 2px; margin-bottom: 28px; }
+        .subtitle { text-align: center; color: #94a3b8; font-size: 12px; letter-spacing: 2px; margin-bottom: 20px; }
+        .time-pill { text-align: center; margin-bottom: 20px; }
+        .time-pill span { background: rgba(0,247,255,0.12); color: #00f7ff; border: 1px solid rgba(0,247,255,0.3); padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .otp-box { background: rgba(0,247,255,0.08); border: 2px solid rgba(0,247,255,0.3); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0; }
         .otp-code { font-size: 42px; font-weight: 900; letter-spacing: 12px; color: #00f7ff; text-shadow: 0 0 20px rgba(0,247,255,0.5); }
         .otp-label { font-size: 11px; color: #94a3b8; letter-spacing: 2px; margin-top: 8px; }
@@ -125,14 +131,17 @@ const sendOTPEmail = async (toEmail, toName, otpCode) => {
       <div class="container">
         <div class="logo">NEON GAMING</div>
         <div class="subtitle">PLAY · CHALLENGE · WIN</div>
+        <div class="time-pill">
+          <span>🕒 Sent: ${istTime} IST · Valid until ${istExpire} IST</span>
+        </div>
         <p style="color:#cbd5e1;">Hi <strong>${toName}</strong>,</p>
-        <p style="color:#94a3b8;font-size:14px;">Use the OTP below to verify your email address. It expires in <strong style="color:#00f7ff;">5 minutes</strong>.</p>
+        <p style="color:#94a3b8;font-size:14px;">Use the OTP below to verify your email address. It is valid for <strong style="color:#00f7ff;">5 minutes</strong> (until <strong>${istExpire} IST</strong>).</p>
         <div class="otp-box">
           <div class="otp-code">${otpCode}</div>
           <div class="otp-label">YOUR ONE-TIME PASSWORD</div>
         </div>
         <p class="note">If you did not request this, please ignore this email.</p>
-        <div class="footer">© Neon Gaming · Do not reply to this email</div>
+        <div class="footer">© Neon Gaming · Sent at ${istTime} IST</div>
       </div>
     </body>
     </html>`;
@@ -140,13 +149,17 @@ const sendOTPEmail = async (toEmail, toName, otpCode) => {
     return dispatchEmail({
         toEmail,
         toName,
-        subject: `${otpCode} — Your Neon Gaming Verification Code`,
+        subject: `${otpCode} — Neon Gaming Verification Code [${istTime} IST]`,
         html
     });
 };
 
 // ── Send Password Reset OTP email ──────────────────────────────
 const sendPasswordResetEmail = async (toEmail, toName, otpCode) => {
+    const now = new Date();
+    const istTime = now.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true });
+    const istExpire = new Date(now.getTime() + 5 * 60 * 1000).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true });
+
     const html = `
     <!DOCTYPE html>
     <html>
@@ -155,7 +168,9 @@ const sendPasswordResetEmail = async (toEmail, toName, otpCode) => {
         body { font-family: Arial, sans-serif; background: #050816; color: #fff; margin: 0; padding: 0; }
         .container { max-width: 480px; margin: 40px auto; padding: 32px; background: rgba(255,255,255,0.06); border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); }
         .logo { text-align: center; font-size: 28px; font-weight: 900; letter-spacing: 4px; color: #ff007f; margin-bottom: 8px; }
-        .subtitle { text-align: center; color: #94a3b8; font-size: 12px; letter-spacing: 2px; margin-bottom: 28px; }
+        .subtitle { text-align: center; color: #94a3b8; font-size: 12px; letter-spacing: 2px; margin-bottom: 20px; }
+        .time-pill { text-align: center; margin-bottom: 20px; }
+        .time-pill span { background: rgba(255,0,127,0.12); color: #ff007f; border: 1px solid rgba(255,0,127,0.3); padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .otp-box { background: rgba(255,0,127,0.08); border: 2px solid rgba(255,0,127,0.3); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0; }
         .otp-code { font-size: 42px; font-weight: 900; letter-spacing: 12px; color: #ff007f; text-shadow: 0 0 20px rgba(255,0,127,0.5); }
         .otp-label { font-size: 11px; color: #94a3b8; letter-spacing: 2px; margin-top: 8px; }
@@ -167,14 +182,17 @@ const sendPasswordResetEmail = async (toEmail, toName, otpCode) => {
       <div class="container">
         <div class="logo">NEON GAMING</div>
         <div class="subtitle">PASSWORD RESET</div>
+        <div class="time-pill">
+          <span>🕒 Sent: ${istTime} IST · Valid until ${istExpire} IST</span>
+        </div>
         <p style="color:#cbd5e1;">Hi <strong>${toName}</strong>,</p>
-        <p style="color:#94a3b8;font-size:14px;">We received a request to reset your password. Use the OTP code below. It expires in <strong style="color:#ff007f;">5 minutes</strong>.</p>
+        <p style="color:#94a3b8;font-size:14px;">We received a request to reset your password. Use the OTP code below. It is valid for <strong style="color:#ff007f;">5 minutes</strong> (until <strong>${istExpire} IST</strong>).</p>
         <div class="otp-box">
           <div class="otp-code">${otpCode}</div>
           <div class="otp-label">PASSWORD RESET CODE</div>
         </div>
         <p class="note">If you did not request a password reset, please ignore this email or contact support.</p>
-        <div class="footer">© Neon Gaming · Do not reply to this email</div>
+        <div class="footer">© Neon Gaming · Sent at ${istTime} IST</div>
       </div>
     </body>
     </html>`;
@@ -182,7 +200,7 @@ const sendPasswordResetEmail = async (toEmail, toName, otpCode) => {
     return dispatchEmail({
         toEmail,
         toName,
-        subject: `${otpCode} — Reset Your Neon Gaming Password`,
+        subject: `${otpCode} — Reset Your Neon Gaming Password [${istTime} IST]`,
         html
     });
 };
