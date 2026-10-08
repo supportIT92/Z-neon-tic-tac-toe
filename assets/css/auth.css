@@ -357,12 +357,19 @@ button {
 }
 
 .field-group .field-icon {
-    flex-shrink:  0;
-    width:        44px;
-    text-align:   center;
-    font-size:    16px;
-    color:        var(--muted);
+    flex-shrink:    0;
+    width:          44px;
+    height:         50px;
+    display:        flex;
+    align-items:    center;
+    justify-content: center;
+    color:          var(--muted);
     pointer-events: none;
+}
+
+.field-group .field-icon svg {
+    width:          16px;
+    height:         16px;
 }
 
 .field-group input {
@@ -394,6 +401,11 @@ button {
     color:         var(--muted);
     font-size:     17px;
     transition:    color .2s;
+}
+
+.toggle-pw svg {
+    width:         16px;
+    height:        16px;
 }
 
 .toggle-pw:hover,
@@ -773,15 +785,25 @@ input:focus {
 ============================================= */
 
 .pw-hint {
-    font-size:    0.7rem;
-    color:        var(--muted);
-    margin:       -4px 0 10px;
-    line-height:  1.5;
+    display:        flex;
+    align-items:    center;
+    font-size:      0.72rem;
+    color:          var(--muted);
+    margin:         -4px 0 10px;
+    line-height:    1.4;
     letter-spacing: 0.02em;
-    padding:      6px 10px;
-    background:   rgba(255, 255, 255, .03);
-    border-left:  2px solid rgba(0, 247, 255, .25);
-    border-radius: 0 6px 6px 0;
+    padding:        6px 10px;
+    background:     rgba(255, 255, 255, .03);
+    border-left:    2px solid rgba(0, 247, 255, .25);
+    border-radius:  0 6px 6px 0;
+}
+
+.pw-hint svg {
+    width:          13px;
+    height:         13px;
+    margin-right:   6px;
+    flex-shrink:    0;
+    stroke:         var(--cyan);
 }
 
 /* =============================================
