@@ -594,7 +594,7 @@ otpBoxes.forEach(function (box, idx) {
 // ════════════════════════════════════════════════════════════
 
 function getOTPInput() {
-    return Array.from(otpBoxes).map(function (b) { return b.value; }).join("");
+    return Array.from(otpBoxes).map(function (b) { return (b.value || "").trim(); }).join("");
 }
 
 function verifyOTP() {
@@ -621,6 +621,7 @@ function verifyOTP() {
 
     setLoading("otpVerifyBtn", true);
     var userData = _otpState.userData;
+    console.log("[Auth] Submitting OTP verification code:", entered, "for email:", userData.email);
 
     API.register({
         username: userData.username,

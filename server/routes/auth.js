@@ -93,20 +93,22 @@ router.post("/send-otp", otpLimiter, async (req, res) => {
             attempts:  0
         });
 
-        console.log(`[OTP Stored] 🔐 Stored OTP record in DB for ${cleanEmail} (expires in 5m)`);
+        const istTime = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: false });
+        const expireTime = expiresAt.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: false });
+        console.log(`[OTP Stored ${istTime} IST] 🔐 Stored OTP in DB for ${cleanEmail} (code: ${otpCode}, expires at ${expireTime} IST)`);
 
         // Send email via Brevo
         try {
-            console.log(`[OTP Dispatch] 🚀 Calling Brevo API to send OTP to ${cleanEmail}...`);
+            console.log(`[OTP Dispatch ${istTime} IST] 🚀 Calling Brevo API to send OTP to ${cleanEmail}...`);
             const dispatchResult = await sendOTPEmail(cleanEmail, username || "Player", otpCode);
-            console.log(`[OTP Success] ✅ OTP delivered via Brevo to ${cleanEmail}!`, dispatchResult);
+            console.log(`[OTP Success ${istTime} IST] ✅ OTP delivered via Brevo to ${cleanEmail}!`, dispatchResult);
 
             return res.json({
                 success: true,
                 message: "Verification code sent to your email! Valid for 5 minutes."
             });
         } catch (emailErr) {
-            console.error(`[OTP Error] ❌ Brevo dispatch failed for ${cleanEmail}:`, emailErr.message);
+            console.error(`[OTP Error ${istTime} IST] ❌ Brevo dispatch failed for ${cleanEmail}:`, emailErr.message);
 
             if (process.env.NODE_ENV !== "production") {
                 return res.status(200).json({
@@ -134,6 +136,7 @@ router.post("/send-otp", otpLimiter, async (req, res) => {
 router.post("/register", authLimiter, async (req, res) => {
     try {
         const { username, email, password, otp } = req.body;
+        const cleanOtp = String(otp || "").replace(/\D/g, "").trim();
 
         // Validation
         if (!username || !isValidUsername(username)) {
@@ -145,12 +148,15 @@ router.post("/register", authLimiter, async (req, res) => {
         if (!password || !isStrongPassword(password)) {
             return res.status(400).json({ success: false, message: "Password too weak. Minimum 8 characters with upper, lower, and numbers/symbols." });
         }
-        if (!otp || String(otp).trim().length !== 6) {
+        if (!cleanOtp || cleanOtp.length !== 6) {
             return res.status(400).json({ success: false, message: "Valid 6-digit OTP code is required." });
         }
 
         const cleanEmail = email.trim().toLowerCase();
         const cleanName  = username.trim();
+        const istTime    = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: false });
+
+        console.log(`[Register Verification ${istTime} IST] 🔍 Checking OTP for: ${cleanEmail}`);
 
         // 1. Verify OTP in database
         const otpRecord = await Otp.findOne({
@@ -159,6 +165,7 @@ router.post("/register", authLimiter, async (req, res) => {
         });
 
         if (!otpRecord) {
+            console.warn(`[Register Failed ${istTime} IST] ⚠️ No active OTP in DB for ${cleanEmail} (expired after 5m or not requested)`);
             return res.status(400).json({
                 success: false,
                 message: "Verification code has expired or was not requested. Please request a new code."
@@ -167,21 +174,25 @@ router.post("/register", authLimiter, async (req, res) => {
 
         if (otpRecord.attempts >= 5) {
             await Otp.deleteOne({ _id: otpRecord._id });
+            console.warn(`[Register Failed ${istTime} IST] ⚠️ Max attempts reached for ${cleanEmail}`);
             return res.status(429).json({
                 success: false,
                 message: "Maximum OTP attempts exceeded. Please request a new code."
             });
         }
 
-        const submittedHash = hashOtp(otp);
+        const submittedHash = hashOtp(cleanOtp);
         if (submittedHash !== otpRecord.codeHash) {
             otpRecord.attempts += 1;
             await otpRecord.save();
+            console.warn(`[Register Failed ${istTime} IST] ❌ Incorrect OTP code for ${cleanEmail}. Entered: "${cleanOtp}", Attempt: ${otpRecord.attempts}/5`);
             return res.status(400).json({
                 success: false,
                 message: `Invalid verification code. Attempts remaining: ${5 - otpRecord.attempts}`
             });
         }
+
+        console.log(`[Register Success ${istTime} IST] ✅ OTP verified successfully for ${cleanEmail}!`);
 
         // 2. Check for duplicate account
         const existing = await User.findOne({
