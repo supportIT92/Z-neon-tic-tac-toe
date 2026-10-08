@@ -7,7 +7,7 @@
 "use strict";
 
 // ════════════════════════════════════════════════════════════
-//  ⚙️  EMAILJS CONFIG
+//  EMAILJS CONFIG
 //  Service:  service_if0qmog   (your EmailJS Gmail service)
 //  Template variables used in your EmailJS template:
 //    {{to_name}}  — recipient username
@@ -458,7 +458,7 @@ function startOTPCountdown() {
 
         if (remaining <= 0) {
             clearInterval(_otpCountdownInterval);
-            otpTimerText.innerHTML = '<span style="color:#ff4444">⏰ OTP expired. Please resend.</span>';
+            otpTimerText.innerHTML = '<span style="color:#ff4444">[EXPIRED] OTP expired. Please resend.</span>';
             otpVerifyBtn.disabled  = true;
             // Clear OTP from memory after expiry
             if (_otpState) _otpState.code = null;
@@ -538,11 +538,12 @@ function initiateOTPFlow(userData) {
         },
         { publicKey: EMAILJS_CONFIG.publicKey }
     ).then(function () {
-        showAlert("📧 OTP sent to " + userData.email + ". Check your inbox!", "success");
+        showAlert("[EMAIL] OTP sent to " + userData.email + ". Check your inbox!", "success");
     }).catch(function (err) {
-        console.error("[EmailJS] Send failed:", err);
+        console.error("[EmailJS] Send failed — status:", err.status, "text:", err.text, "full:", JSON.stringify(err));
+        var detail = err && err.text ? err.text : (err && err.status ? "Status " + err.status : "Network error");
         showAlert(
-            "⚠️ Could not send OTP email. Check EmailJS config or internet connection.",
+            "[WARNING] OTP email failed: " + detail + ". Please check your inbox anyway or click Resend.",
             "error"
         );
     });
@@ -619,13 +620,13 @@ function verifyOTP() {
     clearAlert();
 
     if (!_otpState) {
-        showAlert("❌ OTP session expired. Please go back and try again.");
+        showAlert("[ERROR] OTP session expired. Please go back and try again.");
         return;
     }
 
     // Check expiry
     if (Date.now() > _otpState.expiresAt || !_otpState.code) {
-        showAlert("⏰ OTP has expired. Click 'Resend OTP' to get a new one.");
+        showAlert("[EXPIRED] OTP has expired. Click 'Resend OTP' to get a new one.");
         otpVerifyBtn.disabled = true;
         return;
     }
@@ -633,7 +634,7 @@ function verifyOTP() {
     var entered = getOTPInput();
 
     if (entered.length !== 6) {
-        showAlert("⚠️ Please enter all 6 digits.");
+        showAlert("[WARNING] Please enter all 6 digits.");
         otpBoxes[0].focus();
         return;
     }
@@ -641,7 +642,7 @@ function verifyOTP() {
     // Max 5 attempts
     _otpState.attempts++;
     if (_otpState.attempts > 5) {
-        showAlert("🚫 Too many incorrect attempts. Please go back and restart signup.");
+        showAlert("[BLOCKED] Too many incorrect attempts. Please go back and restart signup.");
         otpVerifyBtn.disabled = true;
         otpBoxes.forEach(function (b) { b.disabled = true; b.style.borderColor = "#ff4444"; });
         clearOTPState();
@@ -658,14 +659,14 @@ function verifyOTP() {
         }, 500);
 
         var left = 5 - _otpState.attempts;
-        showAlert("❌ Incorrect OTP. " + left + " attempt" + (left !== 1 ? "s" : "") + " remaining.");
+        showAlert("[ERROR] Incorrect OTP. " + left + " attempt" + (left !== 1 ? "s" : "") + " remaining.");
         // Clear boxes & focus first
         otpBoxes.forEach(function (b) { b.value = ""; });
         otpBoxes[0].focus();
         return;
     }
 
-    // ✅ OTP Correct — frontend verified, now register user on backend
+    // [OK] OTP Correct — frontend verified, now register user on backend
     otpBoxes.forEach(function (b) { b.style.borderColor = "#00ff88"; });
     setLoading("otpVerifyBtn", true);
 
@@ -689,7 +690,7 @@ function verifyOTP() {
         })
         .catch(function (err) {
             setLoading("otpVerifyBtn", false);
-            showAlert("❌ " + (err.message || "Registration failed. Please try again."));
+            showAlert("[ERROR] " + (err.message || "Registration failed. Please try again."));
         });
 }
 
