@@ -222,7 +222,12 @@ var _alertTimer = null;
 function showAlert(msg, type) {
     type = type || "error";
     clearTimeout(_alertTimer);
-    alertBox.textContent = msg;
+    var cleanMsg = String(msg || "")
+        .replace(/^\[(ERROR|WARNING|INFO|SUCCESS|EXPIRED|LOCK|OK|GAME)\]\s*/gi, "")
+        .replace(/\[(GAME|OK)\]/gi, "")
+        .replace(/^[\u2600-\u27BF\uD83C-\uDBFF\uDC00-\uDFFF\u2700-\u27BF⚠️❌🚫⏱️📧🔗✓]+\s*/g, "")
+        .trim();
+    alertBox.textContent = cleanMsg;
     alertBox.className   = "alert " + type;
     if (type === "success" || type === "info") {
         _alertTimer = setTimeout(clearAlert, 5000);
@@ -521,12 +526,12 @@ function initiateOTPFlow(userData) {
 
             startOTPCountdown();
             startResendCooldown();
-            showAlert("📧 " + (res.message || "Verification code sent to " + userData.email + "!"), "success");
+            showAlert(res.message || "Verification code sent to " + userData.email + "!", "success");
         })
         .catch(function (err) {
-            console.error(`[Auth] ❌ Backend sendOTP request failed:`, err);
+            console.error(`[Auth] Backend sendOTP request failed:`, err);
             setLoading("signupBtn", false);
-            showAlert("❌ " + (err.message || "Failed to send verification code. Please check server logs."));
+            showAlert(err.message || "Failed to send verification code. Please check server logs.");
         });
 }
 
@@ -601,12 +606,12 @@ function verifyOTP() {
     clearAlert();
 
     if (!_otpState || !_otpState.userData) {
-        showAlert("[ERROR] OTP session expired. Please go back and try again.");
+        showAlert("OTP session expired. Please go back and try again.");
         return;
     }
 
     if (Date.now() > _otpState.expiresAt) {
-        showAlert("[EXPIRED] OTP has expired. Click 'Resend OTP' to get a new code.");
+        showAlert("OTP has expired. Click 'Resend OTP' to get a new code.");
         otpVerifyBtn.disabled = true;
         return;
     }
@@ -614,7 +619,7 @@ function verifyOTP() {
     var entered = getOTPInput();
 
     if (entered.length !== 6) {
-        showAlert("[WARNING] Please enter all 6 digits.");
+        showAlert("Please enter all 6 digits.");
         otpBoxes[0].focus();
         return;
     }
@@ -649,7 +654,7 @@ function verifyOTP() {
                 otpBoxesEl.classList.add("otp-shake");
                 setTimeout(function () { otpBoxesEl.classList.remove("otp-shake"); }, 500);
             }
-            showAlert("[ERROR] " + (err.message || "Invalid or expired verification code. Please try again."));
+            showAlert(err.message || "Invalid or expired verification code. Please try again.");
         });
 }
 
@@ -667,18 +672,18 @@ otpResendBtn.addEventListener("click", function () {
     otpVerifyBtn.disabled     = false;
     otpTimerCount.style.color = "";
 
-    console.log(`[Auth] 🔄 Resending OTP request for ${_otpState.userData.email}...`);
+    console.log(`[Auth] Resending OTP request for ${_otpState.userData.email}...`);
     API.sendOTP({ email: _otpState.userData.email, username: _otpState.userData.username })
         .then(function (res) {
-            console.log(`[Auth] ✅ Resend success:`, res);
+            console.log(`[Auth] Resend success:`, res);
             _otpState.expiresAt = Date.now() + OTP_EXPIRY_MS;
             startOTPCountdown();
             startResendCooldown();
-            showAlert("📧 " + (res.message || "New verification code sent to " + _otpState.userData.email), "success");
+            showAlert(res.message || "New verification code sent to " + _otpState.userData.email, "success");
         })
         .catch(function (err) {
-            console.error(`[Auth] ❌ Resend failed:`, err);
-            showAlert("[ERROR] " + (err.message || "Failed to resend code. Please wait a moment."), "error");
+            console.error(`[Auth] Resend failed:`, err);
+            showAlert(err.message || "Failed to resend code. Please wait a moment.", "error");
         });
 });
 
@@ -700,8 +705,8 @@ loginForm.addEventListener("submit", function (e) {
     var pw  = loginPassword.value;
     var rem = rememberMe.checked;
 
-    if (!id) { showAlert("[WARNING] Please enter your email or username."); loginIdentifier.focus(); return; }
-    if (!pw) { showAlert("[WARNING] Please enter your password.");          loginPassword.focus();   return; }
+    if (!id) { showAlert("Please enter your email or username."); loginIdentifier.focus(); return; }
+    if (!pw) { showAlert("Please enter your password.");          loginPassword.focus();   return; }
 
     setLoading("loginBtn", true);
 
@@ -712,16 +717,16 @@ loginForm.addEventListener("submit", function (e) {
             if (rem) { try { localStorage.setItem(SK.REMEMBER, id); } catch(e){} }
 
             if (data.user.role === "admin") {
-                showAlert("[OK] Admin login successful! Redirecting…", "success");
+                showAlert("Admin login successful! Redirecting…", "success");
                 setTimeout(goToAdmin, 1000);
             } else {
-                showAlert("[OK] Welcome back, " + data.user.username + "! [GAME]", "success");
+                showAlert("Welcome back, " + data.user.username + "!", "success");
                 setTimeout(goToGame, 1000);
             }
         })
         .catch(function (err) {
             setLoading("loginBtn", false);
-            showAlert("[ERROR] " + (err.message || "Login failed."));
+            showAlert(err.message || "Login failed.");
             loginPassword.value = ""; loginPassword.focus();
         });
 });
@@ -741,39 +746,38 @@ signupForm.addEventListener("submit", function (e) {
     var agreed   = agreeTerms.checked;
 
     // Username
-    if (!username) { showAlert("[WARNING] Please enter a username."); signupUsername.focus(); return; }
+    if (!username) { showAlert("Please enter a username."); signupUsername.focus(); return; }
     if (!isValidUsername(username)) {
-        showAlert("[WARNING] Username: 3-20 chars, start with a letter, only letters/digits/underscores.");
+        showAlert("Username: 3-20 characters, starting with a letter.");
         signupUsername.focus(); return;
     }
 
     // Email
-    if (!email) { showAlert("[WARNING] Please enter your email address."); signupEmail.focus(); return; }
+    if (!email) { showAlert("Please enter your email address."); signupEmail.focus(); return; }
     if (!isValidEmail(email)) {
-        showAlert("[ERROR] Invalid email. Use a real address like user@gmail.com");
+        showAlert("Please enter a valid email address.");
         signupEmail.style.borderColor = "#ff4444"; signupEmail.focus(); return;
     }
 
     // Password strength
-    if (!pw) { showAlert("[WARNING] Please enter a password."); signupPassword.focus(); return; }
+    if (!pw) { showAlert("Please enter a password."); signupPassword.focus(); return; }
     if (getStrength(pw) < MIN_STRENGTH) {
         showAlert(
-            "[LOCK] Password too weak! Need at least \"Good\" level.\n" +
-            "Use 10+ chars with uppercase, lowercase, number & special char (!@#$%)."
+            "Password is too weak. Must be at least 10 characters with uppercase, lowercase, numbers, and symbols."
         );
         signupPassword.focus(); return;
     }
 
     // Confirm password
-    if (!pw2) { showAlert("[WARNING] Please confirm your password."); signupConfirm.focus(); return; }
+    if (!pw2) { showAlert("Please confirm your password."); signupConfirm.focus(); return; }
     if (pw !== pw2) {
-        showAlert("❌ Passwords do not match.");
+        showAlert("Passwords do not match.");
         signupConfirm.value = ""; signupConfirm.style.borderColor = "#ff4444";
         signupConfirm.focus(); return;
     }
 
     // Terms
-    if (!agreed) { showAlert("[WARNING] Please agree to the Terms & Conditions."); agreeTerms.focus(); return; }
+    if (!agreed) { showAlert("Please agree to the Terms & Conditions."); agreeTerms.focus(); return; }
 
     // All validations passed — go straight to OTP flow
     // (backend /register does a final duplicate check after OTP is verified)
@@ -802,9 +806,9 @@ forgotForm.addEventListener("submit", function (e) {
 
     var email = sanitise(forgotEmail.value);
 
-    if (!email) { showAlert("⚠️ Please enter your email address."); forgotEmail.focus(); return; }
+    if (!email) { showAlert("Please enter your email address."); forgotEmail.focus(); return; }
     if (!isValidEmail(email)) {
-        showAlert("❌ Invalid email. Example: user@gmail.com");
+        showAlert("Please enter a valid email address.");
         forgotEmail.style.borderColor = "#ff4444"; forgotEmail.focus(); return;
     }
 
@@ -813,12 +817,12 @@ forgotForm.addEventListener("submit", function (e) {
     API.forgotPassword({ email: email })
         .then(function (res) {
             setLoading("forgotSubmitBtn", false);
-            showAlert("📧 " + (res.message || "If that email is registered, a reset link/code has been sent!"), "success");
+            showAlert(res.message || "If that email is registered, a reset code has been sent!", "success");
             forgotEmail.value = ""; forgotEmail.style.borderColor = "";
         })
         .catch(function (err) {
             setLoading("forgotSubmitBtn", false);
-            showAlert("❌ " + (err.message || "Failed to process request. Please try again."));
+            showAlert(err.message || "Failed to process request. Please try again.");
         });
 });
 

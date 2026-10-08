@@ -221,7 +221,9 @@ function applyTheme() {
     const isLight = currentTheme === "light";
     document.body.classList.toggle("light-theme", isLight);
     if (themeButton) {
-        themeButton.textContent = isLight ? "☀️" : "🌙";
+        themeButton.innerHTML = isLight
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:inline-block;vertical-align:middle"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:inline-block;vertical-align:middle"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
         themeButton.setAttribute("aria-label", isLight ? "Switch to dark mode" : "Switch to light mode");
     }
 }
@@ -568,7 +570,7 @@ function makeMove(index, player) {
 
 function handleDraw() {
     gameActive               = false;
-    message.textContent      = "🤝 GAME DRAW!";
+    message.textContent      = "GAME DRAW!";
     turnText.textContent     = "DRAW";
 
     // Fix: increment round counter on draw too
@@ -1068,25 +1070,31 @@ window._toggleSfx = _toggleSfx;
 // =============================
 
 function showMatchWinner(winner) {
+    const iconEl = document.querySelector(".victory-icon");
+    const svgTrophy = '<svg viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:52px;height:52px;display:inline-block"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h8c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34"/><path d="M6 4h12v4a6 6 0 0 1-12 0V4z" fill="rgba(255,215,0,0.2)"/></svg>';
+    const svgRobot = '<svg viewBox="0 0 24 24" fill="none" stroke="#ff007f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:52px;height:52px;display:inline-block"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>';
+
     if (gameMode === "computer") {
         if (winner === "X") {
-            victoryTitle.textContent   = "MATCH WON! 🏆";
+            victoryTitle.textContent   = "MATCH WON!";
             victoryMessage.textContent = `${nameX} beat the AI in ${matchFormat === 3 ? "Best of 3" : "Best of 5"}!`;
+            if (iconEl) iconEl.innerHTML = svgTrophy;
         } else {
-            victoryTitle.textContent   = "COMPUTER WINS 🤖";
+            victoryTitle.textContent   = "COMPUTER WINS";
             victoryMessage.textContent = `The AI won the ${matchFormat === 3 ? "Best of 3" : "Best of 5"} match.`;
+            if (iconEl) iconEl.innerHTML = svgRobot;
         }
     } else {
         const winnerName = winner === "X" ? nameX : nameO;
-        victoryTitle.textContent   = "MATCH WON! 🏆";
+        victoryTitle.textContent   = "MATCH WON!";
         victoryMessage.textContent = `${winnerName} won the ${matchFormat === 3 ? "Best of 3" : "Best of 5"} match!`;
+        if (iconEl) iconEl.innerHTML = svgTrophy;
     }
 
     victoryOverlay.classList.remove("draw");
     victoryOverlay.classList.add("active");
     victoryOverlay.setAttribute("aria-hidden", "false");
 
-    document.querySelector(".victory-icon").textContent = "🏆";
     createConfetti(100);
 
     // Move focus into the overlay for accessibility
@@ -1098,10 +1106,13 @@ function showMatchWinner(winner) {
 // =============================
 
 function showDrawScreen() {
-    victoryTitle.textContent   = "IT'S A DRAW! 🤝";
+    victoryTitle.textContent   = "IT'S A DRAW!";
     victoryMessage.textContent = "Nobody won this match.";
 
-    document.querySelector(".victory-icon").textContent = "🤝";
+    const iconEl = document.querySelector(".victory-icon");
+    if (iconEl) {
+        iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:52px;height:52px;display:inline-block"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>';
+    }
 
     victoryOverlay.classList.add("active", "draw");
     victoryOverlay.setAttribute("aria-hidden", "false");
@@ -1194,8 +1205,10 @@ _syncAllSfxBtns();
             .replace(/<[^>]*>/g, "")
             .trim()
             .slice(0, 20);
-        const roleTag = session.role === "admin" ? " 👑" : "";
-        greetingEl.textContent = `👋 Hey, ${safeName}${roleTag}!`;
+        const roleTag = session.role === "admin"
+            ? ' <span class="badge-admin" style="display:inline-block;vertical-align:middle;margin-left:4px" title="Admin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px"><path d="M2 20h20"/><path d="m4 20 2-10 6 4 4-8 4 8 2-4 2 10"/></svg></span>'
+            : "";
+        greetingEl.innerHTML = `Hey, ${safeName}${roleTag}!`;
     }
 
     // Show admin panel link only for admin users

@@ -131,7 +131,7 @@ function checkAccess() {
         return false;
     }
 
-    // Admin ✓ — populate sidebar
+    // Admin - populate sidebar
     sidebarUsername.textContent = session.username || "Admin";
     sidebarEmail.textContent    = session.email    || "";
     return true;
@@ -159,16 +159,16 @@ function showToast(msg, type) {
 // ════════════════════════════════════════════════════════════
 
 var LOG_ICONS = {
-    ban:     "🚫",
-    unban:   "✅",
-    delete:  "🗑️",
-    promote: "👑",
-    demote:  "⬇️",
-    edit:    "✏️",
-    login:   "🔐",
-    nuke:    "💥",
-    reset:   "🔄",
-    export:  "📥"
+    ban:     '<svg viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>',
+    unban:   '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><polyline points="20 6 9 17 4 12"/></svg>',
+    delete:  '<svg viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
+    promote: '<svg viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><path d="M2 20h20"/><path d="m4 20 2-10 6 4 4-8 4 8 2-4 2 10"/></svg>',
+    demote:  '<svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><polyline points="7 13 12 18 17 13"/><line x1="12" y1="6" x2="12" y2="18"/></svg>',
+    edit:    '<svg viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+    login:   '<svg viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    nuke:    '<svg viewBox="0 0 24 24" fill="none" stroke="#ff007f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    reset:   '<svg viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+    export:  '<svg viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
 };
 
 function addLog(action, msg) {
@@ -191,8 +191,9 @@ function renderLog() {
         return;
     }
     var html = "";
+    var fallbackIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
     logs.forEach(function (entry) {
-        var icon = LOG_ICONS[entry.action] || "📌";
+        var icon = LOG_ICONS[entry.action] || fallbackIcon;
         var time = formatDateTime(entry.timestamp);
         html +=
             '<div class="log-entry log-' + entry.action + '">' +
@@ -343,18 +344,18 @@ function renderUsersTable() {
             ? '<span class="badge badge-banned">Banned</span>'
             : '<span class="badge badge-active">Active</span>';
 
-        // Action buttons
-        var editBtn = '<button class="act-btn act-edit"    data-action="edit"   data-email="' + escHtml(u.email) + '">✏️ Edit</button>';
+        // Action buttons with clean SVG icons
+        var editBtn = '<button class="act-btn act-edit" data-action="edit" data-email="' + escHtml(u.email) + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>';
 
         var banBtn = u.banned
-            ? '<button class="act-btn act-unban"  data-action="unban"  data-email="' + escHtml(u.email) + '">✅ Unban</button>'
-            : '<button class="act-btn act-ban"    data-action="ban"    data-email="' + escHtml(u.email) + '"' + (isSelf ? " disabled title='Cannot ban yourself'" : "") + '>🚫 Ban</button>';
+            ? '<button class="act-btn act-unban" data-action="unban" data-email="' + escHtml(u.email) + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg>Unban</button>'
+            : '<button class="act-btn act-ban" data-action="ban" data-email="' + escHtml(u.email) + '"' + (isSelf ? " disabled title='Cannot ban yourself'" : "") + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban</button>';
 
         var roleBtn = u.role === "admin"
-            ? '<button class="act-btn act-demote"  data-action="demote" data-email="' + escHtml(u.email) + '"' + (isSelf ? " disabled title='Cannot demote yourself'" : "") + '>⬇ Demote</button>'
-            : '<button class="act-btn act-promote" data-action="promote" data-email="' + escHtml(u.email) + '">👑 Promote</button>';
+            ? '<button class="act-btn act-demote" data-action="demote" data-email="' + escHtml(u.email) + '"' + (isSelf ? " disabled title='Cannot demote yourself'" : "") + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="6 9 12 15 18 9"/></svg>Demote</button>'
+            : '<button class="act-btn act-promote" data-action="promote" data-email="' + escHtml(u.email) + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"/></svg>Promote</button>';
 
-        var delBtn = '<button class="act-btn act-delete" data-action="delete" data-email="' + escHtml(u.email) + '"' + (isSelf ? " disabled title='Cannot delete yourself'" : "") + '>🗑 Delete</button>';
+        var delBtn = '<button class="act-btn act-delete" data-action="delete" data-email="' + escHtml(u.email) + '"' + (isSelf ? " disabled title='Cannot delete yourself'" : "") + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>';
 
         html +=
             "<tr>" +
@@ -799,7 +800,7 @@ resetStatsBtn.addEventListener("click", function () {
 });
 
 nukeUsersBtn.addEventListener("click", function () {
-    askConfirm("DELETE ALL USERS", "⚠️ This permanently removes EVERY account including yours. You will be logged out.", doNukeUsers, true);
+    askConfirm("DELETE ALL USERS", "This permanently removes EVERY account including yours. You will be logged out.", doNukeUsers, true);
 });
 
 clearLogBtn.addEventListener("click",  function () {

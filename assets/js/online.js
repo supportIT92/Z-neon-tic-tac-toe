@@ -52,7 +52,7 @@ function getSocket() {
         });
 
         socket.on("error", ({ message }) => {
-            oShowAlert("❌ " + message);
+            oShowAlert(message);
         });
 
         // ── Game events from server ───────────────────────────
@@ -300,7 +300,11 @@ function oGoMode() {
 // ══════════════════════════════════════════════════════════════
 
 function oShowAlert(msg, type) {
-    oLobbyAlert.textContent = msg;
+    var cleanMsg = String(msg || "")
+        .replace(/^\[(ERROR|WARNING|INFO|SUCCESS)\]\s*/gi, "")
+        .replace(/^[\u2600-\u27BF\uD83C-\uDBFF\uDC00-\uDFFF\u2700-\u27BF⚠️❌🚫⏱️📧🔗✓]+\s*/g, "")
+        .trim();
+    oLobbyAlert.textContent = cleanMsg;
     oLobbyAlert.className   = "online-alert show oa-" + (type || "error");
     clearTimeout(oShowAlert._t);
     oShowAlert._t = setTimeout(() => { oLobbyAlert.className = "online-alert"; }, 4000);
@@ -341,7 +345,7 @@ oBackLobbyBtn.addEventListener("click", oGoMode);
 
 oCreateBtn.addEventListener("click", () => {
     oMyName = oSanitise(oLobbyName.value);
-    if (!oMyName) { oShowAlert("⚠️ Please enter your name."); oLobbyName.focus(); return; }
+    if (!oMyName) { oShowAlert("Please enter your name."); oLobbyName.focus(); return; }
 
     const session = API ? API.getSession() : null;
     oMyRole = "X";
@@ -371,8 +375,8 @@ oJoinBtn.addEventListener("click", () => {
     oMyName    = oSanitise(oLobbyName.value);
     const code = oJoinInput.value.trim().toUpperCase();
 
-    if (!oMyName) { oShowAlert("⚠️ Please enter your name."); oLobbyName.focus(); return; }
-    if (!code || code.length !== 6) { oShowAlert("⚠️ Enter a valid 6-character room code."); oJoinInput.focus(); return; }
+    if (!oMyName) { oShowAlert("Please enter your name."); oLobbyName.focus(); return; }
+    if (!code || code.length !== 6) { oShowAlert("Enter a valid 6-character room code."); oJoinInput.focus(); return; }
 
     const session = API ? API.getSession() : null;
     oMyRole   = "O";
@@ -786,7 +790,7 @@ function queueCreateMatch(myId, myName, p2Id, p2Name) {
         });
     }).catch((err) => {
         console.error("[Queue] Match creation failed:", err);
-        oShowAlert("❌ Match creation failed. Try again.");
+        oShowAlert("Match creation failed. Try again.");
     });
 }
 
@@ -854,7 +858,7 @@ if (quickMatchB) {
     quickMatchB.addEventListener("click", () => {
         const name = oSanitise(oLobbyName.value);
         if (!name) {
-            oShowAlert("⚠️ Please enter your name first.");
+            oShowAlert("Please enter your name first.");
             oLobbyName.focus();
             return;
         }
@@ -955,7 +959,7 @@ function lobbyRender(rooms) {
 function lobbyQuickJoin(code) {
     const name = oSanitise(oLobbyName.value);
     if (!name) {
-        oShowAlert("⚠️ Please enter your name first.");
+        oShowAlert("Please enter your name first.");
         oLobbyName.focus();
         return;
     }
@@ -969,8 +973,8 @@ function lobbyQuickJoin(code) {
 
     oRoomRef.once("value").then((snap) => {
         const data = snap.val();
-        if (!data)                     { oShowAlert("❌ Room no longer exists."); return; }
-        if (data.status !== "waiting") { oShowAlert("⚠️ Room is full or game started."); return; }
+        if (!data)                     { oShowAlert("Room no longer exists."); return; }
+        if (data.status !== "waiting") { oShowAlert("Room is full or game started."); return; }
 
         oMyRole = "O";
         oMyTurn = false;
@@ -985,7 +989,7 @@ function lobbyQuickJoin(code) {
                 scoreO:  data.scoreO || 0
             });
         });
-    }).catch(() => oShowAlert("❌ Failed to join. Check connection."));
+    }).catch(() => oShowAlert("Failed to join. Check connection."));
 }
 
 // ── Time ago helper ───────────────────────────────────────────
