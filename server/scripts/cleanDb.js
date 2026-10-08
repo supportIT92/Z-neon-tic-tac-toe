@@ -10,9 +10,11 @@ const User        = require("../models/User");
 const GameHistory = require("../models/GameHistory");
 const GameRoom    = require("../models/GameRoom");
 
-const ADMIN_EMAIL    = process.env.ADMIN_EMAILS || "ztictactoe@outlook.com";
-const ADMIN_USERNAME = "ZAdmin";
-const ADMIN_PASSWORD = "ZAdmin@Neon2024!";  // Change this after first login!
+const crypto        = require("crypto");
+
+const ADMIN_EMAIL    = (process.env.ADMIN_EMAILS || "admin@neongaming.com").split(",")[0].trim();
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "ZAdmin";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || crypto.randomBytes(12).toString("base64url") + "!1Aa";
 
 async function cleanDatabase() {
     try {

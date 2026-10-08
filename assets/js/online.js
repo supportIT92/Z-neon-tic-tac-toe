@@ -28,11 +28,15 @@ let socket = null;
 
 function getSocket() {
     if (!socket || socket.disconnected) {
+        const token = (window.API && API.getToken()) || "";
         socket = io(window.BACKEND_URL || "http://localhost:5000", {
             transports:      ["websocket", "polling"],
             reconnection:    true,
             reconnectionDelay: 1000,
-            timeout:         10000
+            timeout:         10000,
+            auth: {
+                token: token
+            }
         });
 
         socket.on("connect", () => {

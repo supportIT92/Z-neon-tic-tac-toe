@@ -7,20 +7,14 @@
     <meta name="description" content="Neon Gaming — Login or create your account">
     <title>Neon Gaming — Login</title>
     <link rel="stylesheet" href="../assets/css/auth.css">
-    <!-- If already logged in, redirect to game -->
-    <script>
-        (function() {
-            try {
-                var s = JSON.parse(localStorage.getItem("neonGaming_session") || "null");
-                if (s && s.username) {
-                    var maxAge = 7 * 24 * 60 * 60 * 1000;
-                    if (!s.loginTime || (Date.now() - s.loginTime) < maxAge) {
-                        window.location.replace(s.role === "admin" ? "/admin/" : "/");
-                    }
-                }
-            } catch(e) {}
-        }());
-    </script>
+    <!-- auth.css styles .ic SVG icons -->
+    <style>
+        .ic { width:18px; height:18px; display:inline-block; vertical-align:middle; stroke:currentColor; }
+        .field-icon .ic { width:16px; height:16px; }
+        .eye-icon .ic { width:16px; height:16px; }
+        .otp-timer-icon .ic { width:15px; height:15px; }
+        .otp-mail-icon .ic { width:48px; height:48px; display:block; margin:0 auto; }
+    </style>
 </head>
 
 <body>
@@ -51,7 +45,7 @@
 
             <!-- LOGO -->
             <div class="logo" aria-label="Neon Gaming">
-                <span class="logo-x">✕</span>
+                <span class="logo-x"><svg class="ic" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
                 <span class="logo-o">○</span>
             </div>
 
@@ -76,7 +70,7 @@
             <form class="auth-form" id="loginForm" novalidate autocomplete="off">
 
                 <div class="field-group">
-                    <span class="field-icon" aria-hidden="true">👤</span>
+                    <span class="field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
                     <input
                         type="text"
                         id="loginIdentifier"
@@ -90,7 +84,7 @@
                 </div>
 
                 <div class="field-group">
-                    <span class="field-icon" aria-hidden="true">🔒</span>
+                    <span class="field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
                     <input
                         type="password"
                         id="loginPassword"
@@ -106,7 +100,7 @@
                         id="toggleLoginPw"
                         aria-label="Show password"
                         tabindex="0">
-                        <span class="eye-icon" aria-hidden="true">👁</span>
+                        <span class="eye-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
                     </button>
                 </div>
 
@@ -130,7 +124,7 @@
             <form class="auth-form hidden" id="signupForm" novalidate autocomplete="off">
 
                 <div class="field-group">
-                    <span class="field-icon" aria-hidden="true">👤</span>
+                    <span class="field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
                     <input
                         type="text"
                         id="signupUsername"
@@ -144,7 +138,7 @@
                 </div>
 
                 <div class="field-group">
-                    <span class="field-icon" aria-hidden="true">✉</span>
+                    <span class="field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg></span>
                     <input
                         type="email"
                         id="signupEmail"
@@ -158,7 +152,7 @@
                 </div>
 
                 <div class="field-group">
-                    <span class="field-icon" aria-hidden="true">🔒</span>
+                    <span class="field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
                     <input
                         type="password"
                         id="signupPassword"
@@ -174,7 +168,7 @@
                         id="toggleSignupPw"
                         aria-label="Show password"
                         tabindex="0">
-                        <span class="eye-icon" aria-hidden="true">👁</span>
+                        <span class="eye-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
                     </button>
                 </div>
 
@@ -188,11 +182,11 @@
 
                 <!-- Password requirements hint -->
                 <p class="pw-hint" id="pwHint">
-                    🔒 Min 10 chars · Uppercase · Lowercase · Number · Special char (!@#$%)
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Min 10 chars · Uppercase · Lowercase · Number · Special char (!@#$%)
                 </p>
 
                 <div class="field-group">
-                    <span class="field-icon" aria-hidden="true">🔒</span>
+                    <span class="field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
                     <input
                         type="password"
                         id="signupConfirm"
@@ -208,7 +202,7 @@
                         id="toggleConfirmPw"
                         aria-label="Show confirm password"
                         tabindex="0">
-                        <span class="eye-icon" aria-hidden="true">👁</span>
+                        <span class="eye-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
                     </button>
                 </div>
 
@@ -233,7 +227,7 @@
                 <p class="forgot-hint">Enter your email and we'll send you a reset link.</p>
 
                 <div class="field-group">
-                    <span class="field-icon" aria-hidden="true">✉</span>
+                    <span class="field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg></span>
                     <input
                         type="email"
                         id="forgotEmail"
@@ -251,7 +245,7 @@
                     <span class="btn-glow" aria-hidden="true"></span>
                 </button>
 
-                <button type="button" class="link-btn back-link" id="backToLoginBtn">← Back to Login</button>
+                <button type="button" class="link-btn back-link" id="backToLoginBtn"><span aria-hidden="true"><svg style="width:14px;height:14px;vertical-align:middle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg></span> Back to Login</button>
 
             </form>
 
@@ -259,7 +253,7 @@
             <div class="auth-form hidden" id="otpPanel">
 
                 <div class="otp-header">
-                    <div class="otp-mail-icon" aria-hidden="true">📧</div>
+                    <div class="otp-mail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg></div>
                     <p class="otp-sent-msg">
                         We've sent a <strong>6-digit OTP</strong> to<br>
                         <span class="otp-email-display" id="otpEmailDisplay">—</span>
@@ -278,7 +272,7 @@
 
                 <!-- Timer -->
                 <div class="otp-timer-wrap" aria-live="polite">
-                    <span class="otp-timer-icon" aria-hidden="true">⏱</span>
+                    <span class="otp-timer-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6"/></svg></span>
                     <span id="otpTimerText">OTP expires in <strong id="otpTimerCount">05:00</strong></span>
                 </div>
 
@@ -294,7 +288,7 @@
                     </button>
                 </div>
 
-                <button type="button" class="link-btn back-link" id="otpBackBtn">← Back to Signup</button>
+                <button type="button" class="link-btn back-link" id="otpBackBtn"><span aria-hidden="true"><svg style="width:14px;height:14px;vertical-align:middle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg></span> Back to Signup</button>
 
             </div>
 
@@ -308,8 +302,7 @@
 
     </main>
 
-    <!-- EmailJS SDK v4 (self-hosted) -->
-    <script src="../assets/js/email.min.js"></script>
+    <!-- Scripts -->
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/auth.js"></script>
 

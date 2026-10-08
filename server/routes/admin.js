@@ -1,18 +1,20 @@
 // ═══════════════════════════════════════════════════════════
 // ROUTE: /api/admin  (admin only)
-// GET  /users        → all users
+// GET  /users        → all users (paginated, safe search)
 // PUT  /users/:id/ban   → ban user
 // PUT  /users/:id/unban → unban user
+// PUT  /users/:id/role  → change user role
 // DELETE /users/:id  → delete user
 // GET  /stats        → site stats
 // GET  /games        → recent games
 // ═══════════════════════════════════════════════════════════
 
-const express  = require("express");
-const User     = require("../models/User");
-const GameHistory = require("../models/GameHistory");
-const GameRoom    = require("../models/GameRoom");
+const express      = require("express");
+const User         = require("../models/User");
+const GameHistory  = require("../models/GameHistory");
+const GameRoom     = require("../models/GameRoom");
 const { protect, adminOnly } = require("../middleware/auth.middleware");
+const { escapeRegex }        = require("../utils/security");
 
 const router = express.Router();
 
@@ -22,24 +24,29 @@ router.use(protect, adminOnly);
 // ── GET /api/admin/users ──────────────────────────────────────
 router.get("/users", async (req, res) => {
     try {
-        const { page = 1, limit = 50, search = "" } = req.query;
-        const query = search
+        const page  = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+        const search = String(req.query.search || "").trim();
+
+        const safeSearch = escapeRegex(search);
+        const query = safeSearch
             ? { $or: [
-                { username: { $regex: search, $options: "i" } },
-                { email:    { $regex: search, $options: "i" } }
+                { username: { $regex: safeSearch, $options: "i" } },
+                { email:    { $regex: safeSearch, $options: "i" } }
               ]}
             : {};
 
         const users = await User.find(query)
             .sort({ createdAt: -1 })
-            .limit(Number(limit))
-            .skip((Number(page) - 1) * Number(limit));
+            .limit(limit)
+            .skip((page - 1) * limit);
 
         const total = await User.countDocuments(query);
 
         res.json({ success: true, users: users.map(u => u.toPublic()), total });
     } catch (err) {
-        res.status(500).json({ success: false, message: "Server error." });
+        console.error("[admin/users error]", err);
+        res.status(500).json({ success: false, message: "Server error fetching users." });
     }
 });
 

@@ -1,22 +1,13 @@
 // ═══════════════════════════════════════════════════════════
-// SOCKET.IO — Game Logic
-// Events handled:
-//   join_lobby       → player enters matchmaking queue
-//   leave_queue      → player cancels matchmaking
-//   create_room      → private room create
-//   join_room        → join by room code
-//   make_move        → play a cell
-//   rematch          → request new round
-//   leave_game       → player quits
-//   disconnect       → cleanup on disconnect
+// SOCKET.IO — Secure Game Logic & Room Management
 // ═══════════════════════════════════════════════════════════
 
+const jwt         = require("jsonwebtoken");
 const GameRoom    = require("../models/GameRoom");
 const GameHistory = require("../models/GameHistory");
 const User        = require("../models/User");
 
 // ── In-memory matchmaking queue ───────────────────────────────
-// [{ socketId, username, userId, joinedAt }]
 const queue = [];
 
 // ── Win patterns ─────────────────────────────────────────────
@@ -42,37 +33,50 @@ function genCode() {
 // ── Main socket init ──────────────────────────────────────────
 module.exports = function initSocket(io) {
 
+    // ── Handshake Authentication Middleware ───────────────────
+    io.use((socket, next) => {
+        try {
+            const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+            if (token && typeof token === "string") {
+                const cleanToken = token.replace(/^Bearer\s+/i, "");
+                const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET, { clockTolerance: 300 });
+                socket.data.authUserId = decoded.id;
+            } else {
+                socket.data.authUserId = null;
+            }
+        } catch (err) {
+            // Unauthenticated guest user
+            socket.data.authUserId = null;
+        }
+        next();
+    });
+
     io.on("connection", (socket) => {
-        console.log(`[Socket] Connected: ${socket.id}`);
 
         // ══════════════════════════════════════════════════════
         //  QUICK MATCH — join queue
         // ══════════════════════════════════════════════════════
-        socket.on("join_queue", async ({ username, userId }) => {
-            // Remove any stale entry for this socket
+        socket.on("join_queue", async ({ username }) => {
             removeFromQueue(socket.id);
 
+            const safeName = String(username || "Player").slice(0, 20);
             const player = {
                 socketId: socket.id,
-                username: username || "Player",
-                userId:   userId   || null,
+                username: safeName,
+                userId:   socket.data.authUserId || null, // Never trust client-supplied userId!
                 joinedAt: Date.now()
             };
 
             queue.push(player);
             socket.emit("queue_joined", { position: queue.length });
-            console.log(`[Queue] ${username} joined. Queue size: ${queue.length}`);
 
-            // Broadcast updated queue count
             io.emit("queue_count", { count: queue.length });
 
-            // Try to match
             if (queue.length >= 2) {
                 const p1 = queue.shift();
                 const p2 = queue.shift();
 
                 io.emit("queue_count", { count: queue.length });
-
                 await createAndStartMatch(io, p1, p2, "quickmatch");
             }
         });
@@ -89,12 +93,14 @@ module.exports = function initSocket(io) {
         // ══════════════════════════════════════════════════════
         //  CREATE PRIVATE ROOM
         // ══════════════════════════════════════════════════════
-        socket.on("create_room", async ({ username, userId }) => {
+        socket.on("create_room", async ({ username }) => {
             try {
                 const code = genCode();
-                const room = await GameRoom.create({
+                const safeName = String(username || "Player").slice(0, 20);
+
+                await GameRoom.create({
                     roomCode: code,
-                    playerX:  { userId: userId || null, username, socketId: socket.id },
+                    playerX:  { userId: socket.data.authUserId || null, username: safeName, socketId: socket.id },
                     status:   "waiting",
                     type:     "private"
                 });
@@ -102,16 +108,15 @@ module.exports = function initSocket(io) {
                 socket.join(code);
                 socket.data.roomCode = code;
                 socket.data.role     = "X";
-                socket.data.username = username;
+                socket.data.username = safeName;
 
                 socket.emit("room_created", {
                     roomCode: code,
                     role:     "X"
                 });
 
-                console.log(`[Room] Created: ${code} by ${username}`);
             } catch (err) {
-                console.error("[create_room]", err);
+                console.error("[create_room error]", err);
                 socket.emit("error", { message: "Failed to create room." });
             }
         });
@@ -119,36 +124,39 @@ module.exports = function initSocket(io) {
         // ══════════════════════════════════════════════════════
         //  JOIN ROOM BY CODE
         // ══════════════════════════════════════════════════════
-        socket.on("join_room", async ({ roomCode, username, userId }) => {
+        socket.on("join_room", async ({ roomCode, username }) => {
             try {
-                const code = roomCode.toUpperCase().trim();
+                if (!roomCode || typeof roomCode !== "string") {
+                    return socket.emit("error", { message: "Invalid room code." });
+                }
+
+                const code = roomCode.toUpperCase().trim().slice(0, 8);
                 const room = await GameRoom.findOne({ roomCode: code });
 
                 if (!room) {
                     return socket.emit("error", { message: "Room not found." });
                 }
                 if (room.status !== "waiting") {
-                    return socket.emit("error", { message: "Room is full or game already started." });
+                    return socket.emit("error", { message: "Room is full or game has already started." });
                 }
 
-                // Update room
-                room.playerO = { userId: userId || null, username, socketId: socket.id };
-                room.status  = "playing";
-                room.expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
+                const safeName = String(username || "Player").slice(0, 20);
+
+                room.playerO   = { userId: socket.data.authUserId || null, username: safeName, socketId: socket.id };
+                room.status    = "playing";
+                room.expiresAt = new Date(Date.now() + 60 * 60 * 1000);
                 await room.save();
 
                 socket.join(code);
                 socket.data.roomCode = code;
                 socket.data.role     = "O";
-                socket.data.username = username;
+                socket.data.username = safeName;
 
-                // Notify both players
                 const gameState = buildGameState(room);
                 io.to(code).emit("game_start", gameState);
 
-                console.log(`[Room] ${username} joined ${code}`);
             } catch (err) {
-                console.error("[join_room]", err);
+                console.error("[join_room error]", err);
                 socket.emit("error", { message: "Failed to join room." });
             }
         });
@@ -158,30 +166,37 @@ module.exports = function initSocket(io) {
         // ══════════════════════════════════════════════════════
         socket.on("make_move", async ({ roomCode, cellIndex }) => {
             try {
-                const room = await GameRoom.findOne({ roomCode });
+                if (!roomCode || typeof roomCode !== "string") return;
+
+                // Validate cellIndex: must be an integer between 0 and 8
+                const cellIdx = Number(cellIndex);
+                if (!Number.isInteger(cellIdx) || cellIdx < 0 || cellIdx > 8) {
+                    return socket.emit("error", { message: "Invalid board coordinate." });
+                }
+
+                const room = await GameRoom.findOne({ roomCode: roomCode.toUpperCase().trim() });
                 if (!room || room.status !== "playing") return;
 
                 const role = socket.data.role;
-                if (!role) return;
+                if (!role || (role !== "X" && role !== "O")) return;
 
                 // Validate turn
                 if (room.currentTurn !== role) {
                     return socket.emit("error", { message: "Not your turn." });
                 }
 
-                // Validate cell
-                if (room.board[cellIndex] !== "") {
+                // Validate cell emptiness
+                if (room.board[cellIdx] !== "") {
                     return socket.emit("error", { message: "Cell already taken." });
                 }
 
-                // Apply move
-                room.board[cellIndex] = role;
+                // Apply move safely
+                room.board[cellIdx] = role;
 
                 const winner = checkWinner(room.board);
                 const isDraw = !winner && room.board.every(c => c !== "");
 
                 if (winner || isDraw) {
-                    // Round over
                     if (winner === "X") room.scoreX++;
                     if (winner === "O") room.scoreO++;
                     room.roundsPlayed++;
@@ -196,13 +211,10 @@ module.exports = function initSocket(io) {
                         room.winner = winner || "draw";
                         await room.save();
 
-                        // Save to history
                         await saveHistory(room);
-
-                        // Update player stats
                         await updateStats(room);
 
-                        io.to(roomCode).emit("game_over", {
+                        io.to(room.roomCode).emit("game_over", {
                             board:       room.board,
                             roundWinner: winner || "draw",
                             matchWinner: room.winner,
@@ -210,9 +222,8 @@ module.exports = function initSocket(io) {
                             scoreO:      room.scoreO
                         });
                     } else {
-                        // Round over, continue match
                         await room.save();
-                        io.to(roomCode).emit("round_over", {
+                        io.to(room.roomCode).emit("round_over", {
                             board:       room.board,
                             roundWinner: winner || "draw",
                             scoreX:      room.scoreX,
@@ -220,29 +231,29 @@ module.exports = function initSocket(io) {
                         });
                     }
                 } else {
-                    // Switch turn
                     room.currentTurn = role === "X" ? "O" : "X";
                     await room.save();
 
-                    io.to(roomCode).emit("move_made", {
+                    io.to(room.roomCode).emit("move_made", {
                         board:       room.board,
                         currentTurn: room.currentTurn,
-                        cellIndex,
+                        cellIndex:   cellIdx,
                         player:      role
                     });
                 }
             } catch (err) {
-                console.error("[make_move]", err);
-                socket.emit("error", { message: "Move failed." });
+                console.error("[make_move error]", err);
+                socket.emit("error", { message: "Move could not be processed." });
             }
         });
 
         // ══════════════════════════════════════════════════════
-        //  REMATCH — reset board for next round
+        //  REMATCH
         // ══════════════════════════════════════════════════════
         socket.on("request_rematch", async ({ roomCode }) => {
             try {
-                const room = await GameRoom.findOne({ roomCode });
+                if (!roomCode || typeof roomCode !== "string") return;
+                const room = await GameRoom.findOne({ roomCode: roomCode.toUpperCase().trim() });
                 if (!room) return;
 
                 room.board       = ["","","","","","","","",""];
@@ -251,29 +262,25 @@ module.exports = function initSocket(io) {
                 room.winner      = null;
                 await room.save();
 
-                io.to(roomCode).emit("rematch_start", {
+                io.to(room.roomCode).emit("rematch_start", {
                     board:       room.board,
                     currentTurn: "X",
                     scoreX:      room.scoreX,
                     scoreO:      room.scoreO
                 });
             } catch (err) {
-                console.error("[rematch]", err);
+                console.error("[rematch error]", err);
             }
         });
 
         // ══════════════════════════════════════════════════════
-        //  LEAVE GAME
+        //  LEAVE & DISCONNECT
         // ══════════════════════════════════════════════════════
         socket.on("leave_game", async ({ roomCode }) => {
-            await handleLeave(socket, roomCode, io);
+            if (roomCode) await handleLeave(socket, roomCode, io);
         });
 
-        // ══════════════════════════════════════════════════════
-        //  DISCONNECT
-        // ══════════════════════════════════════════════════════
         socket.on("disconnect", async () => {
-            console.log(`[Socket] Disconnected: ${socket.id}`);
             removeFromQueue(socket.id);
             io.emit("queue_count", { count: queue.length });
 
@@ -283,29 +290,28 @@ module.exports = function initSocket(io) {
         });
 
         // ══════════════════════════════════════════════════════
-        //  CHAT MESSAGE (voice chat fallback)
+        //  CHAT MESSAGE
         // ══════════════════════════════════════════════════════
         socket.on("chat_message", ({ roomCode, message }) => {
-            const safe = String(message || "").slice(0, 200);
-            socket.to(roomCode).emit("chat_message", {
+            if (!roomCode || typeof roomCode !== "string") return;
+            const safe = String(message || "").slice(0, 150);
+            socket.to(roomCode.toUpperCase().trim()).emit("chat_message", {
                 from:    socket.data.username || "Player",
                 message: safe
             });
         });
 
-    }); // end io.on("connection")
+    });
 
     // ══════════════════════════════════════════════════════════
     //  HELPERS
     // ══════════════════════════════════════════════════════════
 
-    // Remove player from matchmaking queue
     function removeFromQueue(socketId) {
         const idx = queue.findIndex(p => p.socketId === socketId);
         if (idx !== -1) queue.splice(idx, 1);
     }
 
-    // Create room + start match for 2 queued players
     async function createAndStartMatch(io, p1, p2, type) {
         try {
             const code = genCode();
@@ -319,7 +325,6 @@ module.exports = function initSocket(io) {
                 expiresAt: new Date(Date.now() + 60 * 60 * 1000)
             });
 
-            // Both sockets join the room
             const p1Socket = io.sockets.sockets.get(p1.socketId);
             const p2Socket = io.sockets.sockets.get(p2.socketId);
 
@@ -339,13 +344,11 @@ module.exports = function initSocket(io) {
             const gameState = buildGameState(room);
             io.to(code).emit("game_start", gameState);
 
-            console.log(`[Match] ${p1.username} (X) vs ${p2.username} (O) → Room ${code}`);
         } catch (err) {
-            console.error("[createAndStartMatch]", err);
+            console.error("[createAndStartMatch error]", err);
         }
     }
 
-    // Build game state object for client
     function buildGameState(room) {
         return {
             roomCode:    room.roomCode,
@@ -360,28 +363,27 @@ module.exports = function initSocket(io) {
         };
     }
 
-    // Handle player leaving a game room
     async function handleLeave(socket, roomCode, io) {
         try {
-            const room = await GameRoom.findOne({ roomCode });
+            const code = String(roomCode || "").toUpperCase().trim();
+            const room = await GameRoom.findOne({ roomCode: code });
             if (!room || room.status === "finished") return;
 
             room.status = "abandoned";
             await room.save();
 
-            socket.to(roomCode).emit("opponent_left", {
+            socket.to(code).emit("opponent_left", {
                 message: `${socket.data.username || "Opponent"} left the game.`
             });
 
-            socket.leave(roomCode);
+            socket.leave(code);
             socket.data.roomCode = null;
 
         } catch (err) {
-            console.error("[handleLeave]", err);
+            console.error("[handleLeave error]", err);
         }
     }
 
-    // Save completed game to history
     async function saveHistory(room) {
         try {
             const winnerUsername =
@@ -402,11 +404,10 @@ module.exports = function initSocket(io) {
                 roomType:       room.type
             });
         } catch (err) {
-            console.error("[saveHistory]", err);
+            console.error("[saveHistory error]", err);
         }
     }
 
-    // Update user win/loss stats
     async function updateStats(room) {
         try {
             const updates = [];
@@ -433,7 +434,7 @@ module.exports = function initSocket(io) {
 
             await Promise.all(updates);
         } catch (err) {
-            console.error("[updateStats]", err);
+            console.error("[updateStats error]", err);
         }
     }
 };

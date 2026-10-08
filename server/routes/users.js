@@ -6,10 +6,11 @@
 // GET  /:username    → public profile
 // ═══════════════════════════════════════════════════════════
 
-const express  = require("express");
-const User     = require("../models/User");
-const GameHistory = require("../models/GameHistory");
-const { protect } = require("../middleware/auth.middleware");
+const express      = require("express");
+const User         = require("../models/User");
+const GameHistory  = require("../models/GameHistory");
+const { protect }  = require("../middleware/auth.middleware");
+const { escapeRegex } = require("../utils/security");
 
 const router = express.Router();
 
@@ -60,8 +61,9 @@ router.get("/leaderboard", async (req, res) => {
 // ── GET /api/users/:username/history ─────────────────────────
 router.get("/:username/history", protect, async (req, res) => {
     try {
+        const safeUsername = escapeRegex(req.params.username);
         const user = await User.findOne({
-            username: { $regex: new RegExp(`^${req.params.username}$`, "i") }
+            username: { $regex: new RegExp(`^${safeUsername}$`, "i") }
         });
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found." });
@@ -86,8 +88,9 @@ router.get("/:username/history", protect, async (req, res) => {
 // ── GET /api/users/:username ──────────────────────────────────
 router.get("/:username", async (req, res) => {
     try {
+        const safeUsername = escapeRegex(req.params.username);
         const user = await User.findOne({
-            username: { $regex: new RegExp(`^${req.params.username}$`, "i") },
+            username: { $regex: new RegExp(`^${safeUsername}$`, "i") },
             banned:   false
         }).select("username stats avatarColor createdAt");
 

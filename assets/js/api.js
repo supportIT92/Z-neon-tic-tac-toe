@@ -8,10 +8,10 @@
 // ── Detect if running as a local file (no server) ────────────
 const IS_LOCAL_FILE = window.location.protocol === "file:";
 
-// ── Backend URL — same origin on Render, localhost for dev ───
+// ── Backend URL — Render backend URL for custom domain / GitHub Pages ───
 const BACKEND_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
     ? "http://localhost:5000"
-    : window.location.origin;  // On Render: same domain, no CORS issues!
+    : (window.location.hostname.includes("onrender.com") ? window.location.origin : "https://z-neon-tic-tac-toe.onrender.com");
 
 // ── Auth token helpers ────────────────────────────────────────
 const API = {
@@ -127,11 +127,20 @@ const API = {
     },
 
     // ── Auth endpoints (auto-switch local vs backend) ─────────
+    sendOTP(body) {
+        return IS_LOCAL_FILE ? Promise.resolve({ success: true, message: "Local dev mode: OTP bypass" }) : this.request("/api/auth/send-otp", { method: "POST", body });
+    },
     register(body) {
         return IS_LOCAL_FILE ? this.localRegister(body) : this.request("/api/auth/register", { method: "POST", body });
     },
     login(body) {
         return IS_LOCAL_FILE ? this.localLogin(body) : this.request("/api/auth/login", { method: "POST", body });
+    },
+    forgotPassword(body) {
+        return IS_LOCAL_FILE ? Promise.resolve({ success: true, message: "Reset link sent" }) : this.request("/api/auth/forgot-password", { method: "POST", body });
+    },
+    resetPassword(body) {
+        return IS_LOCAL_FILE ? Promise.resolve({ success: true, message: "Password reset" }) : this.request("/api/auth/reset-password", { method: "POST", body });
     },
     logout() {
         if (IS_LOCAL_FILE) { this.clearSession(); return Promise.resolve({ success: true }); }

@@ -35,9 +35,6 @@ var SK = {
 // Minimum password strength (3 = Good, 4 = Strong)
 var MIN_STRENGTH = 3;
 
-// ── Fixed Admin Emails — these always get admin role ─────────
-var ADMIN_EMAILS = ["ztictactoe@outlook.com"];
-
 // ── OTP State (in-memory only, never persisted) ──────────────
 var _otpState = null;
 /*  _otpState = {
@@ -499,54 +496,38 @@ function startResendCooldown() {
 // ════════════════════════════════════════════════════════════
 
 function initiateOTPFlow(userData) {
-    var code = generateOTP();
+    setLoading("signupBtn", true);
+    console.log(`[Auth] 🚀 Requesting OTP from backend for ${userData.email}...`);
+    API.sendOTP({ email: userData.email, username: userData.username })
+        .then(function (res) {
+            console.log(`[Auth] ✅ Backend responded with success:`, res);
+            setLoading("signupBtn", false);
+            _otpState = {
+                expiresAt: Date.now() + OTP_EXPIRY_MS,
+                attempts:  0,
+                userData:  userData
+            };
 
-    _otpState = {
-        code:      code,
-        expiresAt: Date.now() + OTP_EXPIRY_MS,
-        attempts:  0,
-        userData:  userData
-    };
+            // Show OTP panel
+            otpEmailDisplay.textContent = userData.email;
+            showPanel("otp");
 
-    // Show OTP panel
-    otpEmailDisplay.textContent = userData.email;
-    showPanel("otp");
+            // Clear previous inputs
+            otpBoxes.forEach(function (b) { b.value = ""; b.style.borderColor = ""; b.disabled = false; });
+            otpVerifyBtn.disabled = false;
+            otpTimerCount.style.color = "";
+            otpTimerText.innerHTML = 'OTP expires in <strong id="otpTimerCount">05:00</strong>';
+            otpTimerCount = document.getElementById("otpTimerCount");
 
-    // Clear previous inputs
-    otpBoxes.forEach(function (b) { b.value = ""; b.style.borderColor = ""; });
-    otpVerifyBtn.disabled = false;
-    otpTimerCount.style.color = "";
-    otpTimerText.innerHTML = 'OTP expires in <strong id="otpTimerCount">05:00</strong>';
-    // Re-grab reference after innerHTML reset
-    otpTimerCount = document.getElementById("otpTimerCount");
-
-    startOTPCountdown();
-    startResendCooldown();
-
-    // Send OTP via EmailJS (frontend)
-    emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId,
-        {
-            to_name:  userData.username,
-            to_email: userData.email,
-            otp_code: code,
-            otpCode:  code,
-            otp:      code,
-            message:  "Your OTP is: " + code,
-            app_name: "Neon Gaming"
-        },
-        { publicKey: EMAILJS_CONFIG.publicKey }
-    ).then(function () {
-        showAlert("[EMAIL] OTP sent to " + userData.email + ". Check your inbox!", "success");
-    }).catch(function (err) {
-        console.error("[EmailJS] Send failed — status:", err.status, "text:", err.text, "full:", JSON.stringify(err));
-        var detail = err && err.text ? err.text : (err && err.status ? "Status " + err.status : "Network error");
-        showAlert(
-            "[WARNING] OTP email failed: " + detail + ". Please check your inbox anyway or click Resend.",
-            "error"
-        );
-    });
+            startOTPCountdown();
+            startResendCooldown();
+            showAlert("📧 " + (res.message || "Verification code sent to " + userData.email + "!"), "success");
+        })
+        .catch(function (err) {
+            console.error(`[Auth] ❌ Backend sendOTP request failed:`, err);
+            setLoading("signupBtn", false);
+            showAlert("❌ " + (err.message || "Failed to send verification code. Please check server logs."));
+        });
 }
 
 function clearOTPState() {
@@ -619,14 +600,13 @@ function getOTPInput() {
 function verifyOTP() {
     clearAlert();
 
-    if (!_otpState) {
+    if (!_otpState || !_otpState.userData) {
         showAlert("[ERROR] OTP session expired. Please go back and try again.");
         return;
     }
 
-    // Check expiry
-    if (Date.now() > _otpState.expiresAt || !_otpState.code) {
-        showAlert("[EXPIRED] OTP has expired. Click 'Resend OTP' to get a new one.");
+    if (Date.now() > _otpState.expiresAt) {
+        showAlert("[EXPIRED] OTP has expired. Click 'Resend OTP' to get a new code.");
         otpVerifyBtn.disabled = true;
         return;
     }
@@ -639,45 +619,17 @@ function verifyOTP() {
         return;
     }
 
-    // Max 5 attempts
-    _otpState.attempts++;
-    if (_otpState.attempts > 5) {
-        showAlert("[BLOCKED] Too many incorrect attempts. Please go back and restart signup.");
-        otpVerifyBtn.disabled = true;
-        otpBoxes.forEach(function (b) { b.disabled = true; b.style.borderColor = "#ff4444"; });
-        clearOTPState();
-        return;
-    }
-
-    if (entered !== _otpState.code) {
-        // Wrong OTP
-        otpBoxes.forEach(function (b) { b.style.borderColor = "#ff4444"; });
-        // Shake animation
-        document.getElementById("otpBoxes").classList.add("otp-shake");
-        setTimeout(function () {
-            document.getElementById("otpBoxes").classList.remove("otp-shake");
-        }, 500);
-
-        var left = 5 - _otpState.attempts;
-        showAlert("[ERROR] Incorrect OTP. " + left + " attempt" + (left !== 1 ? "s" : "") + " remaining.");
-        // Clear boxes & focus first
-        otpBoxes.forEach(function (b) { b.value = ""; });
-        otpBoxes[0].focus();
-        return;
-    }
-
-    // [OK] OTP Correct — frontend verified, now register user on backend
-    otpBoxes.forEach(function (b) { b.style.borderColor = "#00ff88"; });
     setLoading("otpVerifyBtn", true);
-
     var userData = _otpState.userData;
 
     API.register({
         username: userData.username,
         email:    userData.email,
-        password: userData.password
+        password: userData.password,
+        otp:      entered
     })
         .then(function (data) {
+            otpBoxes.forEach(function (b) { b.style.borderColor = "#00ff88"; });
             API.setSession(data.token, data.user);
             clearOTPState();
             setLoading("otpVerifyBtn", false);
@@ -690,7 +642,13 @@ function verifyOTP() {
         })
         .catch(function (err) {
             setLoading("otpVerifyBtn", false);
-            showAlert("[ERROR] " + (err.message || "Registration failed. Please try again."));
+            otpBoxes.forEach(function (b) { b.style.borderColor = "#ff4444"; });
+            var otpBoxesEl = document.getElementById("otpBoxes");
+            if (otpBoxesEl) {
+                otpBoxesEl.classList.add("otp-shake");
+                setTimeout(function () { otpBoxesEl.classList.remove("otp-shake"); }, 500);
+            }
+            showAlert("[ERROR] " + (err.message || "Invalid or expired verification code. Please try again."));
         });
 }
 
@@ -704,38 +662,23 @@ otpVerifyBtn.addEventListener("click", verifyOTP);
 otpResendBtn.addEventListener("click", function () {
     if (!_otpState || !_otpState.userData) return;
 
-    // Reset UI
     otpBoxes.forEach(function (b) { b.value = ""; b.style.borderColor = ""; b.disabled = false; });
     otpVerifyBtn.disabled     = false;
     otpTimerCount.style.color = "";
-    startOTPCountdown();
-    startResendCooldown();
 
-    // Resend via EmailJS
-    var newCode = generateOTP();
-    _otpState.code      = newCode;
-    _otpState.expiresAt = Date.now() + OTP_EXPIRY_MS;
-    _otpState.attempts  = 0;
-
-    emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId,
-        {
-            to_name:  _otpState.userData.username,
-            to_email: _otpState.userData.email,
-            otp_code: newCode,
-            otpCode:  newCode,
-            otp:      newCode,
-            message:  "Your new OTP is: " + newCode,
-            app_name: "Neon Gaming"
-        },
-        { publicKey: EMAILJS_CONFIG.publicKey }
-    ).then(function () {
-        showAlert("📧 New OTP sent to " + _otpState.userData.email, "success");
-    }).catch(function (err) {
-        console.error("[EmailJS] Resend failed:", err);
-        showAlert("❌ Failed to resend OTP. Check your connection.", "error");
-    });
+    console.log(`[Auth] 🔄 Resending OTP request for ${_otpState.userData.email}...`);
+    API.sendOTP({ email: _otpState.userData.email, username: _otpState.userData.username })
+        .then(function (res) {
+            console.log(`[Auth] ✅ Resend success:`, res);
+            _otpState.expiresAt = Date.now() + OTP_EXPIRY_MS;
+            startOTPCountdown();
+            startResendCooldown();
+            showAlert("📧 " + (res.message || "New verification code sent to " + _otpState.userData.email), "success");
+        })
+        .catch(function (err) {
+            console.error(`[Auth] ❌ Resend failed:`, err);
+            showAlert("[ERROR] " + (err.message || "Failed to resend code. Please wait a moment."), "error");
+        });
 });
 
 // OTP back button → return to signup (clear OTP state)
@@ -756,8 +699,8 @@ loginForm.addEventListener("submit", function (e) {
     var pw  = loginPassword.value;
     var rem = rememberMe.checked;
 
-    if (!id) { showAlert("⚠️ Please enter your email or username."); loginIdentifier.focus(); return; }
-    if (!pw) { showAlert("⚠️ Please enter your password.");          loginPassword.focus();   return; }
+    if (!id) { showAlert("[WARNING] Please enter your email or username."); loginIdentifier.focus(); return; }
+    if (!pw) { showAlert("[WARNING] Please enter your password.");          loginPassword.focus();   return; }
 
     setLoading("loginBtn", true);
 
@@ -768,16 +711,16 @@ loginForm.addEventListener("submit", function (e) {
             if (rem) { try { localStorage.setItem(SK.REMEMBER, id); } catch(e){} }
 
             if (data.user.role === "admin") {
-                showAlert("✅ Admin login successful! Redirecting…", "success");
+                showAlert("[OK] Admin login successful! Redirecting…", "success");
                 setTimeout(goToAdmin, 1000);
             } else {
-                showAlert("✅ Welcome back, " + data.user.username + "! 🎮", "success");
+                showAlert("[OK] Welcome back, " + data.user.username + "! [GAME]", "success");
                 setTimeout(goToGame, 1000);
             }
         })
         .catch(function (err) {
             setLoading("loginBtn", false);
-            showAlert("❌ " + (err.message || "Login failed."));
+            showAlert("[ERROR] " + (err.message || "Login failed."));
             loginPassword.value = ""; loginPassword.focus();
         });
 });
@@ -797,31 +740,31 @@ signupForm.addEventListener("submit", function (e) {
     var agreed   = agreeTerms.checked;
 
     // Username
-    if (!username) { showAlert("⚠️ Please enter a username."); signupUsername.focus(); return; }
+    if (!username) { showAlert("[WARNING] Please enter a username."); signupUsername.focus(); return; }
     if (!isValidUsername(username)) {
-        showAlert("⚠️ Username: 3-20 chars, start with a letter, only letters/digits/underscores.");
+        showAlert("[WARNING] Username: 3-20 chars, start with a letter, only letters/digits/underscores.");
         signupUsername.focus(); return;
     }
 
     // Email
-    if (!email) { showAlert("⚠️ Please enter your email address."); signupEmail.focus(); return; }
+    if (!email) { showAlert("[WARNING] Please enter your email address."); signupEmail.focus(); return; }
     if (!isValidEmail(email)) {
-        showAlert("❌ Invalid email. Use a real address like user@gmail.com");
+        showAlert("[ERROR] Invalid email. Use a real address like user@gmail.com");
         signupEmail.style.borderColor = "#ff4444"; signupEmail.focus(); return;
     }
 
     // Password strength
-    if (!pw) { showAlert("⚠️ Please enter a password."); signupPassword.focus(); return; }
+    if (!pw) { showAlert("[WARNING] Please enter a password."); signupPassword.focus(); return; }
     if (getStrength(pw) < MIN_STRENGTH) {
         showAlert(
-            "🔒 Password too weak! Need at least \"Good\" level.\n" +
+            "[LOCK] Password too weak! Need at least \"Good\" level.\n" +
             "Use 10+ chars with uppercase, lowercase, number & special char (!@#$%)."
         );
         signupPassword.focus(); return;
     }
 
     // Confirm password
-    if (!pw2) { showAlert("⚠️ Please confirm your password."); signupConfirm.focus(); return; }
+    if (!pw2) { showAlert("[WARNING] Please confirm your password."); signupConfirm.focus(); return; }
     if (pw !== pw2) {
         showAlert("❌ Passwords do not match.");
         signupConfirm.value = ""; signupConfirm.style.borderColor = "#ff4444";
@@ -829,7 +772,7 @@ signupForm.addEventListener("submit", function (e) {
     }
 
     // Terms
-    if (!agreed) { showAlert("⚠️ Please agree to the Terms & Conditions."); agreeTerms.focus(); return; }
+    if (!agreed) { showAlert("[WARNING] Please agree to the Terms & Conditions."); agreeTerms.focus(); return; }
 
     // All validations passed — go straight to OTP flow
     // (backend /register does a final duplicate check after OTP is verified)
@@ -866,11 +809,16 @@ forgotForm.addEventListener("submit", function (e) {
 
     setLoading("forgotSubmitBtn", true);
 
-    setTimeout(function () {
-        setLoading("forgotSubmitBtn", false);
-        showAlert("📧 If that email is registered, a reset link has been sent!", "success");
-        forgotEmail.value = ""; forgotEmail.style.borderColor = "";
-    }, 700);
+    API.forgotPassword({ email: email })
+        .then(function (res) {
+            setLoading("forgotSubmitBtn", false);
+            showAlert("📧 " + (res.message || "If that email is registered, a reset link/code has been sent!"), "success");
+            forgotEmail.value = ""; forgotEmail.style.borderColor = "";
+        })
+        .catch(function (err) {
+            setLoading("forgotSubmitBtn", false);
+            showAlert("❌ " + (err.message || "Failed to process request. Please try again."));
+        });
 });
 
 // ════════════════════════════════════════════════════════════
