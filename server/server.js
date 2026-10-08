@@ -60,24 +60,32 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true }));
 
+const path = require("path");
+
+// ── Frontend static files ─────────────────────────────────────
+// Serve the entire project root (one level up from server/)
+const FRONTEND_DIR = path.join(__dirname, "..");
+app.use(express.static(FRONTEND_DIR));
+
+// Clean URLs — serve index.html for /auth, /online, /admin
+app.get("/auth",   (req, res) => res.sendFile(path.join(FRONTEND_DIR, "auth.html")));
+app.get("/online", (req, res) => res.sendFile(path.join(FRONTEND_DIR, "online.html")));
+app.get("/admin",  (req, res) => res.sendFile(path.join(FRONTEND_DIR, "admin.html")));
+
 // ── Routes ───────────────────────────────────────────────────
 app.use("/api/auth",  authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/game",  gameRoutes);
 
-// ── Health check ─────────────────────────────────────────────
-app.get("/", (req, res) => {
-    res.json({
-        status:  "ok",
-        message: "Neon Gaming API is running 🎮",
-        version: "1.0.0"
-    });
-});
-
-// ── 404 handler ──────────────────────────────────────────────
-app.use((req, res) => {
-    res.status(404).json({ success: false, message: "Route not found" });
+// ── Catch-all — serve index.html for any unknown route ───────
+app.get("*", (req, res) => {
+    // Only serve HTML for non-API routes
+    if (!req.path.startsWith("/api")) {
+        res.sendFile(path.join(FRONTEND_DIR, "index.html"));
+    } else {
+        res.status(404).json({ success: false, message: "Route not found" });
+    }
 });
 
 // ── Global error handler ─────────────────────────────────────

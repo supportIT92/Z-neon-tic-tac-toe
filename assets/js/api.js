@@ -8,10 +8,10 @@
 // ── Detect if running as a local file (no server) ────────────
 const IS_LOCAL_FILE = window.location.protocol === "file:";
 
-// ── Set this to your Render URL after deployment ─────────────
-const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+// ── Backend URL — same origin on Render, localhost for dev ───
+const BACKEND_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
     ? "http://localhost:5000"
-    : "https://z-neon-tic-tac-toe.onrender.com";
+    : window.location.origin;  // On Render: same domain, no CORS issues!
 
 // ── Auth token helpers ────────────────────────────────────────
 const API = {
