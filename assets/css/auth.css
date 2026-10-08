@@ -796,14 +796,21 @@ input:focus {
     background:     rgba(255, 255, 255, .03);
     border-left:    2px solid rgba(0, 247, 255, .25);
     border-radius:  0 6px 6px 0;
+    max-height:     48px;
+    overflow:       hidden;
 }
 
 .pw-hint svg {
-    width:          13px;
-    height:         13px;
-    margin-right:   6px;
-    flex-shrink:    0;
-    stroke:         var(--cyan);
+    width:          12px !important;
+    height:         12px !important;
+    min-width:      12px !important;
+    max-width:      12px !important;
+    min-height:     12px !important;
+    max-height:     12px !important;
+    margin-right:   6px !important;
+    flex-shrink:    0 !important;
+    stroke:         var(--cyan) !important;
+    display:        inline-block !important;
 }
 
 /* =============================================
