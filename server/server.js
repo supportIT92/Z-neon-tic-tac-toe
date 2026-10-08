@@ -56,11 +56,31 @@ const io = new Server(server, {
 // ── Middleware ───────────────────────────────────────────────
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors(corsOptions));
-app.use(morgan("dev"));
+
+// Custom clean log format
+const path = require("path");
+morgan.token("time", () => new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: false }));
+morgan.token("status-color", (req, res) => {
+    const s = res.statusCode;
+    if (s >= 500) return `❌ ${s}`;
+    if (s >= 400) return `⚠️  ${s}`;
+    if (s >= 300) return `↪  ${s}`;
+    return `✅ ${s}`;
+});
+app.use(morgan((tokens, req, res) => {
+    // Skip static asset logs (css, js, images, sounds, fonts)
+    const url = tokens.url(req, res) || "";
+    if (/\.(css|js|png|jpg|jpeg|gif|ico|mp3|mp4|woff|woff2|ttf|svg|webp)(\?|$)/.test(url)) return null;
+    const s = res.statusCode;
+    const method = tokens.method(req, res);
+    const ms = parseFloat(tokens["response-time"](req, res)).toFixed(1);
+    const time = tokens.time(req, res);
+    const icon = s >= 500 ? "❌" : s >= 400 ? "⚠️ " : s >= 300 ? "↪ " : "✅";
+    return `${time} │ ${icon} ${method.padEnd(6)} ${s} │ ${url.padEnd(30)} │ ${ms}ms`;
+}));
+
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true }));
-
-const path = require("path");
 
 // ── Frontend static files ─────────────────────────────────────
 // Serve the entire project root (one level up from server/)
