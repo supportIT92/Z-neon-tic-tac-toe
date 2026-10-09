@@ -103,6 +103,14 @@ router.get("/users", async (req, res) => {
     }
 });
 
+const PRIMARY_ADMIN_EMAIL = "ztictactoe@outlook.com";
+
+function isPrimaryAdmin(user) {
+    if (!user) return false;
+    const email = (typeof user === "string" ? user : user.email || "").toLowerCase().trim();
+    return email === PRIMARY_ADMIN_EMAIL;
+}
+
 // ── PUT /api/admin/users/:id (Edit User Profile) ──────────────
 router.put("/users/:id", async (req, res) => {
     try {
@@ -110,9 +118,20 @@ router.put("/users/:id", async (req, res) => {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, message: "User not found." });
 
+        if (isPrimaryAdmin(user)) {
+            if (role && role !== "admin") {
+                return res.status(403).json({ success: false, message: "Primary Admin role cannot be changed." });
+            }
+            if (email && email.toLowerCase() !== PRIMARY_ADMIN_EMAIL) {
+                return res.status(403).json({ success: false, message: "Primary Admin email cannot be modified." });
+            }
+        }
+
         if (username && username.trim()) user.username = username.trim();
-        if (email && email.trim())       user.email    = email.trim().toLowerCase();
-        if (role && ["user", "admin"].includes(role)) user.role = role;
+        if (email && email.trim() && !isPrimaryAdmin(user)) user.email = email.trim().toLowerCase();
+        if (role && ["user", "admin"].includes(role)) {
+            user.role = isPrimaryAdmin(user) ? "admin" : role;
+        }
         if (password && password.trim()) user.password = password.trim();
 
         await user.save();
@@ -135,12 +154,15 @@ router.put("/users/:id", async (req, res) => {
 // ── PUT /api/admin/users/:id/ban ──────────────────────────────
 router.put("/users/:id/ban", async (req, res) => {
     try {
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            { banned: true },
-            { new: true }
-        );
+        const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
+        if (isPrimaryAdmin(user)) {
+            return res.status(403).json({ success: false, message: "Primary Admin cannot be banned." });
+        }
+
+        user.banned = true;
+        await user.save();
 
         await ActivityLog.create({
             action:    "ban",
@@ -159,12 +181,11 @@ router.put("/users/:id/ban", async (req, res) => {
 // ── PUT /api/admin/users/:id/unban ────────────────────────────
 router.put("/users/:id/unban", async (req, res) => {
     try {
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            { banned: false },
-            { new: true }
-        );
+        const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
+        user.banned = false;
+        await user.save();
 
         await ActivityLog.create({
             action:    "unban",
@@ -187,10 +208,15 @@ router.put("/users/:id/role", async (req, res) => {
         if (!["user", "admin"].includes(role)) {
             return res.status(400).json({ success: false, message: "Invalid role." });
         }
-        const user = await User.findByIdAndUpdate(
-            req.params.id, { role }, { new: true }
-        );
+        const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
+        if (isPrimaryAdmin(user)) {
+            return res.status(403).json({ success: false, message: "Primary Admin role cannot be changed." });
+        }
+
+        user.role = role;
+        await user.save();
 
         await ActivityLog.create({
             action:    role === "admin" ? "promote" : "demote",
@@ -209,8 +235,14 @@ router.put("/users/:id/role", async (req, res) => {
 // ── DELETE /api/admin/users/:id ───────────────────────────────
 router.delete("/users/:id", async (req, res) => {
     try {
-        const user = await User.findByIdAndDelete(req.params.id);
+        const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
+        if (isPrimaryAdmin(user)) {
+            return res.status(403).json({ success: false, message: "Primary Admin cannot be deleted." });
+        }
+
+        await User.findByIdAndDelete(req.params.id);
 
         await ActivityLog.create({
             action:    "delete",

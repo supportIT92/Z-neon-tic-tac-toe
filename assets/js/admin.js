@@ -304,10 +304,13 @@ function renderUsersTable() {
 
     var html = "";
     filtered.forEach(function (u, i) {
-        var isSelf       = session && (u.email === session.email || u.id === session.id);
-        var roleBadge    = u.role === "admin"
-            ? '<span class="badge badge-admin">Admin</span>'
-            : '<span class="badge badge-user">User</span>';
+        var isSelf         = session && (u.email === session.email || u.id === session.id);
+        var isPrimaryAdmin = (u.email && u.email.toLowerCase() === "ztictactoe@outlook.com");
+        var roleBadge      = isPrimaryAdmin
+            ? '<span class="badge badge-admin" style="border:1px solid #ffd700;box-shadow:0 0 8px rgba(255,215,0,0.35);color:#ffd700">Super Admin</span>'
+            : (u.role === "admin"
+                ? '<span class="badge badge-admin">Admin</span>'
+                : '<span class="badge badge-user">User</span>');
         var statusBadge  = u.banned
             ? '<span class="badge badge-banned">Banned</span>'
             : '<span class="badge badge-active">Active</span>';
@@ -317,13 +320,13 @@ function renderUsersTable() {
 
         var banBtn = u.banned
             ? '<button class="act-btn act-unban" data-action="unban" data-id="' + escHtml(u.id || u._id) + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg>Unban</button>'
-            : '<button class="act-btn act-ban" data-action="ban" data-id="' + escHtml(u.id || u._id) + '"' + (isSelf ? " disabled title='Cannot ban yourself'" : "") + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban</button>';
+            : '<button class="act-btn act-ban" data-action="ban" data-id="' + escHtml(u.id || u._id) + '"' + ((isSelf || isPrimaryAdmin) ? " disabled title='" + (isPrimaryAdmin ? "Primary Admin cannot be banned" : "Cannot ban yourself") + "'" : "") + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban</button>';
 
         var roleBtn = u.role === "admin"
-            ? '<button class="act-btn act-demote" data-action="demote" data-id="' + escHtml(u.id || u._id) + '"' + (isSelf ? " disabled title='Cannot demote yourself'" : "") + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="6 9 12 15 18 9"/></svg>Demote</button>'
+            ? '<button class="act-btn act-demote" data-action="demote" data-id="' + escHtml(u.id || u._id) + '"' + ((isSelf || isPrimaryAdmin) ? " disabled title='" + (isPrimaryAdmin ? "Primary Admin role cannot be changed" : "Cannot demote yourself") + "'" : "") + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="6 9 12 15 18 9"/></svg>Demote</button>'
             : '<button class="act-btn act-promote" data-action="promote" data-id="' + escHtml(u.id || u._id) + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"/></svg>Promote</button>';
 
-        var delBtn = '<button class="act-btn act-delete" data-action="delete" data-id="' + escHtml(u.id || u._id) + '"' + (isSelf ? " disabled title='Cannot delete yourself'" : "") + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>';
+        var delBtn = '<button class="act-btn act-delete" data-action="delete" data-id="' + escHtml(u.id || u._id) + '"' + ((isSelf || isPrimaryAdmin) ? " disabled title='" + (isPrimaryAdmin ? "Primary Admin cannot be deleted" : "Cannot delete yourself") + "'" : "") + '><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>';
 
         html +=
             "<tr>" +
@@ -426,6 +429,12 @@ function handleUserAction(action, id) {
     var user = findUserById(id);
     if (!user) { showToast("User not found.", "error"); return; }
 
+    var isPrimaryAdmin = (user.email && user.email.toLowerCase() === "ztictactoe@outlook.com");
+    if (isPrimaryAdmin && (action === "demote" || action === "ban" || action === "delete")) {
+        showToast("Primary Admin role cannot be changed, banned, or deleted.", "error");
+        return;
+    }
+
     if (action === "edit") {
         openEditModal(user);
         return;
@@ -521,17 +530,38 @@ function openEditModal(user) {
     editingUserId         = user.id || user._id;
     editUsername.value    = user.username;
     editEmail.value       = user.email;
-    editRole.value        = user.role || "user";
     editNewPassword.value = "";
     editError.textContent = "";
+
+    var isPrimaryAdmin = (user.email && user.email.toLowerCase() === "ztictactoe@outlook.com");
+
+    if (isPrimaryAdmin) {
+        // Primary admin role cannot be changed to user
+        editRole.innerHTML = '<option value="admin" selected>Admin (Permanent / Locked)</option>';
+        editRole.disabled  = true;
+        editRole.title     = "Primary Admin role cannot be changed";
+        editEmail.disabled = true;
+        editEmail.title    = "Primary Admin email cannot be modified";
+    } else {
+        editRole.innerHTML = '<option value="user">User</option><option value="admin">Admin</option>';
+        editRole.value     = user.role || "user";
+        editRole.disabled  = false;
+        editRole.title     = "";
+        editEmail.disabled = false;
+        editEmail.title    = "";
+    }
+
     editModal.classList.add("open");
     editUsername.focus();
 }
 
 editSaveBtn.addEventListener("click", function () {
+    var user = findUserById(editingUserId);
+    var isPrimaryAdmin = (user && user.email && user.email.toLowerCase() === "ztictactoe@outlook.com");
+
     var newUser = editUsername.value.trim();
-    var newEmail= editEmail.value.trim().toLowerCase();
-    var newRole = editRole.value;
+    var newEmail= isPrimaryAdmin ? "ztictactoe@outlook.com" : editEmail.value.trim().toLowerCase();
+    var newRole = isPrimaryAdmin ? "admin" : editRole.value;
     var newPw   = editNewPassword.value;
 
     editError.textContent = "";
@@ -567,6 +597,8 @@ editSaveBtn.addEventListener("click", function () {
             showToast("User profile updated successfully.", "success");
             editModal.classList.remove("open");
             editingUserId = null;
+            if (editRole) editRole.disabled = false;
+            if (editEmail) editEmail.disabled = false;
             refreshAll();
         })
         .catch(function (err) {
@@ -577,6 +609,8 @@ editSaveBtn.addEventListener("click", function () {
 editCancelBtn.addEventListener("click", function () {
     editModal.classList.remove("open");
     editingUserId = null;
+    if (editRole) editRole.disabled = false;
+    if (editEmail) editEmail.disabled = false;
 });
 
 // ════════════════════════════════════════════════════════════
