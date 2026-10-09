@@ -80,6 +80,19 @@ var strengthLabel   = document.getElementById("strengthLabel");
 var forgotEmail     = document.getElementById("forgotEmail");
 var backToLoginBtn  = document.getElementById("backToLoginBtn");
 
+// Reset password panel
+var resetPasswordForm       = document.getElementById("resetPasswordForm");
+var resetEmailInput         = document.getElementById("resetEmailInput");
+var newPasswordInput        = document.getElementById("newPasswordInput");
+var confirmNewPasswordInput = document.getElementById("confirmNewPasswordInput");
+var toggleNewPw             = document.getElementById("toggleNewPw");
+var toggleConfirmNewPw      = document.getElementById("toggleConfirmNewPw");
+var resetStrengthFill       = document.getElementById("resetStrengthFill");
+var resetStrengthLabel      = document.getElementById("resetStrengthLabel");
+var resetPasswordSubmitBtn  = document.getElementById("resetPasswordSubmitBtn");
+var resetBackToLoginBtn     = document.getElementById("resetBackToLoginBtn");
+var _currentResetToken      = null;
+
 // OTP panel
 var otpEmailDisplay = document.getElementById("otpEmailDisplay");
 var otpBoxes        = document.querySelectorAll(".otp-digit");
@@ -244,10 +257,11 @@ function clearAlert() {
 // ════════════════════════════════════════════════════════════
 
 function hideAllPanels() {
-    loginForm.classList.add("hidden");
-    signupForm.classList.add("hidden");
-    forgotForm.classList.add("hidden");
-    otpPanel.classList.add("hidden");
+    if (loginForm) loginForm.classList.add("hidden");
+    if (signupForm) signupForm.classList.add("hidden");
+    if (forgotForm) forgotForm.classList.add("hidden");
+    if (resetPasswordForm) resetPasswordForm.classList.add("hidden");
+    if (otpPanel) otpPanel.classList.add("hidden");
     var old = document.getElementById("successScreen");
     if (old) old.remove();
 }
@@ -282,6 +296,12 @@ function showPanel(panel) {
         formTitle.textContent = "RESET PASSWORD";
         switchText.classList.add("hidden");
         forgotEmail.focus();
+
+    } else if (panel === "reset") {
+        if (resetPasswordForm) resetPasswordForm.classList.remove("hidden");
+        formTitle.textContent = "NEW PASSWORD";
+        switchText.classList.add("hidden");
+        if (newPasswordInput) newPasswordInput.focus();
 
     } else if (panel === "otp") {
         otpPanel.classList.remove("hidden");
@@ -821,7 +841,7 @@ forgotForm.addEventListener("submit", function (e) {
     API.forgotPassword({ email: email })
         .then(function (res) {
             setLoading("forgotSubmitBtn", false);
-            showAlert(res.message || "If that email is registered, a reset code has been sent!", "success");
+            showAlert(res.message || "A password reset link has been dispatched to your email!", "success");
             forgotEmail.value = ""; forgotEmail.style.borderColor = "";
         })
         .catch(function (err) {
@@ -829,6 +849,93 @@ forgotForm.addEventListener("submit", function (e) {
             showAlert(err.message || "Failed to process request. Please try again.");
         });
 });
+
+// ════════════════════════════════════════════════════════════
+//  RESET PASSWORD (NEW PASSWORD FORM)
+// ════════════════════════════════════════════════════════════
+
+if (resetPasswordForm) {
+    resetPasswordForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        clearAlert();
+
+        var email       = sanitise(resetEmailInput.value);
+        var newPw       = newPasswordInput.value;
+        var confirmPw   = confirmNewPasswordInput.value;
+        var token       = _currentResetToken;
+
+        if (!email) { showAlert("Email address missing from reset link."); return; }
+        if (!token) { showAlert("Invalid or missing reset token. Please request a new link."); return; }
+
+        if (!newPw) { showAlert("Please enter a new password."); newPasswordInput.focus(); return; }
+        if (getStrength(newPw) < MIN_STRENGTH) {
+            showAlert("Password is too weak. Minimum 10 characters with upper, lower, numbers, and symbols.");
+            newPasswordInput.focus(); return;
+        }
+
+        if (!confirmPw) { showAlert("Please confirm your new password."); confirmNewPasswordInput.focus(); return; }
+        if (newPw !== confirmPw) {
+            showAlert("Passwords do not match.");
+            confirmNewPasswordInput.value = "";
+            confirmNewPasswordInput.style.borderColor = "#ff4444";
+            confirmNewPasswordInput.focus();
+            return;
+        }
+
+        setLoading("resetPasswordSubmitBtn", true);
+
+        API.resetPassword({
+            email: email,
+            token: token,
+            newPassword: newPw
+        })
+            .then(function (res) {
+                setLoading("resetPasswordSubmitBtn", false);
+                showAlert(res.message || "Password updated successfully! Redirecting to login...", "success");
+                newPasswordInput.value = "";
+                confirmNewPasswordInput.value = "";
+                setTimeout(function () {
+                    // Clear search params in URL
+                    try {
+                        var cleanUrl = window.location.pathname;
+                        window.history.replaceState({}, document.title, cleanUrl);
+                    } catch(e) {}
+                    showPanel("login");
+                    showAlert("Password reset successfully. You can now login.", "success");
+                }, 1800);
+            })
+            .catch(function (err) {
+                setLoading("resetPasswordSubmitBtn", false);
+                showAlert(err.message || "Failed to reset password. Link may have expired.");
+            });
+    });
+}
+
+function updateResetStrengthBar(pw) {
+    if (!resetStrengthFill || !resetStrengthLabel) return;
+    var lvl = getStrength(pw);
+    var m   = STRENGTH_META[lvl];
+    resetStrengthFill.style.width           = pw.length === 0 ? "0%" : m.width;
+    resetStrengthFill.style.backgroundColor = pw.length === 0 ? "#333" : m.color;
+    resetStrengthLabel.textContent          = pw.length === 0 ? "" : m.label;
+    resetStrengthLabel.style.color          = pw.length === 0 ? "" : m.color;
+}
+
+if (newPasswordInput) {
+    newPasswordInput.addEventListener("input", function () {
+        updateResetStrengthBar(newPasswordInput.value);
+        if (confirmNewPasswordInput && confirmNewPasswordInput.value) {
+            confirmNewPasswordInput.style.borderColor = newPasswordInput.value === confirmNewPasswordInput.value ? "#00ff88" : "#ff4444";
+        }
+    });
+}
+
+if (confirmNewPasswordInput) {
+    confirmNewPasswordInput.addEventListener("input", function () {
+        if (!confirmNewPasswordInput.value) { confirmNewPasswordInput.style.borderColor = ""; return; }
+        confirmNewPasswordInput.style.borderColor = newPasswordInput.value === confirmNewPasswordInput.value ? "#00ff88" : "#ff4444";
+    });
+}
 
 // ════════════════════════════════════════════════════════════
 //  REAL-TIME INPUT FEEDBACK
@@ -860,10 +967,21 @@ signupConfirm.addEventListener("input", function () {
 
 forgotBtn.addEventListener("click",      function () { showPanel("forgot"); });
 backToLoginBtn.addEventListener("click", function () { showPanel("login");  });
+if (resetBackToLoginBtn) {
+    resetBackToLoginBtn.addEventListener("click", function () {
+        try {
+            var cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+        } catch(e) {}
+        showPanel("login");
+    });
+}
 
 setupToggle(toggleLoginPw,   loginPassword);
 setupToggle(toggleSignupPw,  signupPassword);
 setupToggle(toggleConfirmPw, signupConfirm);
+if (toggleNewPw && newPasswordInput) setupToggle(toggleNewPw, newPasswordInput);
+if (toggleConfirmNewPw && confirmNewPasswordInput) setupToggle(toggleConfirmNewPw, confirmNewPasswordInput);
 
 // ════════════════════════════════════════════════════════════
 //  INIT
@@ -873,6 +991,19 @@ setupToggle(toggleConfirmPw, signupConfirm);
     // Initialise EmailJS with public key
     if (typeof emailjs !== "undefined") {
         emailjs.init({ publicKey: EMAILJS_CONFIG.publicKey });
+    }
+
+    // Check for Password Reset Link query parameters (?reset_token=...&email=...)
+    var urlParams = new URLSearchParams(window.location.search);
+    var tokenParam = urlParams.get("reset_token") || urlParams.get("token");
+    var emailParam = urlParams.get("email");
+
+    if (tokenParam && emailParam) {
+        _currentResetToken = tokenParam.trim();
+        if (resetEmailInput) resetEmailInput.value = emailParam.trim().toLowerCase();
+        showPanel("reset");
+        showAlert("Please set your new account password.", "info");
+        return;
     }
 
     // Validate existing session — clear if expired or invalid

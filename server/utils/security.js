@@ -21,14 +21,22 @@ function generateOtp() {
 }
 
 /**
- * Hashes OTP using SHA-256 for secure database storage.
+ * Hashes OTP or tokens using SHA-256 for secure database storage.
  */
 function hashOtp(code) {
     return crypto.createHash("sha256").update(String(code).trim()).digest("hex");
 }
 
+/**
+ * Generates a cryptographically secure random hex token for password reset links.
+ */
+function generateResetToken() {
+    return crypto.randomBytes(32).toString("hex");
+}
+
 module.exports = {
     escapeRegex,
     generateOtp,
-    hashOtp
+    hashOtp,
+    generateResetToken
 };

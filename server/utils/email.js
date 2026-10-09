@@ -192,8 +192,8 @@ const sendOTPEmail = async (toEmail, toName, otpCode) => {
     });
 };
 
-// ── Send Password Reset OTP email (Simple, Clean Dark Format) ──
-const sendPasswordResetEmail = async (toEmail, toName, otpCode) => {
+// ── Send Password Reset Email (Direct Link Button) ────────────
+const sendPasswordResetEmail = async (toEmail, toName, resetLink) => {
     const now = new Date();
     const istTime = now.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true });
 
@@ -203,18 +203,19 @@ const sendPasswordResetEmail = async (toEmail, toName, otpCode) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Password Reset Code</title>
+      <title>Reset Your Password</title>
       <style>
         body { margin: 0; padding: 0; background: #080c16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc; }
         .wrapper { width: 100%; padding: 40px 12px; background: #080c16; }
-        .card { max-width: 440px; margin: 0 auto; background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 32px 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .brand { font-size: 20px; font-weight: 800; letter-spacing: 3px; color: #ff007f; text-align: center; margin: 0 0 24px; text-transform: uppercase; }
-        .greeting { font-size: 15px; color: #f1f5f9; margin: 0 0 10px; }
-        .desc { font-size: 14px; color: #94a3b8; line-height: 1.5; margin: 0 0 22px; }
-        .code-box { background: #050814; border: 1px solid #ff007f; border-radius: 8px; padding: 18px; text-align: center; margin: 20px 0; }
-        .code { font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: bold; letter-spacing: 10px; color: #ff007f; margin-left: 10px; }
-        .meta { font-size: 12px; color: #64748b; line-height: 1.6; text-align: center; margin: 18px 0 0; }
-        .footer { font-size: 11px; color: #475569; text-align: center; margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; }
+        .card { max-width: 460px; margin: 0 auto; background: #0f172a; border: 1px solid #1e293b; border-radius: 14px; padding: 36px 30px; box-shadow: 0 12px 35px rgba(0,0,0,0.6); }
+        .brand { font-size: 22px; font-weight: 800; letter-spacing: 3px; color: #ff007f; text-align: center; margin: 0 0 24px; text-transform: uppercase; }
+        .greeting { font-size: 16px; color: #f1f5f9; margin: 0 0 12px; }
+        .desc { font-size: 14px; color: #94a3b8; line-height: 1.6; margin: 0 0 26px; }
+        .btn-wrap { text-align: center; margin: 28px 0; }
+        .btn { display: inline-block; background: linear-gradient(135deg, #ff007f 0%, #7928ca 100%); color: #ffffff !important; text-decoration: none; font-size: 15px; font-weight: 700; letter-spacing: 1.5px; padding: 14px 34px; border-radius: 8px; box-shadow: 0 4px 20px rgba(255, 0, 127, 0.4); text-transform: uppercase; }
+        .meta { font-size: 12px; color: #64748b; line-height: 1.6; text-align: center; margin: 22px 0 0; }
+        .link-alt { word-break: break-all; font-size: 11px; color: #00f7ff; text-align: center; margin-top: 14px; line-height: 1.4; }
+        .footer { font-size: 11px; color: #475569; text-align: center; margin-top: 26px; border-top: 1px solid #1e293b; padding-top: 18px; }
       </style>
     </head>
     <body>
@@ -222,16 +223,22 @@ const sendPasswordResetEmail = async (toEmail, toName, otpCode) => {
         <div class="card">
           <div class="brand">NEON GAMING</div>
           <div class="greeting">Hi <strong>${toName}</strong>,</div>
-          <div class="desc">Use the security code below to reset your password:</div>
-          <div class="code-box">
-            <div class="code">${otpCode}</div>
+          <div class="desc">
+            We received a request to reset your Neon Gaming account password. Click the button below to set a new password:
+          </div>
+          <div class="btn-wrap">
+            <a href="${resetLink}" class="btn" target="_blank" rel="noopener noreferrer">RESET PASSWORD</a>
           </div>
           <div class="meta">
-            Valid for <strong>5 minutes</strong> (Sent at <strong>${istTime} IST</strong>)<br>
-            If you did not request a password reset, you can ignore this email.
+            This link is valid for <strong>15 minutes</strong> (Dispatched at <strong>${istTime} IST</strong>).<br>
+            If you did not request a password reset, you can safely ignore this email.
+          </div>
+          <div class="link-alt">
+            If the button doesn't work, copy and paste this link in your browser:<br>
+            <a href="${resetLink}" style="color: #00f7ff; text-decoration: underline;">${resetLink}</a>
           </div>
           <div class="footer">
-            © Neon Gaming · Security service
+            © Neon Gaming · Account Security Service
           </div>
         </div>
       </div>
@@ -241,9 +248,71 @@ const sendPasswordResetEmail = async (toEmail, toName, otpCode) => {
     return dispatchEmail({
         toEmail,
         toName,
-        subject: `${otpCode} is your password reset code`,
+        subject: "Reset your Neon Gaming password",
         html
     });
 };
 
-module.exports = { sendOTPEmail, sendPasswordResetEmail, sendViaBrevoApi };
+// ── Send Password Changed Confirmation Email (Security Alert) ──
+const sendPasswordChangedEmail = async (toEmail, toName) => {
+    const now = new Date();
+    const istTime = now.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true });
+    const istDate = now.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" });
+
+    const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Password Changed Successfully</title>
+      <style>
+        body { margin: 0; padding: 0; background: #080c16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc; }
+        .wrapper { width: 100%; padding: 40px 12px; background: #080c16; }
+        .card { max-width: 460px; margin: 0 auto; background: #0f172a; border: 1px solid #1e293b; border-radius: 14px; padding: 36px 30px; box-shadow: 0 12px 35px rgba(0,0,0,0.6); }
+        .brand { font-size: 22px; font-weight: 800; letter-spacing: 3px; color: #00ff88; text-align: center; margin: 0 0 24px; text-transform: uppercase; }
+        .greeting { font-size: 16px; color: #f1f5f9; margin: 0 0 12px; }
+        .desc { font-size: 14px; color: #94a3b8; line-height: 1.6; margin: 0 0 20px; }
+        .status-box { background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; border-radius: 8px; padding: 16px; text-align: center; margin: 20px 0; color: #22c55e; font-weight: 600; font-size: 15px; }
+        .info-row { font-size: 13px; color: #cbd5e1; margin: 8px 0; }
+        .warning-text { font-size: 12px; color: #f87171; line-height: 1.6; margin-top: 20px; padding-top: 14px; border-top: 1px solid #1e293b; text-align: center; }
+        .footer { font-size: 11px; color: #475569; text-align: center; margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; }
+      </style>
+    </head>
+    <body>
+      <div class="wrapper">
+        <div class="card">
+          <div class="brand">NEON GAMING</div>
+          <div class="greeting">Hi <strong>${toName}</strong>,</div>
+          <div class="status-box">
+            Password Changed Successfully
+          </div>
+          <div class="desc">
+            Your Neon Gaming account password has just been updated.
+          </div>
+          <div class="info-row">
+            <strong>Time:</strong> ${istTime} IST (${istDate})
+          </div>
+          <div class="info-row">
+            <strong>Account:</strong> ${toEmail}
+          </div>
+          <div class="warning-text">
+            If you did not perform this change, please immediately reach out to our support at supportit92@gmail.com or reset your password immediately.
+          </div>
+          <div class="footer">
+            © Neon Gaming · Security Alert Notification
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>`;
+
+    return dispatchEmail({
+        toEmail,
+        toName,
+        subject: "Security Alert: Your Neon Gaming password was changed",
+        html
+    });
+};
+
+module.exports = { sendOTPEmail, sendPasswordResetEmail, sendPasswordChangedEmail, sendViaBrevoApi };

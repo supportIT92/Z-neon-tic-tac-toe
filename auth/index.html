@@ -253,6 +253,88 @@
 
             </form>
 
+            <!-- ===== RESET PASSWORD PANEL (NEW PASSWORD FORM) ===== -->
+            <form class="auth-form hidden" id="resetPasswordForm" novalidate autocomplete="off">
+
+                <p class="forgot-hint">Create a strong new password for your account.</p>
+
+                <div class="field-group">
+                    <span class="field-icon" aria-hidden="true"><svg width="16" height="16" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg></span>
+                    <input
+                        type="email"
+                        id="resetEmailInput"
+                        name="resetEmailInput"
+                        placeholder="Email Address"
+                        maxlength="100"
+                        autocomplete="email"
+                        spellcheck="false"
+                        aria-label="Email Address"
+                        readonly
+                        required>
+                </div>
+
+                <div class="field-group">
+                    <span class="field-icon" aria-hidden="true"><svg width="16" height="16" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+                    <input
+                        type="password"
+                        id="newPasswordInput"
+                        name="newPasswordInput"
+                        placeholder="New Password"
+                        maxlength="128"
+                        autocomplete="new-password"
+                        aria-label="New Password"
+                        required>
+                    <button
+                        type="button"
+                        class="toggle-pw"
+                        id="toggleNewPw"
+                        aria-label="Show new password"
+                        tabindex="0">
+                        <span class="eye-icon" aria-hidden="true"><svg width="16" height="16" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                    </button>
+                </div>
+
+                <div class="strength-wrap" id="resetStrengthWrap" aria-live="polite">
+                    <div class="strength-bar">
+                        <div class="strength-fill" id="resetStrengthFill"></div>
+                    </div>
+                    <span class="strength-label" id="resetStrengthLabel"></span>
+                </div>
+
+                <p class="pw-hint" id="resetPwHint">
+                    <svg width="12" height="12" style="width:12px!important;height:12px!important;min-width:12px!important;max-width:12px!important;max-height:12px!important;display:inline-block!important;vertical-align:-1px!important;margin-right:6px!important;flex-shrink:0!important;stroke:#00f7ff!important;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>Min 10 chars · Uppercase · Lowercase · Number · Special char
+                </p>
+
+                <div class="field-group">
+                    <span class="field-icon" aria-hidden="true"><svg width="16" height="16" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+                    <input
+                        type="password"
+                        id="confirmNewPasswordInput"
+                        name="confirmNewPasswordInput"
+                        placeholder="Confirm New Password"
+                        maxlength="128"
+                        autocomplete="new-password"
+                        aria-label="Confirm New Password"
+                        required>
+                    <button
+                        type="button"
+                        class="toggle-pw"
+                        id="toggleConfirmNewPw"
+                        aria-label="Show confirm new password"
+                        tabindex="0">
+                        <span class="eye-icon" aria-hidden="true"><svg width="16" height="16" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                    </button>
+                </div>
+
+                <button type="submit" class="submit-btn" id="resetPasswordSubmitBtn">
+                    <span class="btn-text">SAVE NEW PASSWORD</span>
+                    <span class="btn-glow" aria-hidden="true"></span>
+                </button>
+
+                <button type="button" class="link-btn back-link" id="resetBackToLoginBtn"><span aria-hidden="true"><svg style="width:14px;height:14px;vertical-align:middle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg></span> Back to Login</button>
+
+            </form>
+
             <!-- ===== OTP VERIFICATION PANEL ===== -->
             <div class="auth-form hidden" id="otpPanel">
 

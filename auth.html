@@ -2,8 +2,11 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0;url=/auth/">
-<script>window.location.replace('/auth/');</script>
+<script>
+    var query = window.location.search || '';
+    var hash = window.location.hash || '';
+    window.location.replace('/auth/' + query + hash);
+</script>
 </head>
 <body></body>
 </html>

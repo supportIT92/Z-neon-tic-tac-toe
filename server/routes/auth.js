@@ -15,8 +15,8 @@ const User          = require("../models/User");
 const Otp           = require("../models/Otp");
 const ActivityLog   = require("../models/ActivityLog");
 const { signToken } = require("../middleware/auth.middleware");
-const { sendOTPEmail, sendPasswordResetEmail } = require("../utils/email");
-const { escapeRegex, generateOtp, hashOtp }    = require("../utils/security");
+const { sendOTPEmail, sendPasswordResetEmail, sendPasswordChangedEmail } = require("../utils/email");
+const { escapeRegex, generateOtp, hashOtp, generateResetToken }    = require("../utils/security");
 
 const router = express.Router();
 
@@ -345,7 +345,7 @@ router.post("/login", authLimiter, async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════
-// POST /api/auth/forgot-password (Send Password Reset OTP)
+// POST /api/auth/forgot-password (Send Password Reset Link)
 // ══════════════════════════════════════════════════════════════
 router.post("/forgot-password", otpLimiter, async (req, res) => {
     try {
@@ -361,13 +361,13 @@ router.post("/forgot-password", otpLimiter, async (req, res) => {
         if (!user) {
             return res.json({
                 success: true,
-                message: "If an account exists with that email, a password reset code has been dispatched."
+                message: "If an account exists with that email, a password reset link has been dispatched."
             });
         }
 
-        const otpCode   = generateOtp();
-        const codeHash  = hashOtp(otpCode);
-        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+        const resetToken = generateResetToken();
+        const codeHash   = hashOtp(resetToken);
+        const expiresAt  = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes for link
 
         await Otp.deleteMany({ email: cleanEmail, purpose: "reset_password" });
         await Otp.create({
@@ -378,22 +378,40 @@ router.post("/forgot-password", otpLimiter, async (req, res) => {
             attempts:  0
         });
 
+        // Determine base client URL
+        // If request provides an origin (e.g. from custom domain or GitHub Pages), use it if allowed, else fallback to CLIENT_URL
+        let clientBase = process.env.CLIENT_URL || "https://supportit92.github.io/Z-neon-tic-tac-toe";
+        const reqOrigin = req.get("origin") || req.get("referer");
+        if (reqOrigin && (reqOrigin.includes("github.io") || reqOrigin.includes("onrender.com") || reqOrigin.includes("localhost") || reqOrigin.includes("127.0.0.1"))) {
+            try {
+                const parsedUrl = new URL(reqOrigin);
+                clientBase = parsedUrl.origin + (parsedUrl.pathname.includes("/Z-neon-tic-tac-toe") ? "/Z-neon-tic-tac-toe" : "");
+            } catch(e) {}
+        }
+
+        // Build direct reset link pointing to auth page with reset_token & email
+        const resetLink = `${clientBase.replace(/\/+$/, "")}/auth/?reset_token=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(cleanEmail)}`;
+
+        const istTime = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: false });
+        console.log(`[Forgot Password ${istTime} IST] 🔗 Generated reset link for ${cleanEmail}: ${resetLink}`);
+
         try {
-            await sendPasswordResetEmail(cleanEmail, user.username, otpCode);
+            await sendPasswordResetEmail(cleanEmail, user.username, resetLink);
+            console.log(`[Forgot Password ${istTime} IST] ✅ Reset link email sent to ${cleanEmail}`);
         } catch (emailErr) {
             console.error("[forgot-password SMTP error]", emailErr.message);
             if (process.env.NODE_ENV !== "production") {
                 return res.json({
                     success: true,
-                    message: `Reset code generated (Dev fallback: ${otpCode})`,
-                    devOtp: otpCode
+                    message: "Reset link generated (Dev mode)",
+                    resetLink: resetLink
                 });
             }
         }
 
         res.json({
             success: true,
-            message: "If an account exists with that email, a password reset code has been dispatched."
+            message: "If an account exists with that email, a password reset link has been sent to your inbox."
         });
 
     } catch (err) {
@@ -403,18 +421,19 @@ router.post("/forgot-password", otpLimiter, async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════
-// POST /api/auth/reset-password (Verify OTP & Change Password)
+// POST /api/auth/reset-password (Verify Reset Token & Change Password)
 // ══════════════════════════════════════════════════════════════
 router.post("/reset-password", authLimiter, async (req, res) => {
     try {
-        const { email, otp, newPassword } = req.body;
+        const { email, token, otp, newPassword } = req.body;
+        const resetCredential = String(token || otp || "").trim();
 
-        if (!email || !otp || !newPassword) {
-            return res.status(400).json({ success: false, message: "Email, OTP code, and new password are required." });
+        if (!email || !resetCredential || !newPassword) {
+            return res.status(400).json({ success: false, message: "Email, reset token, and new password are required." });
         }
 
         if (!isStrongPassword(newPassword)) {
-            return res.status(400).json({ success: false, message: "Password does not meet complexity requirements." });
+            return res.status(400).json({ success: false, message: "Password does not meet complexity requirements. Minimum 8 characters with upper, lower, and numbers/symbols." });
         }
 
         const cleanEmail = email.trim().toLowerCase();
@@ -425,19 +444,19 @@ router.post("/reset-password", authLimiter, async (req, res) => {
         });
 
         if (!otpRecord) {
-            return res.status(400).json({ success: false, message: "Reset code has expired or is invalid." });
+            return res.status(400).json({ success: false, message: "Reset link has expired or is invalid. Please request a new one." });
         }
 
         if (otpRecord.attempts >= 5) {
             await Otp.deleteOne({ _id: otpRecord._id });
-            return res.status(429).json({ success: false, message: "Maximum attempts exceeded. Please request a new code." });
+            return res.status(429).json({ success: false, message: "Maximum attempts exceeded. Please request a new reset link." });
         }
 
-        const submittedHash = hashOtp(otp);
+        const submittedHash = hashOtp(resetCredential);
         if (submittedHash !== otpRecord.codeHash) {
             otpRecord.attempts += 1;
             await otpRecord.save();
-            return res.status(400).json({ success: false, message: "Invalid reset code." });
+            return res.status(400).json({ success: false, message: "Invalid or expired reset token." });
         }
 
         // Update user password
@@ -451,6 +470,20 @@ router.post("/reset-password", authLimiter, async (req, res) => {
 
         // Remove OTP record
         await Otp.deleteOne({ _id: otpRecord._id });
+
+        // Activity log
+        ActivityLog.create({
+            action:    "password_reset",
+            msg:       `Password changed for user: ${user.username} (${user.email})`,
+            email:     user.email,
+            username:  user.username,
+            timestamp: new Date()
+        }).catch(e => console.error("[ActivityLog Error]", e.message));
+
+        // Send security alert notification email
+        sendPasswordChangedEmail(user.email, user.username).catch(err => {
+            console.error("[Password Changed Email Error]", err.message);
+        });
 
         res.json({
             success: true,
