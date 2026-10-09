@@ -344,9 +344,13 @@ function goToGame()  {
             return;
         }
     } catch(e) {}
-    window.location.href = "/";
+    var inSubdir = window.location.pathname.includes("/auth/") || window.location.pathname.endsWith("/auth");
+    window.location.href = inSubdir ? "../index.html" : "index.html";
 }
-function goToAdmin() { window.location.href = "/admin/"; }
+function goToAdmin() {
+    var inSubdir = window.location.pathname.includes("/auth/") || window.location.pathname.endsWith("/auth");
+    window.location.href = inSubdir ? "../admin/index.html" : "admin/index.html";
+}
 
 // ════════════════════════════════════════════════════════════
 //  PASSWORD TOGGLE

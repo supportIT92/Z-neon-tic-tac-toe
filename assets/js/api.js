@@ -176,12 +176,18 @@ const API = {
     publicRooms:  ()     => IS_LOCAL_FILE ? Promise.resolve([]) : API.request("/api/game/rooms"),
 
     // ── Admin endpoints ───────────────────────────────────────
-    adminStats:   ()     => API.request("/api/admin/stats"),
-    adminUsers:   (q)    => API.request("/api/admin/users" + (q ? "?search=" + q : "")),
-    adminBan:     (id)   => API.request("/api/admin/users/" + id + "/ban",   { method: "PUT" }),
-    adminUnban:   (id)   => API.request("/api/admin/users/" + id + "/unban", { method: "PUT" }),
-    adminDelete:  (id)   => API.request("/api/admin/users/" + id,            { method: "DELETE" }),
-    adminGames:   ()     => API.request("/api/admin/games"),
+    adminStats:      ()          => API.request("/api/admin/stats"),
+    adminUsers:      (q)         => API.request("/api/admin/users" + (q ? "?search=" + encodeURIComponent(q) : "")),
+    adminBan:        (id)        => API.request("/api/admin/users/" + id + "/ban",   { method: "PUT" }),
+    adminUnban:      (id)        => API.request("/api/admin/users/" + id + "/unban", { method: "PUT" }),
+    adminRole:       (id, role)  => API.request("/api/admin/users/" + id + "/role",  { method: "PUT", body: { role } }),
+    adminEditUser:   (id, body)  => API.request("/api/admin/users/" + id,            { method: "PUT", body }),
+    adminDelete:     (id)        => API.request("/api/admin/users/" + id,            { method: "DELETE" }),
+    adminLogs:       ()          => API.request("/api/admin/logs"),
+    adminClearLogs:  ()          => API.request("/api/admin/logs",                   { method: "DELETE" }),
+    adminResetStats: ()          => API.request("/api/admin/reset-stats",            { method: "POST" }),
+    adminNukeUsers:  ()          => API.request("/api/admin/nuke-users",             { method: "POST" }),
+    adminGames:      ()          => API.request("/api/admin/games"),
 };
 
 window.API         = API;

@@ -13,6 +13,7 @@ const express       = require("express");
 const rateLimit     = require("express-rate-limit");
 const User          = require("../models/User");
 const Otp           = require("../models/Otp");
+const ActivityLog   = require("../models/ActivityLog");
 const { signToken } = require("../middleware/auth.middleware");
 const { sendOTPEmail, sendPasswordResetEmail } = require("../utils/email");
 const { escapeRegex, generateOtp, hashOtp }    = require("../utils/security");
@@ -228,6 +229,14 @@ router.post("/register", authLimiter, async (req, res) => {
 
         const token = signToken(user._id);
 
+        ActivityLog.create({
+            action:    "register",
+            msg:       `New user registered: ${user.username} (${user.email})`,
+            email:     user.email,
+            username:  user.username,
+            timestamp: new Date()
+        }).catch(e => console.error("[ActivityLog Error]", e.message));
+
         res.status(201).json({
             success: true,
             message: "Account verified and registered successfully!",
@@ -311,6 +320,14 @@ router.post("/login", authLimiter, async (req, res) => {
 
         user.lastLogin = new Date();
         await user.save({ validateBeforeSave: false });
+
+        ActivityLog.create({
+            action:    "login",
+            msg:       `User logged in: ${user.username} (${user.email})`,
+            email:     user.email,
+            username:  user.username,
+            timestamp: new Date()
+        }).catch(e => console.error("[ActivityLog Error]", e.message));
 
         const token = signToken(user._id);
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -12,9 +12,9 @@
                 var s = JSON.parse(localStorage.getItem('neonGaming_session')||'null');
                 var maxAge = 7*24*60*60*1000;
                 var valid = s && s.username && (!s.loginTime || (Date.now()-s.loginTime) < maxAge);
-                if(!valid) { window.location.replace('/auth'); return; }
-                if(s.role !== 'admin') { window.location.replace('/'); }
-            } catch(e) { window.location.replace('/auth'); }
+                if(!valid) { window.location.replace('../auth.html'); return; }
+                if(s.role !== 'admin') { window.location.replace('../index.html'); }
+            } catch(e) { window.location.replace('../auth.html'); }
         })();
     </script>
     <link rel="stylesheet" href="../assets/css/admin.css">
