@@ -240,6 +240,16 @@ body.light-theme .info-card h3 {
     font-size:    18px;
     cursor:       pointer;
     transition:   0.2s ease;
+    display:      inline-flex;
+    align-items:  center;
+    justify-content: center;
+}
+
+.mini-button svg {
+    width:        18px;
+    height:       18px;
+    display:      inline-block;
+    vertical-align: middle;
 }
 
 .mini-button:hover {
