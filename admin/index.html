@@ -122,6 +122,47 @@
         </div>
     </div>
 
+    <!-- ── EXPORT FORMAT SELECTION MODAL ────────────────── -->
+    <div class="modal-overlay" id="exportModal" aria-modal="true" role="dialog" aria-labelledby="exportTitle">
+        <div class="modal-card" style="max-width: 440px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                <h3 id="exportTitle" style="margin-bottom:0;">Choose Export Format</h3>
+                <button type="button" id="exportCloseBtn" style="color:var(--muted); font-size:20px; padding:2px 8px; cursor:pointer;">✕</button>
+            </div>
+            <p id="exportDesc" style="font-size:13px; color:var(--muted); margin-bottom:18px;">Select which format you want to download:</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                <button type="button" class="export-opt-btn" data-format="json" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:rgba(0,247,255,0.08); border:1px solid rgba(0,247,255,0.25); border-radius:10px; color:#fff; cursor:pointer; transition:0.2s;">
+                    <div style="text-align:left;">
+                        <strong style="color:var(--cyan); font-size:14px; display:block;">JSON Format (.json)</strong>
+                        <small style="color:var(--muted); font-size:11px;">Structured raw data object format</small>
+                    </div>
+                    <span style="font-size:16px; font-weight:bold; color:var(--cyan);">⬇</span>
+                </button>
+
+                <button type="button" class="export-opt-btn" data-format="csv" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:rgba(0,255,136,0.08); border:1px solid rgba(0,255,136,0.25); border-radius:10px; color:#fff; cursor:pointer; transition:0.2s;">
+                    <div style="text-align:left;">
+                        <strong style="color:var(--green); font-size:14px; display:block;">CSV Format (.csv)</strong>
+                        <small style="color:var(--muted); font-size:11px;">Comma-separated values spreadsheet</small>
+                    </div>
+                    <span style="font-size:16px; font-weight:bold; color:var(--green);">⬇</span>
+                </button>
+
+                <button type="button" class="export-opt-btn" data-format="excel" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25); border-radius:10px; color:#fff; cursor:pointer; transition:0.2s;">
+                    <div style="text-align:left;">
+                        <strong style="color:#ffd700; font-size:14px; display:block;">Excel Format (.xls)</strong>
+                        <small style="color:var(--muted); font-size:11px;">Microsoft Excel XML spreadsheet table</small>
+                    </div>
+                    <span style="font-size:16px; font-weight:bold; color:#ffd700;">⬇</span>
+                </button>
+            </div>
+
+            <div class="modal-btns">
+                <button type="button" class="modal-cancel-btn" id="exportCancelBtn" style="width:100%;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ── MAIN WRAPPER ─────────────────────────────────── -->
     <div class="admin-wrapper" id="adminWrapper">
 
@@ -406,15 +447,15 @@
                         <h3 class="settings-heading">Data Export</h3>
                         <div class="setting-row">
                             <div>
-                                <strong>Export User Data (CSV)</strong>
-                                <p>Download all registered users as a CSV file.</p>
+                                <strong>Export User Data</strong>
+                                <p>Download all registered users as JSON, CSV, or Excel file.</p>
                             </div>
                             <button class="export-btn" id="exportBtn2">⬇ Export</button>
                         </div>
                         <div class="setting-row">
                             <div>
-                                <strong>Export Activity Log (JSON)</strong>
-                                <p>Download the full activity log as a JSON file.</p>
+                                <strong>Export Activity Log</strong>
+                                <p>Download the full activity and audit logs as JSON, CSV, or Excel file.</p>
                             </div>
                             <button class="export-btn" id="exportLogBtn">⬇ Export</button>
                         </div>

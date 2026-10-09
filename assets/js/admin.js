@@ -807,107 +807,239 @@ editModal.addEventListener("click", function (e) {
 });
 
 // ════════════════════════════════════════════════════════════
-//  DATA EXPORT (Live Server Data)
+//  DATA EXPORT (JSON, CSV, EXCEL)
 // ════════════════════════════════════════════════════════════
 
-function exportCSV() {
-    var users = _serverUsers;
-    if (!users || users.length === 0) { showToast("No users to export.", "error"); return; }
+var _activeExportTarget = null; // "users" or "logs"
+var exportModal      = document.getElementById("exportModal");
+var exportTitle      = document.getElementById("exportTitle");
+var exportDesc       = document.getElementById("exportDesc");
+var exportCloseBtn   = document.getElementById("exportCloseBtn");
+var exportCancelBtn  = document.getElementById("exportCancelBtn");
+var exportOptBtns    = document.querySelectorAll(".export-opt-btn");
 
-    var rows = ["#,Username,Email,Role,Status,Joined,Last Login"];
-    users.forEach(function (u, i) {
-        rows.push([
-            i + 1,
-            '"' + escHtml(u.username) + '"',
-            '"' + escHtml(u.email)    + '"',
-            u.role || "user",
-            u.banned ? "Banned" : "Active",
-            formatDateTime(u.createdAt),
-            formatDateTime(u.lastLogin)
-        ].join(","));
+function openExportModal(target) {
+    _activeExportTarget = target;
+    if (exportTitle) {
+        exportTitle.textContent = target === "users" ? "Export User Data" : "Export Activity Log";
+    }
+    if (exportDesc) {
+        exportDesc.textContent = target === "users"
+            ? "Choose file format to export all registered players and stats:"
+            : "Choose file format to export all system audit logs:";
+    }
+    if (exportModal) exportModal.classList.add("open");
+}
+
+function closeExportModal() {
+    if (exportModal) exportModal.classList.remove("open");
+    _activeExportTarget = null;
+}
+
+if (exportCloseBtn)  exportCloseBtn.addEventListener("click", closeExportModal);
+if (exportCancelBtn) exportCancelBtn.addEventListener("click", closeExportModal);
+if (exportModal) {
+    exportModal.addEventListener("click", function (e) {
+        if (e.target === exportModal) closeExportModal();
     });
+}
 
-    var blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+function downloadFile(content, fileName, mimeType) {
+    var blob = new Blob([content], { type: mimeType });
     var url  = URL.createObjectURL(blob);
     var a    = document.createElement("a");
     a.href     = url;
-    a.download = "neon-gaming-users-" + new Date().toISOString().slice(0, 10) + ".csv";
+    a.download = fileName;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
-
-    showToast("Exported " + users.length + " users.", "success");
 }
 
-function exportLogJSON() {
-    var logs = _serverLogs;
-    if (!logs || logs.length === 0) { showToast("No log entries to export.", "error"); return; }
+// ── Export Users Implementation (JSON, CSV, Excel) ───────────
+function exportUsersAs(format) {
+    var users = _serverUsers || [];
+    if (users.length === 0) { showToast("No users found to export.", "error"); return; }
+    var dateStamp = new Date().toISOString().slice(0, 10);
 
-    var blob = new Blob([JSON.stringify(logs, null, 2)], { type: "application/json" });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement("a");
-    a.href     = url;
-    a.download = "neon-gaming-log-" + new Date().toISOString().slice(0, 10) + ".json";
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("Activity log exported.", "success");
-}
-
-// ════════════════════════════════════════════════════════════
-//  SETTINGS BUTTONS
-// ════════════════════════════════════════════════════════════
-
-function doResetStats() {
-    window.API.adminResetStats()
-        .then(function () {
-            showToast("All player stats reset.", "success");
-            refreshAll();
-        })
-        .catch(function (err) {
-            showToast(err.message || "Failed to reset stats.", "error");
+    if (format === "json") {
+        var jsonContent = JSON.stringify(users, null, 2);
+        downloadFile(jsonContent, "neon-gaming-users-" + dateStamp + ".json", "application/json;charset=utf-8;");
+        showToast("Exported " + users.length + " users as JSON.", "success");
+    } else if (format === "csv") {
+        var csvRows = ["#,Username,Email,Role,Status,Total Games,Wins,Losses,Draws,Win Rate,Joined,Last Login"];
+        users.forEach(function (u, i) {
+            var stats = u.stats || {};
+            var wins = stats.wins || 0;
+            var losses = stats.losses || 0;
+            var draws = stats.draws || 0;
+            var total = stats.totalGames || (wins + losses + draws);
+            var winRate = total > 0 ? Math.round((wins / total) * 100) + "%" : "0%";
+            csvRows.push([
+                i + 1,
+                '"' + (u.username || "").replace(/"/g, '""') + '"',
+                '"' + (u.email || "").replace(/"/g, '""') + '"',
+                u.role || "user",
+                u.banned ? "Banned" : "Active",
+                total,
+                wins,
+                losses,
+                draws,
+                winRate,
+                formatDateTime(u.createdAt),
+                formatDateTime(u.lastLogin)
+            ].join(","));
         });
-}
-
-function doNukeUsers() {
-    window.API.adminNukeUsers()
-        .then(function (res) {
-            showToast(res.message || "Non-admin users deleted.", "error");
-            refreshAll();
-        })
-        .catch(function (err) {
-            showToast(err.message || "Failed to delete users.", "error");
+        downloadFile(csvRows.join("\n"), "neon-gaming-users-" + dateStamp + ".csv", "text/csv;charset=utf-8;");
+        showToast("Exported " + users.length + " users as CSV.", "success");
+    } else if (format === "excel") {
+        // XML-based Excel Spreadsheet format (.xls) natively supported by Microsoft Excel, LibreOffice, and Google Sheets
+        var excelRows = "";
+        users.forEach(function (u, i) {
+            var stats = u.stats || {};
+            var wins = stats.wins || 0;
+            var losses = stats.losses || 0;
+            var draws = stats.draws || 0;
+            var total = stats.totalGames || (wins + losses + draws);
+            var winRate = total > 0 ? Math.round((wins / total) * 100) + "%" : "0%";
+            excelRows +=
+                "<Row>" +
+                    "<Cell><Data ss:Type='Number'>" + (i + 1) + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + escHtml(u.username) + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + escHtml(u.email) + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + escHtml(u.role || "user") + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + (u.banned ? "Banned" : "Active") + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='Number'>" + total + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='Number'>" + wins + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='Number'>" + losses + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='Number'>" + draws + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + winRate + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + formatDateTime(u.createdAt) + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + formatDateTime(u.lastLogin) + "</Data></Cell>" +
+                "</Row>";
         });
+
+        var excelTemplate =
+            '<?xml version="1.0"?>\n' +
+            '<?mso-application progid="Excel.Sheet"?>\n' +
+            '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n' +
+            ' xmlns:o="urn:schemas-microsoft-com:office:office"\n' +
+            ' xmlns:x="urn:schemas-microsoft-com:office:excel"\n' +
+            ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n' +
+            '<Styles>\n' +
+            ' <Style ss:ID="Header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0f172a" ss:Pattern="Solid"/></Style>\n' +
+            '</Styles>\n' +
+            '<Worksheet ss:Name="Users">\n' +
+            '<Table>\n' +
+            ' <Row ss:StyleID="Header">\n' +
+            '  <Cell><Data ss:Type="String">#</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Username</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Email</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Role</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Status</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Total Games</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Wins</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Losses</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Draws</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Win Rate</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Joined</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Last Login</Data></Cell>\n' +
+            ' </Row>\n' +
+            excelRows +
+            '</Table>\n' +
+            '</Worksheet>\n' +
+            '</Workbook>';
+
+        downloadFile(excelTemplate, "neon-gaming-users-" + dateStamp + ".xls", "application/vnd.ms-excel;charset=utf-8;");
+        showToast("Exported " + users.length + " users as Excel (.xls).", "success");
+    }
 }
 
-function doClearLog() {
-    window.API.adminClearLogs()
-        .then(function () {
-            _serverLogs = [];
-            renderLog();
-            showToast("Activity log cleared.", "info");
-        })
-        .catch(function (err) {
-            showToast(err.message || "Failed to clear log.", "error");
+// ── Export Activity Log Implementation (JSON, CSV, Excel) ────
+function exportLogsAs(format) {
+    var logs = _serverLogs || [];
+    if (logs.length === 0) { showToast("No activity log entries to export.", "error"); return; }
+    var dateStamp = new Date().toISOString().slice(0, 10);
+
+    if (format === "json") {
+        var jsonContent = JSON.stringify(logs, null, 2);
+        downloadFile(jsonContent, "neon-gaming-log-" + dateStamp + ".json", "application/json;charset=utf-8;");
+        showToast("Exported " + logs.length + " log entries as JSON.", "success");
+    } else if (format === "csv") {
+        var csvRows = ["#,Action,Message,Username,Email,Timestamp"];
+        logs.forEach(function (l, i) {
+            csvRows.push([
+                i + 1,
+                '"' + (l.action || "").replace(/"/g, '""') + '"',
+                '"' + (l.msg || "").replace(/"/g, '""') + '"',
+                '"' + (l.username || "").replace(/"/g, '""') + '"',
+                '"' + (l.email || "").replace(/"/g, '""') + '"',
+                formatDateTime(l.timestamp)
+            ].join(","));
         });
+        downloadFile(csvRows.join("\n"), "neon-gaming-log-" + dateStamp + ".csv", "text/csv;charset=utf-8;");
+        showToast("Exported " + logs.length + " log entries as CSV.", "success");
+    } else if (format === "excel") {
+        var excelRows = "";
+        logs.forEach(function (l, i) {
+            excelRows +=
+                "<Row>" +
+                    "<Cell><Data ss:Type='Number'>" + (i + 1) + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + escHtml(l.action || "") + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + escHtml(l.msg || "") + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + escHtml(l.username || "—") + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + escHtml(l.email || "—") + "</Data></Cell>" +
+                    "<Cell><Data ss:Type='String'>" + formatDateTime(l.timestamp) + "</Data></Cell>" +
+                "</Row>";
+        });
+
+        var excelTemplate =
+            '<?xml version="1.0"?>\n' +
+            '<?mso-application progid="Excel.Sheet"?>\n' +
+            '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n' +
+            ' xmlns:o="urn:schemas-microsoft-com:office:office"\n' +
+            ' xmlns:x="urn:schemas-microsoft-com:office:excel"\n' +
+            ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n' +
+            '<Styles>\n' +
+            ' <Style ss:ID="Header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0f172a" ss:Pattern="Solid"/></Style>\n' +
+            '</Styles>\n' +
+            '<Worksheet ss:Name="ActivityLog">\n' +
+            '<Table>\n' +
+            ' <Row ss:StyleID="Header">\n' +
+            '  <Cell><Data ss:Type="String">#</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Action</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Message</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Username</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Email</Data></Cell>\n' +
+            '  <Cell><Data ss:Type="String">Timestamp</Data></Cell>\n' +
+            ' </Row>\n' +
+            excelRows +
+            '</Table>\n' +
+            '</Worksheet>\n' +
+            '</Workbook>';
+
+        downloadFile(excelTemplate, "neon-gaming-log-" + dateStamp + ".xls", "application/vnd.ms-excel;charset=utf-8;");
+        showToast("Exported " + logs.length + " log entries as Excel (.xls).", "success");
+    }
 }
 
-resetStatsBtn.addEventListener("click", function () {
-    askConfirm("Reset All Stats", "This will wipe every player's win counts and best score across the database.", doResetStats, true);
+// Wire Format Option Buttons inside Modal
+exportOptBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+        var format = btn.getAttribute("data-format");
+        if (_activeExportTarget === "users") {
+            exportUsersAs(format);
+        } else if (_activeExportTarget === "logs") {
+            exportLogsAs(format);
+        }
+        closeExportModal();
+    });
 });
 
-nukeUsersBtn.addEventListener("click", function () {
-    askConfirm("DELETE ALL USERS", "This permanently removes all regular user accounts from MongoDB. Admin accounts are preserved.", doNukeUsers, true);
-});
-
-clearLogBtn.addEventListener("click",  function () {
-    askConfirm("Clear Activity Log", "Permanently delete all server log entries.", doClearLog, false);
-});
-clearLogBtn2.addEventListener("click", function () {
-    askConfirm("Clear Activity Log", "Permanently delete all server log entries.", doClearLog, false);
-});
-
-exportBtn.addEventListener("click",  exportCSV);
-exportBtn2.addEventListener("click", exportCSV);
-exportLogBtn.addEventListener("click", exportLogJSON);
+// Wire Export Click Handlers on Main Buttons
+if (exportBtn)  exportBtn.addEventListener("click",  function () { openExportModal("users"); });
+if (exportBtn2) exportBtn2.addEventListener("click", function () { openExportModal("users"); });
+if (exportLogBtn) exportLogBtn.addEventListener("click", function () { openExportModal("logs"); });
 
 // Dashboard "View All" button
 if (dashGoUsers) {

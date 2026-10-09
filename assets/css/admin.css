@@ -595,6 +595,15 @@ html, body {
 }
 .export-btn:hover { background: rgba(0,255,136,.16); }
 
+.export-opt-btn:hover {
+    filter: brightness(1.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+.export-opt-btn:active {
+    transform: scale(0.98);
+}
+
 /* ── Activity Log ─────────────────────────────────────────────── */
 .log-wrap {
     padding: 16px 20px;
