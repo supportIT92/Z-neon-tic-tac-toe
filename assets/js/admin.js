@@ -15,6 +15,7 @@ var SK = {
 // ── In-Memory State ──────────────────────────────────────────
 var _serverUsers    = [];
 var _serverLogs     = [];
+var _serverGames    = [];
 var _serverStats    = null;
 var currentFilter   = "all";
 var currentSearch   = "";
@@ -45,6 +46,16 @@ var statValToday    = document.getElementById("statValToday");
 var recentBody      = document.getElementById("recentBody");
 var usersBody       = document.getElementById("usersBody");
 var userCountBadge  = document.getElementById("userCountBadge");
+var matchesBody     = document.getElementById("matchesBody");
+var matchesCountBadge = document.getElementById("matchesCountBadge");
+
+// User History Modal
+var userHistoryModal= document.getElementById("userHistoryModal");
+var uhTitle         = document.getElementById("uhTitle");
+var uhCloseBtn      = document.getElementById("uhCloseBtn");
+var uhUserInfo      = document.getElementById("uhUserInfo");
+var uhMatchesBody   = document.getElementById("uhMatchesBody");
+var uhLogsBody      = document.getElementById("uhLogsBody");
 
 // Toolbar
 var userSearch      = document.getElementById("userSearch");
@@ -158,9 +169,11 @@ var LOG_ICONS = {
     promote:  '<svg viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><path d="M2 20h20"/><path d="m4 20 2-10 6 4 4-8 4 8 2-4 2 10"/></svg>',
     demote:   '<svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><polyline points="7 13 12 18 17 13"/><line x1="12" y1="6" x2="12" y2="18"/></svg>',
     edit:     '<svg viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
-    nuke:     '<svg viewBox="0 0 24 24" fill="none" stroke="#ff007f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-    reset:    '<svg viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
-    export:   '<svg viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+    nuke:           '<svg viewBox="0 0 24 24" fill="none" stroke="#ff007f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    reset:          '<svg viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+    export:         '<svg viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+    password_reset: '<svg viewBox="0 0 24 24" fill="none" stroke="#ff007f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    game:           '<svg viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M7 12h4"/><path d="M9 10v4"/><circle cx="16" cy="11" r="1" fill="currentColor"/><circle cx="18" cy="13" r="1" fill="currentColor"/></svg>'
 };
 
 var LOG_FALLBACK_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
@@ -316,6 +329,7 @@ function renderUsersTable() {
             : '<span class="badge badge-active">Active</span>';
 
         // Action buttons with clean SVG icons
+        var historyBtn = '<button class="act-btn" data-action="history" data-id="' + escHtml(u.id || u._id) + '" style="background:rgba(0,247,255,0.1);border-color:rgba(0,247,255,0.3);color:var(--cyan);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>History</button>';
         var editBtn = '<button class="act-btn act-edit" data-action="edit" data-id="' + escHtml(u.id || u._id) + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>';
 
         var banBtn = u.banned
@@ -332,9 +346,9 @@ function renderUsersTable() {
             "<tr>" +
                 "<td class='row-num'>" + (i + 1) + "</td>" +
                 "<td>" +
-                    "<div class='user-cell'>" +
+                    "<div class='user-cell' style='cursor:pointer;' title='Click to view activity & matches' onclick='openUserHistoryModal(\"" + escHtml(u.id || u._id) + "\")'>" +
                         "<div class='user-avatar'>" + escHtml((u.username || "?").charAt(0).toUpperCase()) + "</div>" +
-                        "<span class='user-name-text'>" + escHtml(u.username) + (isSelf ? " <small style='color:var(--muted)'>(you)</small>" : "") + "</span>" +
+                        "<span class='user-name-text' style='text-decoration:underline;text-underline-offset:2px;'>" + escHtml(u.username) + "</span>" + (isSelf ? " <small style='color:var(--muted)'>(you)</small>" : "") +
                     "</div>" +
                 "</td>" +
                 "<td>" + escHtml(u.email) + "</td>" +
@@ -342,7 +356,7 @@ function renderUsersTable() {
                 "<td>" + statusBadge + "</td>" +
                 "<td>" + formatDate(u.createdAt)  + "</td>" +
                 "<td>" + formatDateTime(u.lastLogin)  + "</td>" +
-                "<td><div class='action-btns'>" + editBtn + banBtn + roleBtn + delBtn + "</div></td>" +
+                "<td><div class='action-btns'>" + historyBtn + editBtn + banBtn + roleBtn + delBtn + "</div></td>" +
             "</tr>";
     });
 
@@ -407,11 +421,156 @@ function fetchLogs() {
         });
 }
 
+function fetchGames() {
+    if (!window.API || typeof window.API.adminGames !== "function") return Promise.resolve();
+    return window.API.adminGames()
+        .then(function (res) {
+            if (res && res.success) {
+                _serverGames = res.games || [];
+                renderMatchesTable();
+            }
+        })
+        .catch(function (err) {
+            console.warn("[Admin Games API Warning]", err.message || err);
+        });
+}
+
+function renderMatchesTable() {
+    if (!matchesBody) return;
+    var games = _serverGames || [];
+    if (matchesCountBadge) {
+        matchesCountBadge.textContent = games.length + " match" + (games.length !== 1 ? "es" : "");
+    }
+    if (games.length === 0) {
+        matchesBody.innerHTML = '<tr><td colspan="8" class="empty-row">No matches played yet.</td></tr>';
+        return;
+    }
+    var html = "";
+    games.forEach(function (g, i) {
+        var pX = (g.playerX && g.playerX.username) ? g.playerX.username : "Player X";
+        var pO = (g.playerO && g.playerO.username) ? g.playerO.username : "Player O";
+        var winnerText = g.winner === "draw" 
+            ? '<span class="badge" style="background:rgba(255,255,255,0.1);color:#94a3b8;">Draw</span>'
+            : '<span class="badge" style="background:rgba(0,255,136,0.15);color:#00ff88;">' + escHtml(g.winnerUsername || (g.winner === "X" ? pX : pO)) + ' Won</span>';
+        var scoreText = (g.scoreX != null && g.scoreO != null) ? (g.scoreX + " - " + g.scoreO) : "—";
+        html +=
+            "<tr>" +
+                "<td class='row-num'>" + (i + 1) + "</td>" +
+                "<td><span style='color:var(--cyan);font-family:monospace;'>" + escHtml(g.roomCode || "—") + "</span></td>" +
+                "<td><strong>" + escHtml(pX) + "</strong> <small style='color:var(--cyan);'>(X)</small></td>" +
+                "<td><strong>" + escHtml(pO) + "</strong> <small style='color:#ff007f;'>(O)</small></td>" +
+                "<td><strong>" + scoreText + "</strong></td>" +
+                "<td>" + winnerText + "</td>" +
+                "<td><span style='text-transform:capitalize;font-size:12px;color:var(--muted);'>" + escHtml(g.roomType || "public") + "</span></td>" +
+                "<td>" + formatDateTime(g.createdAt) + "</td>" +
+            "</tr>";
+    });
+    matchesBody.innerHTML = html;
+}
+
+function openUserHistoryModal(userId) {
+    if (!userHistoryModal) return;
+    if (!window.API || typeof window.API.adminUserHistory !== "function") return;
+
+    uhUserInfo.innerHTML = '<p style="color:var(--muted);">Loading user details and versus history...</p>';
+    uhMatchesBody.innerHTML = '<tr><td colspan="5" class="empty-row">Loading matches...</td></tr>';
+    uhLogsBody.innerHTML = '<p class="empty-row">Loading activity...</p>';
+    userHistoryModal.classList.add("open");
+
+    window.API.adminUserHistory(userId)
+        .then(function (res) {
+            if (!res || !res.success) throw new Error("Could not load user data");
+            var u = res.user;
+            var stats = u.stats || {};
+            var wins = stats.wins || 0;
+            var losses = stats.losses || 0;
+            var draws = stats.draws || 0;
+            var total = stats.totalGames || (wins + losses + draws);
+            var winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+
+            uhTitle.textContent = u.username + " — Activity & Game Records";
+
+            uhUserInfo.innerHTML =
+                '<div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;">' +
+                    '<div>' +
+                        '<div style="font-size:16px; font-weight:800; color:var(--cyan);">' + escHtml(u.username) + ' <span style="font-size:12px; color:var(--muted); font-weight:normal;">(' + escHtml(u.email) + ')</span></div>' +
+                        '<div style="font-size:12px; color:var(--muted); margin-top:4px;">Role: <strong style="color:#fff; text-transform:uppercase;">' + escHtml(u.role) + '</strong> | Registered: <strong>' + formatDate(u.createdAt) + '</strong> | Last Active: <strong>' + formatDateTime(u.lastLogin) + '</strong></div>' +
+                    '</div>' +
+                    '<div style="display:flex; gap:10px; text-align:center;">' +
+                        '<div style="background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); border-radius:6px; padding:6px 10px;"><strong style="color:#00ff88; font-size:15px; display:block;">' + wins + '</strong><span style="font-size:10px; color:var(--muted);">WINS</span></div>' +
+                        '<div style="background:rgba(255,68,68,0.1); border:1px solid rgba(255,68,68,0.3); border-radius:6px; padding:6px 10px;"><strong style="color:#ff4444; font-size:15px; display:block;">' + losses + '</strong><span style="font-size:10px; color:var(--muted);">LOSSES</span></div>' +
+                        '<div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:6px 10px;"><strong style="color:#cbd5e1; font-size:15px; display:block;">' + draws + '</strong><span style="font-size:10px; color:var(--muted);">DRAWS</span></div>' +
+                        '<div style="background:rgba(0,247,255,0.1); border:1px solid rgba(0,247,255,0.3); border-radius:6px; padding:6px 10px;"><strong style="color:var(--cyan); font-size:15px; display:block;">' + winRate + '%</strong><span style="font-size:10px; color:var(--muted);">WIN RATE</span></div>' +
+                    '</div>' +
+                '</div>';
+
+            // Matches
+            var games = res.games || [];
+            if (games.length === 0) {
+                uhMatchesBody.innerHTML = '<tr><td colspan="5" class="empty-row">No versus matches recorded yet for this user.</td></tr>';
+            } else {
+                var mHtml = "";
+                games.forEach(function (g) {
+                    var isX = (g.playerX && (g.playerX.username === u.username || String(g.playerX.userId) === String(u.id)));
+                    var opponentName = isX ? (g.playerO ? g.playerO.username : "Opponent") : (g.playerX ? g.playerX.username : "Opponent");
+                    var role = isX ? "X" : "O";
+                    var isWon = (g.winner === role) || (g.winnerUsername && g.winnerUsername.toLowerCase() === u.username.toLowerCase());
+                    var isDraw = g.winner === "draw";
+                    var outcome = isDraw 
+                        ? '<span style="color:#94a3b8; font-weight:700;">DRAW</span>'
+                        : (isWon ? '<span style="color:#00ff88; font-weight:700;">WON</span>' : '<span style="color:#ff4444; font-weight:700;">LOST</span>');
+                    var score = (g.scoreX != null && g.scoreO != null) ? (isX ? g.scoreX + " - " + g.scoreO : g.scoreO + " - " + g.scoreX) : "—";
+                    mHtml +=
+                        '<tr>' +
+                            '<td><strong>vs ' + escHtml(opponentName) + '</strong></td>' +
+                            '<td><span style="color:' + (isX ? 'var(--cyan)' : '#ff007f') + '; font-weight:bold;">' + role + '</span></td>' +
+                            '<td>' + outcome + '</td>' +
+                            '<td>' + score + '</td>' +
+                            '<td>' + formatDateTime(g.createdAt) + '</td>' +
+                        '</tr>';
+                });
+                uhMatchesBody.innerHTML = mHtml;
+            }
+
+            // Logs
+            var logs = res.logs || [];
+            if (logs.length === 0) {
+                uhLogsBody.innerHTML = '<p class="empty-row">No specific security or action logs for this user.</p>';
+            } else {
+                var lHtml = "";
+                logs.forEach(function (entry) {
+                    var icon = LOG_ICONS[entry.action] || LOG_FALLBACK_ICON;
+                    lHtml +=
+                        '<div class="log-entry log-' + escHtml(entry.action || "info") + '" style="padding:6px 8px; margin-bottom:6px;">' +
+                            '<span class="log-icon" aria-hidden="true">' + icon + '</span>' +
+                            '<div class="log-body">' +
+                                '<div class="log-msg" style="font-size:12px;">' + escHtml(entry.msg) + '</div>' +
+                                '<div class="log-time" style="font-size:10px;">' + formatDateTime(entry.timestamp) + '</div>' +
+                            '</div>' +
+                        '</div>';
+                });
+                uhLogsBody.innerHTML = lHtml;
+            }
+        })
+        .catch(function (err) {
+            uhUserInfo.innerHTML = '<p style="color:#ff4444;">Failed to load user records: ' + escHtml(err.message || err) + '</p>';
+        });
+}
+
+window.openUserHistoryModal = openUserHistoryModal;
+
+if (uhCloseBtn) {
+    uhCloseBtn.addEventListener("click", function () {
+        if (userHistoryModal) userHistoryModal.classList.remove("open");
+    });
+}
+
 function refreshAll() {
     return Promise.all([
         fetchDashboard(),
         fetchUsers(currentSearch),
-        fetchLogs()
+        fetchLogs(),
+        fetchGames()
     ]);
 }
 
@@ -432,6 +591,11 @@ function handleUserAction(action, id) {
     var isPrimaryAdmin = (user.email && user.email.toLowerCase() === "ztictactoe@outlook.com");
     if (isPrimaryAdmin && (action === "demote" || action === "ban" || action === "delete")) {
         showToast("Primary Admin role cannot be changed, banned, or deleted.", "error");
+        return;
+    }
+
+    if (action === "history") {
+        openUserHistoryModal(id);
         return;
     }
 
@@ -768,6 +932,7 @@ var sectionTitles = {
     dashboard: "Dashboard",
     users:     "User Management",
     activity:  "Activity Log",
+    matches:   "Game Matches & Versus Records",
     settings:  "Settings"
 };
 
@@ -788,6 +953,7 @@ function goSection(name) {
     if (name === "dashboard") fetchDashboard();
     if (name === "users")     fetchUsers(currentSearch);
     if (name === "activity")  fetchLogs();
+    if (name === "matches")   fetchGames();
     if (name === "settings")  renderStorageInfo();
 }
 
@@ -861,12 +1027,13 @@ function init() {
     // Initial load
     refreshAll();
 
-    // Auto-refresh every 15s so incoming logins/registrations show live
+    // Auto-refresh every 15s so incoming logins/registrations/matches show live
     setInterval(function () {
         var activeSec = document.querySelector(".section.active");
         var secId = activeSec ? activeSec.id : "";
         if (secId === "section-dashboard" || secId === "sec-dashboard") fetchDashboard();
         if (secId === "section-activity"  || secId === "sec-activity")  fetchLogs();
+        if (secId === "section-matches"   || secId === "sec-matches")   fetchGames();
         if (secId === "section-users"     || secId === "sec-users")     fetchUsers(currentSearch);
     }, 15000);
 }

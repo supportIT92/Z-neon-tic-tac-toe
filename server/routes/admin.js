@@ -362,16 +362,74 @@ router.post("/nuke-users", async (req, res) => {
     }
 });
 
-// ── GET /api/admin/games ──────────────────────────────────────
+// ── GET /api/admin/games (All recent game matches) ───────────
 router.get("/games", async (req, res) => {
     try {
-        const games = await GameHistory.find()
-            .sort({ createdAt: -1 })
-            .limit(50)
-            .select("-moves");
-        res.json({ success: true, games });
+        const page  = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+
+        const [games, total] = await Promise.all([
+            GameHistory.find()
+                .sort({ createdAt: -1 })
+                .limit(limit)
+                .skip((page - 1) * limit)
+                .select("-moves"),
+            GameHistory.countDocuments()
+        ]);
+
+        res.json({ success: true, games, total });
     } catch (err) {
         res.status(500).json({ success: false, message: "Server error fetching games." });
+    }
+});
+
+// ── GET /api/admin/users/:id/history (All matches of specific user) ──
+router.get("/users/:id/history", async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
+        const [games, logs] = await Promise.all([
+            GameHistory.find({
+                $or: [
+                    { "playerX.userId": user._id },
+                    { "playerO.userId": user._id },
+                    { "playerX.username": user.username },
+                    { "playerO.username": user.username }
+                ]
+            })
+            .sort({ createdAt: -1 })
+            .limit(100)
+            .select("-moves"),
+
+            ActivityLog.find({
+                $or: [
+                    { email: user.email },
+                    { username: user.username }
+                ]
+            })
+            .sort({ timestamp: -1 })
+            .limit(50)
+        ]);
+
+        res.json({
+            success: true,
+            user: {
+                id:          user._id,
+                username:    user.username,
+                email:       user.email,
+                role:        user.role,
+                banned:      user.banned,
+                stats:       user.stats,
+                createdAt:   user.createdAt,
+                lastLogin:   user.lastLogin
+            },
+            games,
+            logs
+        });
+    } catch (err) {
+        console.error("[admin/users/:id/history error]", err);
+        res.status(500).json({ success: false, message: "Server error fetching user history." });
     }
 });
 

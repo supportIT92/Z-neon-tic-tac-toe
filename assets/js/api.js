@@ -188,6 +188,7 @@ const API = {
     adminResetStats: ()          => API.request("/api/admin/reset-stats",            { method: "POST" }),
     adminNukeUsers:  ()          => API.request("/api/admin/nuke-users",             { method: "POST" }),
     adminGames:      ()          => API.request("/api/admin/games"),
+    adminUserHistory:(id)        => API.request("/api/admin/users/" + id + "/history"),
 };
 
 window.API         = API;

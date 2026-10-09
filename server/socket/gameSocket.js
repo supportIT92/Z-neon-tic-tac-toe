@@ -6,6 +6,7 @@ const jwt         = require("jsonwebtoken");
 const GameRoom    = require("../models/GameRoom");
 const GameHistory = require("../models/GameHistory");
 const User        = require("../models/User");
+const ActivityLog = require("../models/ActivityLog");
 
 // ── In-memory matchmaking queue ───────────────────────────────
 const queue = [];
@@ -403,6 +404,17 @@ module.exports = function initSocket(io) {
                 matchFormat:    room.matchFormat,
                 roomType:       room.type
             });
+
+            // Log game result to ActivityLog for Admin visibility
+            const outcomeText = room.winner === "draw" 
+                ? `Match Draw (${room.scoreX} - ${room.scoreO})` 
+                : `${winnerUsername} Won (${room.scoreX} - ${room.scoreO})`;
+            ActivityLog.create({
+                action:    "game",
+                msg:       `Game finished: ${room.playerX.username} (X) vs ${room.playerO.username} (O) — ${outcomeText}`,
+                username:  winnerUsername || room.playerX.username,
+                timestamp: new Date()
+            }).catch(e => console.error("[ActivityLog Game Error]", e.message));
         } catch (err) {
             console.error("[saveHistory error]", err);
         }
