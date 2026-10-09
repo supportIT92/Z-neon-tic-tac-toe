@@ -17,6 +17,7 @@ const morgan    = require("morgan");
 const mongoose  = require("mongoose");
 const { Server } = require("socket.io");
 
+const User        = require("./models/User");
 const authRoutes  = require("./routes/auth");
 const userRoutes  = require("./routes/users");
 const adminRoutes = require("./routes/admin");
@@ -148,10 +149,59 @@ app.use((err, req, res, next) => {
     });
 });
 
+// ── Ensure Admin Account ─────────────────────────────────────
+async function ensureAdminAccount() {
+    try {
+        const adminEmail = (process.env.ADMIN_EMAIL || (process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(",")[0] : "") || "ztictactoe@outlook.com").trim().toLowerCase();
+        const adminPassword = process.env.ADMIN_PASSWORD || "Zsupport@@@@@0";
+        const adminUsername = (process.env.ADMIN_USERNAME || "ztictactoe").trim();
+
+        let admin = await User.findOne({ email: adminEmail }).select("+password");
+        if (!admin) {
+            const existingWithName = await User.findOne({ username: adminUsername });
+            const finalUsername = existingWithName ? `admin_${Date.now().toString().slice(-4)}` : adminUsername;
+
+            admin = new User({
+                username:    finalUsername,
+                email:       adminEmail,
+                password:    adminPassword,
+                role:        "admin",
+                isVerified:  true,
+                avatarColor: "#00f7ff"
+            });
+            await admin.save();
+            console.log(`👑 [Admin Setup] Created admin account: ${adminEmail} (username: ${admin.username})`);
+        } else {
+            admin.password   = adminPassword;
+            admin.role       = "admin";
+            admin.isVerified = true;
+            admin.banned     = false;
+            await admin.save();
+            console.log(`👑 [Admin Setup] Verified & updated admin account: ${adminEmail} (role: admin)`);
+        }
+
+        const allAdminEmails = (process.env.ADMIN_EMAILS || "")
+            .split(",")
+            .map(e => e.trim().toLowerCase())
+            .filter(Boolean);
+        if (allAdminEmails.length > 0) {
+            await User.updateMany(
+                { email: { $in: allAdminEmails }, role: { $ne: "admin" } },
+                { $set: { role: "admin", isVerified: true } }
+            );
+        }
+    } catch (err) {
+        console.error("⚠️ [Admin Setup Error]:", err.message);
+    }
+}
+
 // ── MongoDB connection ───────────────────────────────────────
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => {
+    .then(async () => {
         console.log("✅ MongoDB connected successfully");
+
+        // Ensure primary admin credentials are active
+        await ensureAdminAccount();
 
         // Init Socket.io game logic
         initSocket(io);

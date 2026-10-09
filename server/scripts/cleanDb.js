@@ -12,9 +12,9 @@ const GameRoom    = require("../models/GameRoom");
 
 const crypto        = require("crypto");
 
-const ADMIN_EMAIL    = (process.env.ADMIN_EMAILS || "admin@neongaming.com").split(",")[0].trim();
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "ZAdmin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || crypto.randomBytes(12).toString("base64url") + "!1Aa";
+const ADMIN_EMAIL    = (process.env.ADMIN_EMAILS || "ztictactoe@outlook.com").split(",")[0].trim();
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "ztictactoe";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Zsupport@@@@@0";
 
 async function cleanDatabase() {
     try {
