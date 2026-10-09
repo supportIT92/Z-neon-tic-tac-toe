@@ -230,7 +230,7 @@ const sendPasswordResetEmail = async (toEmail, toName, resetLink) => {
             <a href="${resetLink}" class="btn" target="_blank" rel="noopener noreferrer">RESET PASSWORD</a>
           </div>
           <div class="meta">
-            This link is valid for <strong>15 minutes</strong> (Dispatched at <strong>${istTime} IST</strong>).<br>
+            This link is valid for <strong>5 minutes</strong> (Dispatched at <strong>${istTime} IST</strong>).<br>
             If you did not request a password reset, you can safely ignore this email.
           </div>
           <div class="link-alt">

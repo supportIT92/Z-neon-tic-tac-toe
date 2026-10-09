@@ -367,7 +367,7 @@ router.post("/forgot-password", otpLimiter, async (req, res) => {
 
         const resetToken = generateResetToken();
         const codeHash   = hashOtp(resetToken);
-        const expiresAt  = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes for link
+        const expiresAt  = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes validity
 
         await Otp.deleteMany({ email: cleanEmail, purpose: "reset_password" });
         await Otp.create({
