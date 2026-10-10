@@ -64,10 +64,22 @@ var exportBtn       = document.getElementById("exportBtn");
 var exportBtn2      = document.getElementById("exportBtn2");
 var exportLogBtn    = document.getElementById("exportLogBtn");
 
-// Log
-var activityLog     = document.getElementById("activityLog");
-var clearLogBtn     = document.getElementById("clearLogBtn");
-var clearLogBtn2    = document.getElementById("clearLogBtn2");
+// Log Elements & Directory
+var activityLog       = document.getElementById("activityLog");
+var clearLogBtn       = document.getElementById("clearLogBtn");
+var clearLogBtn2      = document.getElementById("clearLogBtn2");
+var cardAdminLog      = document.getElementById("cardAdminLog");
+var cardUserLog       = document.getElementById("cardUserLog");
+var statValAdminLogs  = document.getElementById("statValAdminLogs");
+var statValUserLogs   = document.getElementById("statValUserLogs");
+var statLogUserCount  = document.getElementById("statLogUserCount");
+var logUserSearch     = document.getElementById("logUserSearch");
+var logUsersBody      = document.getElementById("logUsersBody");
+var logFeedTitle      = document.getElementById("logFeedTitle");
+var exportLogFeedBtn  = document.getElementById("exportLogFeedBtn");
+var logTabAll         = document.getElementById("logTabAll");
+var logTabAdmin       = document.getElementById("logTabAdmin");
+var logTabUser        = document.getElementById("logTabUser");
 
 // Settings
 var resetStatsBtn   = document.getElementById("resetStatsBtn");
@@ -178,15 +190,130 @@ var LOG_ICONS = {
 
 var LOG_FALLBACK_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
 
-function renderLog() {
-    if (!activityLog) return;
-    var logs = _serverLogs;
-    if (!logs || logs.length === 0) {
-        activityLog.innerHTML = '<p class="empty-row">No activity recorded yet.</p>';
+var _currentLogFilter = "all"; // "all" | "admin" | "user"
+var _logUserSearchTerm = "";
+
+function isLogAdminEvent(entry) {
+    if (!entry) return false;
+    var msg = (entry.msg || "").toLowerCase();
+    var act = (entry.action || "").toLowerCase();
+    if (act === "nuke" || act === "reset" || act === "demote" || act === "promote" || act === "ban" || act === "unban") return true;
+    if (msg.includes("ztictactoe@outlook.com") || msg.includes("zadmin") || msg.includes("admin")) return true;
+    return false;
+}
+
+function renderLogUsersDirectory() {
+    if (!logUsersBody) return;
+    var users = _serverUsers || [];
+    var logs  = _serverLogs  || [];
+
+    if (statLogUserCount) {
+        statLogUserCount.textContent = users.length;
+    }
+
+    // Filter users by search term
+    var term = _logUserSearchTerm.toLowerCase().trim();
+    var filteredUsers = users.filter(function (u) {
+        if (!term) return true;
+        return (u.username && u.username.toLowerCase().includes(term)) ||
+               (u.email && u.email.toLowerCase().includes(term));
+    });
+
+    if (filteredUsers.length === 0) {
+        logUsersBody.innerHTML = '<tr><td colspan="7" class="empty-row">' + 
+            (term ? 'No users match "' + escHtml(term) + '"' : 'No registered users found.') + '</td></tr>';
         return;
     }
+
     var html = "";
+    filteredUsers.forEach(function (u, i) {
+        var isPrimaryAdmin = (u.email && u.email.toLowerCase() === "ztictactoe@outlook.com");
+        var roleBadge = isPrimaryAdmin
+            ? '<span class="badge badge-admin" style="border:1px solid #ffd700;color:#ffd700;">Super Admin</span>'
+            : (u.role === "admin"
+                ? '<span class="badge badge-admin">Admin</span>'
+                : '<span class="badge badge-user">User</span>');
+
+        // Count logs associated with this user
+        var uName = (u.username || "").toLowerCase();
+        var uMail = (u.email || "").toLowerCase();
+        var uId   = String(u.id || u._id || "");
+        var userLogCount = logs.filter(function (l) {
+            var msg = (l.msg || "").toLowerCase();
+            return msg.includes(uName) || msg.includes(uMail) || (l.userId && String(l.userId) === uId);
+        }).length;
+
+        var viewLogBtn = '<button class="act-btn" onclick="openUserHistoryModal(\'' + escHtml(u.id || u._id) + '\')" style="background:rgba(0,247,255,0.12);border:1px solid rgba(0,247,255,0.35);color:var(--cyan);font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:5px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>View Log' +
+            '</button>';
+
+        html +=
+            "<tr>" +
+                "<td class='row-num'>" + (i + 1) + "</td>" +
+                "<td>" +
+                    "<div class='user-cell' style='cursor:pointer;' onclick=\"openUserHistoryModal('" + escHtml(u.id || u._id) + "')\">" +
+                        "<div class='user-avatar'>" + escHtml((u.username || "?").charAt(0).toUpperCase()) + "</div>" +
+                        "<span class='user-name-text' style='color:#fff;font-weight:600;'>" + escHtml(u.username) + "</span>" +
+                    "</div>" +
+                "</td>" +
+                "<td>" + escHtml(u.email) + "</td>" +
+                "<td>" + roleBadge + "</td>" +
+                "<td>" + formatDateTime(u.lastLogin || u.createdAt) + "</td>" +
+                "<td><span class='badge' style='background:rgba(255,255,255,0.08);color:#cbd5e1;font-weight:700;'>" + userLogCount + " entries</span></td>" +
+                "<td>" + viewLogBtn + "</td>" +
+            "</tr>";
+    });
+
+    logUsersBody.innerHTML = html;
+}
+
+function renderLog() {
+    var logs = _serverLogs || [];
+
+    // Calculate Admin vs User log counts
+    var adminCount = 0;
+    var userCount  = 0;
     logs.forEach(function (entry) {
+        if (isLogAdminEvent(entry)) {
+            adminCount++;
+        } else {
+            userCount++;
+        }
+    });
+
+    if (statValAdminLogs) statValAdminLogs.textContent = adminCount;
+    if (statValUserLogs)  statValUserLogs.textContent  = userCount;
+
+    // Render Per-User Directory
+    renderLogUsersDirectory();
+
+    if (!activityLog) return;
+
+    // Filter log entries by currently selected tab
+    var filteredLogs = logs.filter(function (entry) {
+        var isAdmin = isLogAdminEvent(entry);
+        if (_currentLogFilter === "admin") return isAdmin;
+        if (_currentLogFilter === "user")  return !isAdmin;
+        return true;
+    });
+
+    if (logFeedTitle) {
+        if (_currentLogFilter === "admin") {
+            logFeedTitle.textContent = "Admin Account & Security Log (" + filteredLogs.length + ")";
+        } else if (_currentLogFilter === "user") {
+            logFeedTitle.textContent = "User & Player Activity Feed (" + filteredLogs.length + ")";
+        } else {
+            logFeedTitle.textContent = "System Activity Feed (" + filteredLogs.length + ")";
+        }
+    }
+
+    if (filteredLogs.length === 0) {
+        activityLog.innerHTML = '<p class="empty-row">No ' + (_currentLogFilter !== "all" ? _currentLogFilter + " " : "") + 'activity recorded yet.</p>';
+        return;
+    }
+
+    var html = "";
+    filteredLogs.forEach(function (entry) {
         var icon = LOG_ICONS[entry.action] || LOG_FALLBACK_ICON;
         var time = formatDateTime(entry.timestamp);
         html +=
@@ -1120,6 +1247,41 @@ filterBtns.forEach(function (btn) {
         renderUsersTable();
     });
 });
+
+// ── Activity Log Controls & Directory Listeners ─────────────
+function setActivityLogFilter(filterName) {
+    _currentLogFilter = filterName;
+    var tabs = [logTabAll, logTabAdmin, logTabUser];
+    tabs.forEach(function (t) {
+        if (!t) return;
+        t.classList.toggle("active", t.getAttribute("data-logfilter") === filterName);
+    });
+    renderLog();
+}
+
+if (logTabAll)   logTabAll.addEventListener("click",   function () { setActivityLogFilter("all"); });
+if (logTabAdmin) logTabAdmin.addEventListener("click", function () { setActivityLogFilter("admin"); });
+if (logTabUser)  logTabUser.addEventListener("click",  function () { setActivityLogFilter("user"); });
+
+if (cardAdminLog) cardAdminLog.addEventListener("click", function () { setActivityLogFilter("admin"); });
+if (cardUserLog)  cardUserLog.addEventListener("click",  function () { setActivityLogFilter("user"); });
+
+if (logUserSearch) {
+    var _logSearchDebounce;
+    logUserSearch.addEventListener("input", function () {
+        _logUserSearchTerm = logUserSearch.value || "";
+        clearTimeout(_logSearchDebounce);
+        _logSearchDebounce = setTimeout(function () {
+            renderLogUsersDirectory();
+        }, 200);
+    });
+}
+
+if (exportLogFeedBtn) {
+    exportLogFeedBtn.addEventListener("click", function () {
+        openExportModal("logs");
+    });
+}
 
 // ── Clock ────────────────────────────────────────────────────
 function updateTime() {

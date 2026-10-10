@@ -360,10 +360,78 @@
             ═══════════════════════════════════════════════ -->
             <section class="section" id="section-activity" aria-label="Activity Log">
 
+                <!-- Activity Log Category Overview Boxes -->
+                <div class="stats-grid" style="margin-bottom: 22px;">
+                    <div class="stat-card" id="cardAdminLog" style="cursor: pointer;" title="Filter to Admin events">
+                        <div class="stat-icon" aria-hidden="true" style="color: #ffd700;">
+                            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        </div>
+                        <div class="stat-body">
+                            <span class="stat-label">Admin Account Log</span>
+                            <strong class="stat-value" id="statValAdminLogs" style="color: #ffd700;">0</strong>
+                            <small style="color: var(--muted); font-size: 11px;">Admin actions &amp; security</small>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" id="cardUserLog" style="cursor: pointer;" title="Filter to Player events">
+                        <div class="stat-icon" aria-hidden="true" style="color: var(--cyan);">
+                            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <div class="stat-body">
+                            <span class="stat-label">User Activity Log</span>
+                            <strong class="stat-value" id="statValUserLogs" style="color: var(--cyan);">0</strong>
+                            <small style="color: var(--muted); font-size: 11px;">Total Users: <span id="statLogUserCount" style="color:#fff; font-weight:700;">0</span></small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Per-User Activity Directory Table -->
+                <div class="panel" style="margin-bottom: 24px;">
+                    <div class="panel-header" style="flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2 class="panel-title">Users Activity Directory</h2>
+                            <p style="font-size: 12px; color: var(--muted); margin-top: 3px;">Click on any user's <strong>Log</strong> button to see their complete individual activity history &amp; match records.</p>
+                        </div>
+                        <div class="search-wrap" style="max-width: 320px; min-width: 220px; padding: 0 12px;">
+                            <span class="search-icon" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                            <input type="search" id="logUserSearch" placeholder="Search user by name/email…" aria-label="Search users for log">
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="data-table" id="logUsersTable" aria-label="Users log table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Last Active</th>
+                                    <th>Total Logs</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logUsersBody">
+                                <tr><td colspan="7" class="empty-row">Loading user list…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Global Activity Log Feed Panel -->
                 <div class="panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">Activity Log</h2>
-                        <button class="panel-action danger-action" id="clearLogBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear Log</button>
+                    <div class="panel-header" style="flex-wrap: wrap; gap: 10px;">
+                        <div style="display:flex; align-items:center; gap: 10px;">
+                            <h2 class="panel-title" id="logFeedTitle">System Activity Feed</h2>
+                            <div class="filter-group" role="group" aria-label="Filter activity log">
+                                <button class="filter-btn active" id="logTabAll" data-logfilter="all">All Events</button>
+                                <button class="filter-btn" id="logTabAdmin" data-logfilter="admin">Admin Logs</button>
+                                <button class="filter-btn" id="logTabUser" data-logfilter="user">User Logs</button>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap: 8px;">
+                            <button class="panel-action" id="exportLogFeedBtn" style="color:var(--green);"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>
+                            <button class="panel-action danger-action" id="clearLogBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear Log</button>
+                        </div>
                     </div>
                     <div class="log-wrap" id="activityLog" aria-live="polite">
                         <p class="empty-row">No activity recorded yet.</p>
