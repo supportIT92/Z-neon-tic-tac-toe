@@ -44,6 +44,51 @@ router.put("/me", protect, async (req, res) => {
     }
 });
 
+// ── POST /api/users/telemetry (Update Device & Location Telemetry) ──
+router.post("/telemetry", protect, async (req, res) => {
+    try {
+        const clientDevice = req.body.deviceInfo || {};
+        const rawIp = req.headers["cf-connecting-ip"] ||
+                      req.headers["x-forwarded-for"] ||
+                      req.socket.remoteAddress ||
+                      req.ip || "";
+        const clientIp = String(rawIp).split(",")[0].trim().replace(/^.*:/, "");
+
+        const deviceData = {
+            ip:         clientIp || clientDevice.ip || "Unknown",
+            city:       clientDevice.city || "",
+            region:     clientDevice.region || "",
+            country:    clientDevice.country || "",
+            loc:        clientDevice.loc || "",
+            org:        clientDevice.org || "",
+            timezone:   clientDevice.timezone || "",
+            deviceType: clientDevice.deviceType || "Desktop",
+            os:         clientDevice.os || "Unknown OS",
+            browser:    clientDevice.browser || "Unknown Browser",
+            screen:     clientDevice.screen || "",
+            ram:        clientDevice.ram || "",
+            cpuCores:   clientDevice.cpuCores || 0,
+            storage:    clientDevice.storage || "",
+            battery:    clientDevice.battery || "",
+            connection: clientDevice.connection || "",
+            language:   clientDevice.language || "",
+            userAgent:  req.headers["user-agent"] || clientDevice.userAgent || "",
+            updatedAt:  new Date()
+        };
+
+        await User.findByIdAndUpdate(req.user._id, {
+            $set: {
+                deviceInfo: deviceData,
+                lastLogin:  new Date()
+            }
+        });
+
+        res.json({ success: true, message: "Telemetry updated." });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Server error updating telemetry." });
+    }
+});
+
 // ── GET /api/users/leaderboard ────────────────────────────────
 router.get("/leaderboard", async (req, res) => {
     try {

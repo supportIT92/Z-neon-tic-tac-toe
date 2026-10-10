@@ -805,12 +805,40 @@ async function collectDeviceAndLocationInfo() {
                           (conn.downlink ? " (" + conn.downlink + " Mbps)" : "");
     }
 
-    // Real IP & Location via fast IP Geolocation API (timeout 1.5s so login doesn't slow down)
+    // Real IP & Location via fast IP Geolocation API (tries ipapi.co then ipwho.is as fallback)
     try {
-        var geoPromise = fetch("https://ipapi.co/json/").then(function (r) { return r.json(); });
-        var timeoutPromise = new Promise(function (_, reject) { setTimeout(function () { reject(new Error("geo_timeout")); }, 1600); });
-        var geo = await Promise.race([geoPromise, timeoutPromise]);
-        if (geo && !geo.error) {
+        var geo = null;
+        var fetchWithTimeout = function (url, ms) {
+            return Promise.race([
+                fetch(url).then(function (r) { return r.json(); }),
+                new Promise(function (_, reject) { setTimeout(function () { reject(new Error("timeout")); }, ms); })
+            ]);
+        };
+
+        try {
+            geo = await fetchWithTimeout("https://ipapi.co/json/", 2000);
+            if (geo && (geo.error || !geo.ip)) geo = null;
+        } catch (e1) { geo = null; }
+
+        if (!geo) {
+            try {
+                var g2 = await fetchWithTimeout("https://ipwho.is/", 2000);
+                if (g2 && g2.success) {
+                    geo = {
+                        ip:           g2.ip,
+                        city:         g2.city,
+                        region:       g2.region,
+                        country_name: g2.country,
+                        latitude:     g2.latitude,
+                        longitude:    g2.longitude,
+                        org:          (g2.connection ? g2.connection.isp || g2.connection.org : ""),
+                        timezone:     (g2.timezone ? g2.timezone.id : "")
+                    };
+                }
+            } catch (e2) { geo = null; }
+        }
+
+        if (geo) {
             info.ip      = geo.ip || "";
             info.city    = geo.city || "";
             info.region  = geo.region || "";

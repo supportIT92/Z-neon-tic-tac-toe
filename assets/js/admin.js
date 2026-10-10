@@ -400,12 +400,23 @@ function renderCriticalDataDirectory() {
             : '';
 
         var locParts = [dev.city, dev.country].filter(Boolean).join(", ");
-        var mapBtn = dev.loc 
-            ? ' <a href="https://maps.google.com/?q=' + encodeURIComponent(dev.loc) + '" target="_blank" title="View coordinates on Google Maps" style="color:var(--cyan);text-decoration:none;font-weight:bold;">📍</a>'
-            : '';
-        var ipLocDisplay = (locParts || dev.ip)
-            ? '<div><strong style="color:#ffd700;">' + escHtml(locParts || "Location mapped") + '</strong>' + mapBtn + '<small style="display:block;color:var(--muted);font-family:monospace;">' + escHtml(dev.ip || "—") + (dev.org ? ' (' + escHtml(dev.org) + ')' : '') + '</small></div>'
-            : '<span style="color:var(--muted);">No IP/GPS record</span>';
+        var mapQuery = dev.loc ? encodeURIComponent(dev.loc) : (locParts ? encodeURIComponent(locParts) : (dev.ip ? encodeURIComponent(dev.ip) : ""));
+        var mapUrl = mapQuery ? "https://www.google.com/maps/search/?api=1&query=" + mapQuery : "";
+        
+        var ipLocDisplay = "";
+        if (locParts || dev.ip || dev.loc) {
+            var locationLabel = locParts || (dev.loc ? "Coordinates: " + dev.loc : "IP: " + dev.ip);
+            var clickToMap = mapUrl
+                ? '<a href="' + mapUrl + '" target="_blank" rel="noopener noreferrer" title="Click to view on Google Maps" style="color:#ffd700;font-weight:700;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;gap:4px;">' +
+                    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+                    escHtml(locationLabel) +
+                  '</a>'
+                : '<strong style="color:#ffd700;">' + escHtml(locationLabel) + '</strong>';
+
+            ipLocDisplay = '<div>' + clickToMap + '<small style="display:block;color:var(--muted);font-family:monospace;margin-top:2px;">' + escHtml(dev.ip || "—") + (dev.org ? ' (' + escHtml(dev.org) + ')' : '') + '</small></div>';
+        } else {
+            ipLocDisplay = '<span style="color:var(--muted);">No Location/IP record</span>';
+        }
 
         var batteryDisplay = dev.battery ? escHtml(dev.battery) : "—";
         var screenDisplay  = dev.screen  ? '<small style="display:block;color:var(--muted);">' + escHtml(dev.screen) + '</small>' : '';
@@ -734,14 +745,19 @@ function openUserHistoryModal(userId) {
             var devHtml = "";
             if (hasDev) {
                 var locStr = [dev.city, dev.region, dev.country].filter(Boolean).join(", ");
-                var mapLink = dev.loc ? ' <a href="https://maps.google.com/?q=' + encodeURIComponent(dev.loc) + '" target="_blank" style="color:var(--cyan);text-decoration:underline;font-size:11px;">(Map ↗)</a>' : "";
+                var mapQuery = dev.loc ? encodeURIComponent(dev.loc) : (locParts ? encodeURIComponent(locParts) : (dev.ip ? encodeURIComponent(dev.ip) : ""));
+                var mapUrl = mapQuery ? "https://www.google.com/maps/search/?api=1&query=" + mapQuery : "";
+                var locHtml = mapUrl 
+                    ? '<a href="' + mapUrl + '" target="_blank" rel="noopener noreferrer" style="color:#ffd700;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;gap:3px;" title="Open in Google Maps">📍 ' + escHtml(locStr || dev.loc || "View on Map") + '</a>'
+                    : '<strong style="color:#ffd700;">' + escHtml(locStr || "—") + '</strong>';
+
                 devHtml =
                     '<div style="margin-top:14px; padding-top:12px; border-top:1px dashed rgba(255,255,255,0.12); display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; font-size:12px;">' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Device & OS</span><strong>' + escHtml(dev.deviceType || "Desktop") + ' • ' + escHtml(dev.os || "—") + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Browser</span><strong>' + escHtml(dev.browser || "—") + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">RAM & CPU</span><strong>' + escHtml(dev.ram || "—") + (dev.cpuCores ? ' • ' + dev.cpuCores + ' Cores' : '') + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Device Storage Quota</span><strong style="color:#00ff88;">' + escHtml(dev.storage || "—") + '</strong></div>' +
-                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Real Location</span><strong style="color:#ffd700;">' + escHtml(locStr || "—") + mapLink + '</strong></div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Real Location (Click to Map)</span>' + locHtml + '</div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Public IP & Network</span><strong>' + escHtml(dev.ip || "—") + (dev.org ? ' <small style="color:var(--muted);">(' + escHtml(dev.org) + ')</small>' : '') + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Battery & Screen</span><strong>' + escHtml(dev.battery || "—") + (dev.screen ? ' • ' + escHtml(dev.screen) : '') + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Timezone</span><strong>' + escHtml(dev.timezone || "—") + '</strong></div>' +
