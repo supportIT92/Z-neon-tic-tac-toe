@@ -87,7 +87,7 @@ async function validateRealEmail(email) {
     if (isExactFake || isStrippedFake || isRepeatedChar || local === "xyz" || local.startsWith("xyz.") || local.startsWith("test.")) {
         return {
             valid: false,
-            message: "Dummy or placeholder emails (like xyz@, test@, fake@) are not allowed. Please enter your real email address."
+            message: "Please enter a valid, active email address to receive your verification code."
         };
     }
 
@@ -95,7 +95,7 @@ async function validateRealEmail(email) {
     if (DISPOSABLE_DOMAINS.has(domain)) {
         return {
             valid: false,
-            message: "Temporary/disposable email addresses are not permitted. Please use a permanent email (e.g. Gmail, Outlook, Yahoo, etc.)."
+            message: "Disposable or temporary email addresses are not permitted. Please use a standard email address."
         };
     }
 

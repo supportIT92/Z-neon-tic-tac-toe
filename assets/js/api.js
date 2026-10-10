@@ -91,7 +91,7 @@ const API = {
                 const local = email.slice(0, atIdx);
                 const localStripped = local.replace(/[._\-0-9]/g, "");
                 if (fakePrefixes.includes(local) || fakePrefixes.includes(localStripped) || /^(.)\1+$/.test(local)) {
-                    return reject({ message: "Dummy or fake email addresses (e.g. xyz@, test@) are not allowed." });
+                    return reject({ message: "Please enter a valid, active email address to receive your verification code." });
                 }
             }
 

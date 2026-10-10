@@ -933,14 +933,14 @@ signupForm.addEventListener("submit", function (e) {
         var localStripped = localPart.replace(/[._\-0-9]/g, "");
 
         if (FAKE_PREFIXES.indexOf(localPart) !== -1 || FAKE_PREFIXES.indexOf(localStripped) !== -1 || /^(.)\1+$/.test(localPart) || localPart === "xyz") {
-            showAlert("Dummy ya fake email ID (jaise xyz@, test@, asdf@) allow nahi hai. Kripya apna real personal email dalein.");
+            showAlert("Please enter a valid, active email address to receive your verification code.");
             signupEmail.style.borderColor = "#ff4444";
             signupEmail.focus();
             return;
         }
 
         if (DISPOSABLE_DOMAINS.indexOf(domainPart) !== -1) {
-            showAlert("Temporary ya disposable email address allow nahi hai. Kripya Gmail, Outlook, Yahoo etc. use karein.");
+            showAlert("Disposable or temporary email addresses are not permitted. Please use a standard email address.");
             signupEmail.style.borderColor = "#ff4444";
             signupEmail.focus();
             return;
