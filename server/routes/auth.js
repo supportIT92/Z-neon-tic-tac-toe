@@ -28,6 +28,8 @@ const ADMIN_EMAILS = Array.from(new Set([
         .filter(Boolean)
 ]));
 
+const dns           = require("dns").promises;
+
 // ── Rate limiters ─────────────────────────────────────────────
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -41,7 +43,87 @@ const otpLimiter = rateLimit({
     message:  { success: false, message: "Too many OTP requests. Please wait a few minutes." }
 });
 
-// ── Input Validators ──────────────────────────────────────────
+// ── Disposable & Fake Email Filters ───────────────────────────
+const DISPOSABLE_DOMAINS = new Set([
+    "tempmail.com", "10minutemail.com", "mailinator.com", "guerrillamail.com",
+    "trashmail.com", "yopmail.com", "sharklasers.com", "dispostable.com",
+    "getnada.com", "fakeinbox.com", "throwawaymail.com", "inboxkitten.com",
+    "burnermail.io", "mohmal.com", "crazymailing.com", "temp-mail.org",
+    "tempail.com", "generator.email", "emailondeck.com", "mytemp.email",
+    "nada.ltd", "dropmail.me", "maildrop.cc", "disposablemail.com"
+]);
+
+const FAKE_PREFIXES = [
+    "xyz", "abc", "asdf", "test", "testing", "fake", "demo", "sample",
+    "example", "none", "dummy", "qwerty", "temp", "123", "1234", "12345",
+    "123456", "aaaa", "bbbb", "cccc", "no-reply", "noreply"
+];
+
+async function validateRealEmail(email) {
+    if (!email || typeof email !== "string") {
+        return { valid: false, message: "A valid email address is required." };
+    }
+    const clean = email.trim().toLowerCase();
+
+    // 1. Strict RFC format check
+    if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,8}$/i.test(clean)) {
+        return { valid: false, message: "Invalid email format. Please enter a valid address." };
+    }
+
+    const atIdx = clean.indexOf("@");
+    const local = clean.slice(0, atIdx);
+    const domain = clean.slice(atIdx + 1);
+
+    if (!local || !domain || local.length < 2 || local.length > 64) {
+        return { valid: false, message: "Invalid email address." };
+    }
+
+    // 2. Reject placeholder / obvious dummy username
+    const localStripped = local.replace(/[._\-0-9]/g, "");
+    const isExactFake = FAKE_PREFIXES.includes(local);
+    const isStrippedFake = FAKE_PREFIXES.includes(localStripped);
+    const isRepeatedChar = /^(.)\1+$/.test(local);
+
+    if (isExactFake || isStrippedFake || isRepeatedChar || local === "xyz" || local.startsWith("xyz.") || local.startsWith("test.")) {
+        return {
+            valid: false,
+            message: "Dummy or placeholder emails (like xyz@, test@, fake@) are not allowed. Please enter your real email address."
+        };
+    }
+
+    // 3. Reject disposable / temporary email domains
+    if (DISPOSABLE_DOMAINS.has(domain)) {
+        return {
+            valid: false,
+            message: "Temporary/disposable email addresses are not permitted. Please use a permanent email (e.g. Gmail, Outlook, Yahoo, etc.)."
+        };
+    }
+
+    // 4. DNS MX record verification (verify domain has mail servers)
+    const COMMON_DOMAINS = ["gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "yahoo.com", "icloud.com", "proton.me", "protonmail.com"];
+    if (!COMMON_DOMAINS.includes(domain)) {
+        try {
+            const mxRecords = await dns.resolveMx(domain);
+            if (!mxRecords || mxRecords.length === 0) {
+                return {
+                    valid: false,
+                    message: `The domain @${domain} cannot receive emails. Please check your spelling.`
+                };
+            }
+        } catch (dnsErr) {
+            if (dnsErr.code === "ENOTFOUND" || dnsErr.code === "ENODATA" || dnsErr.code === "ESERVFAIL") {
+                return {
+                    valid: false,
+                    message: `The email domain @${domain} does not exist or has no active mail servers.`
+                };
+            }
+            console.warn(`[DNS MX Check Warning] Could not resolve MX for ${domain}:`, dnsErr.message);
+        }
+    }
+
+    return { valid: true, cleanEmail: clean };
+}
+
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email || "").toLowerCase());
 }
@@ -68,12 +150,13 @@ router.post("/send-otp", otpLimiter, async (req, res) => {
         const { email, username } = req.body;
         console.log(`[OTP Request] 📩 Incoming OTP request for: ${email || "(no email)"} (user: ${username || "Player"})`);
 
-        if (!email || !isValidEmail(email)) {
-            console.warn(`[OTP Rejected] ⚠️ Invalid email format: ${email}`);
-            return res.status(400).json({ success: false, message: "A valid email address is required." });
+        const valResult = await validateRealEmail(email);
+        if (!valResult.valid) {
+            console.warn(`[OTP Rejected] ⚠️ Invalid/Fake email: ${email} - ${valResult.message}`);
+            return res.status(400).json({ success: false, message: valResult.message });
         }
 
-        const cleanEmail = email.trim().toLowerCase();
+        const cleanEmail = valResult.cleanEmail;
 
         // Check if email already registered
         const existing = await User.findOne({ email: cleanEmail });
@@ -114,17 +197,9 @@ router.post("/send-otp", otpLimiter, async (req, res) => {
         } catch (emailErr) {
             console.error(`[OTP Error ${istTime} IST] ❌ Brevo dispatch failed for ${cleanEmail}:`, emailErr.message);
 
-            if (process.env.NODE_ENV !== "production") {
-                return res.status(200).json({
-                    success: true,
-                    message: `OTP generated (Dev fallback code: ${otpCode})`,
-                    devOtp: otpCode
-                });
-            }
-
-            return res.status(500).json({
+            return res.status(400).json({
                 success: false,
-                message: `Email dispatch failed: ${emailErr.message}. Check Brevo API key & sender verification.`
+                message: "Could not deliver verification code to this email address. Please make sure the email is valid and active."
             });
         }
 
@@ -146,8 +221,9 @@ router.post("/register", authLimiter, async (req, res) => {
         if (!username || !isValidUsername(username)) {
             return res.status(400).json({ success: false, message: "Invalid username. Must be 3-20 characters, starting with a letter." });
         }
-        if (!email || !isValidEmail(email)) {
-            return res.status(400).json({ success: false, message: "Invalid email address format." });
+        const valResult = await validateRealEmail(email);
+        if (!valResult.valid) {
+            return res.status(400).json({ success: false, message: valResult.message });
         }
         if (!password || !isStrongPassword(password)) {
             return res.status(400).json({ success: false, message: "Password too weak. Minimum 8 characters with upper, lower, and numbers/symbols." });
@@ -155,8 +231,7 @@ router.post("/register", authLimiter, async (req, res) => {
         if (!cleanOtp || cleanOtp.length !== 6) {
             return res.status(400).json({ success: false, message: "Valid 6-digit OTP code is required." });
         }
-
-        const cleanEmail = email.trim().toLowerCase();
+        const cleanEmail = valResult.cleanEmail;
         const cleanName  = username.trim();
         const istTime    = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: false });
 

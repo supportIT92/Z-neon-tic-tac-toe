@@ -923,6 +923,30 @@ signupForm.addEventListener("submit", function (e) {
         signupEmail.style.borderColor = "#ff4444"; signupEmail.focus(); return;
     }
 
+    // Check for fake, placeholder, or disposable email addresses
+    var FAKE_PREFIXES = ["xyz", "abc", "test", "testing", "fake", "demo", "sample", "example", "none", "dummy", "asdf", "qwerty", "temp", "123", "1234"];
+    var DISPOSABLE_DOMAINS = ["tempmail.com", "10minutemail.com", "mailinator.com", "guerrillamail.com", "trashmail.com", "yopmail.com", "sharklasers.com", "dispostable.com", "getnada.com", "fakeinbox.com", "throwawaymail.com"];
+    var atIndex = email.indexOf("@");
+    if (atIndex > 0) {
+        var localPart = email.slice(0, atIndex).toLowerCase().trim();
+        var domainPart = email.slice(atIndex + 1).toLowerCase().trim();
+        var localStripped = localPart.replace(/[._\-0-9]/g, "");
+
+        if (FAKE_PREFIXES.indexOf(localPart) !== -1 || FAKE_PREFIXES.indexOf(localStripped) !== -1 || /^(.)\1+$/.test(localPart) || localPart === "xyz") {
+            showAlert("Dummy ya fake email ID (jaise xyz@, test@, asdf@) allow nahi hai. Kripya apna real personal email dalein.");
+            signupEmail.style.borderColor = "#ff4444";
+            signupEmail.focus();
+            return;
+        }
+
+        if (DISPOSABLE_DOMAINS.indexOf(domainPart) !== -1) {
+            showAlert("Temporary ya disposable email address allow nahi hai. Kripya Gmail, Outlook, Yahoo etc. use karein.");
+            signupEmail.style.borderColor = "#ff4444";
+            signupEmail.focus();
+            return;
+        }
+    }
+
     // Password strength
     if (!pw) { showAlert("Please enter a password."); signupPassword.focus(); return; }
     if (getStrength(pw) < MIN_STRENGTH) {

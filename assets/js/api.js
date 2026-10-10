@@ -85,6 +85,16 @@ const API = {
             const email    = body.email.trim().toLowerCase();
             const username = body.username.trim();
 
+            const fakePrefixes = ["xyz", "abc", "test", "testing", "fake", "demo", "sample", "example", "none", "dummy", "asdf", "qwerty", "temp", "123", "1234"];
+            const atIdx = email.indexOf("@");
+            if (atIdx > 0) {
+                const local = email.slice(0, atIdx);
+                const localStripped = local.replace(/[._\-0-9]/g, "");
+                if (fakePrefixes.includes(local) || fakePrefixes.includes(localStripped) || /^(.)\1+$/.test(local)) {
+                    return reject({ message: "Dummy or fake email addresses (e.g. xyz@, test@) are not allowed." });
+                }
+            }
+
             if (users.find(u => u.email === email)) {
                 return reject({ message: "Email already registered." });
             }
