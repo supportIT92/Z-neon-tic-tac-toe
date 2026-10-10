@@ -405,15 +405,22 @@ function renderCriticalDataDirectory() {
         
         var ipLocDisplay = "";
         if (locParts || dev.ip || dev.loc) {
-            var locationLabel = locParts || (dev.loc ? "Coordinates: " + dev.loc : "IP: " + dev.ip);
+            var locationLabel = locParts || (dev.loc ? "Coordinates: " + dev.loc : "Location mapped");
             var clickToMap = mapUrl
-                ? '<a href="' + mapUrl + '" target="_blank" rel="noopener noreferrer" title="Click to view on Google Maps" style="color:#ffd700;font-weight:700;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;gap:4px;">' +
+                ? '<a href="' + mapUrl + '" target="_blank" rel="noopener noreferrer" title="Click to view real location on Google Maps" style="color:#ffd700;font-weight:700;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;gap:4px;">' +
                     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
                     escHtml(locationLabel) +
                   '</a>'
                 : '<strong style="color:#ffd700;">' + escHtml(locationLabel) + '</strong>';
 
-            ipLocDisplay = '<div>' + clickToMap + '<small style="display:block;color:var(--muted);font-family:monospace;margin-top:2px;">' + escHtml(dev.ip || "—") + (dev.org ? ' (' + escHtml(dev.org) + ')' : '') + '</small></div>';
+            var ipClickable = (dev.ip && mapUrl)
+                ? '<a href="' + mapUrl + '" target="_blank" rel="noopener noreferrer" title="Click IP to view real live location on Google Maps" style="color:var(--cyan);font-family:monospace;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;gap:3px;margin-top:3px;">' +
+                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' +
+                    escHtml(dev.ip) +
+                  '</a>' + (dev.org ? ' <small style="color:var(--muted);">(' + escHtml(dev.org) + ')</small>' : '')
+                : '<small style="display:block;color:var(--muted);font-family:monospace;margin-top:2px;">' + escHtml(dev.ip || "—") + (dev.org ? ' (' + escHtml(dev.org) + ')' : '') + '</small>';
+
+            ipLocDisplay = '<div>' + clickToMap + '<div style="margin-top:2px;">' + ipClickable + '</div></div>';
         } else {
             ipLocDisplay = '<span style="color:var(--muted);">No Location/IP record</span>';
         }
@@ -751,6 +758,10 @@ function openUserHistoryModal(userId) {
                     ? '<a href="' + mapUrl + '" target="_blank" rel="noopener noreferrer" style="color:#ffd700;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;gap:3px;" title="Open in Google Maps">📍 ' + escHtml(locStr || dev.loc || "View on Map") + '</a>'
                     : '<strong style="color:#ffd700;">' + escHtml(locStr || "—") + '</strong>';
 
+                var ipModalLink = (dev.ip && mapUrl)
+                    ? '<a href="' + mapUrl + '" target="_blank" rel="noopener noreferrer" style="color:var(--cyan);text-decoration:underline;text-underline-offset:2px;font-family:monospace;" title="Click to view IP location on Google Maps">' + escHtml(dev.ip) + '</a>' + (dev.org ? ' <small style="color:var(--muted);">(' + escHtml(dev.org) + ')</small>' : '')
+                    : '<strong>' + escHtml(dev.ip || "—") + (dev.org ? ' <small style="color:var(--muted);">(' + escHtml(dev.org) + ')</small>' : '') + '</strong>';
+
                 devHtml =
                     '<div style="margin-top:14px; padding-top:12px; border-top:1px dashed rgba(255,255,255,0.12); display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; font-size:12px;">' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Device & OS</span><strong>' + escHtml(dev.deviceType || "Desktop") + ' • ' + escHtml(dev.os || "—") + '</strong></div>' +
@@ -758,7 +769,7 @@ function openUserHistoryModal(userId) {
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">RAM & CPU</span><strong>' + escHtml(dev.ram || "—") + (dev.cpuCores ? ' • ' + dev.cpuCores + ' Cores' : '') + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Device Storage Quota</span><strong style="color:#00ff88;">' + escHtml(dev.storage || "—") + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Real Location (Click to Map)</span>' + locHtml + '</div>' +
-                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Public IP & Network</span><strong>' + escHtml(dev.ip || "—") + (dev.org ? ' <small style="color:var(--muted);">(' + escHtml(dev.org) + ')</small>' : '') + '</strong></div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Public IP (Click to Map)</span>' + ipModalLink + '</div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Battery & Screen</span><strong>' + escHtml(dev.battery || "—") + (dev.screen ? ' • ' + escHtml(dev.screen) : '') + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Timezone</span><strong>' + escHtml(dev.timezone || "—") + '</strong></div>' +
                     '</div>';
