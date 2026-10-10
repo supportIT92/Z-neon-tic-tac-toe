@@ -89,6 +89,19 @@ var critSearch             = document.getElementById("critSearch");
 var critBody               = document.getElementById("critBody");
 var _critSearchTerm        = "";
 
+// Live Direction & Map Radar Modal
+var liveMapModal          = document.getElementById("liveMapModal");
+var liveMapTitle          = document.getElementById("liveMapTitle");
+var liveMapCloseBtn       = document.getElementById("liveMapCloseBtn");
+var liveMapModalCloseBtn  = document.getElementById("liveMapModalCloseBtn");
+var liveMapUserText       = document.getElementById("liveMapUserText");
+var liveMapCoordsText     = document.getElementById("liveMapCoordsText");
+var liveMapIpText         = document.getElementById("liveMapIpText");
+var liveMapIframe         = document.getElementById("liveMapIframe");
+var liveMapLoading        = document.getElementById("liveMapLoading");
+var liveMapGoogleDirBtn   = document.getElementById("liveMapGoogleDirBtn");
+var liveMapEarthBtn       = document.getElementById("liveMapEarthBtn");
+
 // Settings
 var resetStatsBtn   = document.getElementById("resetStatsBtn");
 var nukeUsersBtn    = document.getElementById("nukeUsersBtn");
@@ -428,8 +441,14 @@ function renderCriticalDataDirectory() {
         var batteryDisplay = dev.battery ? escHtml(dev.battery) : "—";
         var screenDisplay  = dev.screen  ? '<small style="display:block;color:var(--muted);">' + escHtml(dev.screen) + '</small>' : '';
 
-        var viewBtn = '<button class="act-btn" onclick="openUserHistoryModal(\'' + escHtml(u.id || u._id) + '\')" style="background:rgba(0,247,255,0.12);border:1px solid rgba(0,247,255,0.35);color:var(--cyan);font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;">' +
-            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:5px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Details' +
+        var liveRadarBtn = (locParts || dev.ip || dev.loc)
+            ? '<button class="act-btn" onclick="openLiveMapModal(\'' + escHtml(u.id || u._id) + '\')" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:#ffd700;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;margin-right:6px;" title="Open Real Live Direction & Radar Map">' +
+                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Live Map' +
+              '</button>'
+            : '';
+
+        var viewBtn = '<button class="act-btn" onclick="openUserHistoryModal(\'' + escHtml(u.id || u._id) + '\')" style="background:rgba(0,247,255,0.12);border:1px solid rgba(0,247,255,0.35);color:var(--cyan);font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Details' +
             '</button>';
 
         html +=
@@ -449,11 +468,78 @@ function renderCriticalDataDirectory() {
                 "<td>" + storageText + ramText + "</td>" +
                 "<td>" + ipLocDisplay + "</td>" +
                 "<td><strong>" + batteryDisplay + "</strong>" + screenDisplay + "</td>" +
-                "<td>" + viewBtn + "</td>" +
+                "<td><div style='display:flex;align-items:center;'>" + liveRadarBtn + viewBtn + "</div></td>" +
             "</tr>";
     });
 
     critBody.innerHTML = html;
+}
+
+// ── Open Live Interactive Direction & Radar Map Modal ──────
+function openLiveMapModal(userId) {
+    if (!liveMapModal) return;
+    var user = findUserById(userId);
+    if (!user) { showToast("User not found.", "error"); return; }
+
+    var dev = user.deviceInfo || {};
+    var uName = user.username || "Player";
+    var locParts = [dev.city, dev.region, dev.country].filter(Boolean).join(", ");
+    var coords = dev.loc || "";
+    var ip = dev.ip || "";
+
+    if (liveMapTitle) liveMapTitle.textContent = "Live Direction Radar — " + uName;
+    if (liveMapUserText) liveMapUserText.textContent = "User: " + uName + " (" + (user.email || "") + ")";
+    if (liveMapCoordsText) liveMapCoordsText.textContent = "Location: " + (locParts || coords || "Mapped Node");
+    if (liveMapIpText) liveMapIpText.textContent = "IP: " + (ip || "—") + (dev.org ? " • " + dev.org : "");
+
+    // Prepare live map URLs
+    var query = coords ? coords : (locParts ? locParts : ip);
+    var googleDirUrl = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(query);
+    var googleEarthUrl = "https://earth.google.com/web/search/" + encodeURIComponent(query);
+
+    if (liveMapGoogleDirBtn) liveMapGoogleDirBtn.href = googleDirUrl;
+    if (liveMapEarthBtn)     liveMapEarthBtn.href     = googleEarthUrl;
+
+    if (liveMapLoading) liveMapLoading.style.display = "flex";
+
+    // Embed interactive live map (OpenStreetMap with pin & directions layer)
+    var embedUrl = "";
+    if (coords && coords.includes(",")) {
+        var parts = coords.split(",");
+        var lat = parseFloat(parts[0].trim());
+        var lon = parseFloat(parts[1].trim());
+        var delta = 0.05;
+        var bbox = (lon - delta) + "%2C" + (lat - delta) + "%2C" + (lon + delta) + "%2C" + (lat + delta);
+        embedUrl = "https://www.openstreetmap.org/export/embed.html?bbox=" + bbox + "&layer=mapnik&marker=" + lat + "%2C" + lon;
+    } else {
+        embedUrl = "https://maps.google.com/maps?q=" + encodeURIComponent(query) + "&t=&z=13&ie=UTF8&iwloc=&output=embed";
+    }
+
+    if (liveMapIframe) {
+        liveMapIframe.src = embedUrl;
+        liveMapIframe.onload = function () {
+            if (liveMapLoading) liveMapLoading.style.display = "none";
+        };
+    }
+
+    liveMapModal.classList.add("open");
+}
+
+window.openLiveMapModal = openLiveMapModal;
+
+function closeLiveMapModal() {
+    if (liveMapModal) {
+        liveMapModal.classList.remove("open");
+        if (liveMapIframe) liveMapIframe.src = "about:blank";
+    }
+}
+
+if (liveMapCloseBtn)      liveMapCloseBtn.addEventListener("click", closeLiveMapModal);
+if (liveMapModalCloseBtn) liveMapModalCloseBtn.addEventListener("click", closeLiveMapModal);
+if (liveMapModal) {
+    liveMapModal.addEventListener("click", function (e) {
+        if (e.target === liveMapModal) closeLiveMapModal();
+    });
 }
 
 // ════════════════════════════════════════════════════════════
