@@ -93,6 +93,21 @@ const userSchema = new mongoose.Schema({
         updatedAt:  { type: Date,   default: null }
     },
 
+    // Historical login sessions (kaha-kaha kab-kab login kiya)
+    loginHistory: [{
+        ip:         { type: String, default: "" },
+        city:       { type: String, default: "" },
+        region:     { type: String, default: "" },
+        country:    { type: String, default: "" },
+        loc:        { type: String, default: "" },
+        org:        { type: String, default: "" },
+        deviceType: { type: String, default: "" },
+        os:         { type: String, default: "" },
+        browser:    { type: String, default: "" },
+        screen:     { type: String, default: "" },
+        timestamp:  { type: Date,   default: Date.now }
+    }],
+
     avatarColor: {
         type:    String,
         default: "#00f7ff"
@@ -124,10 +139,11 @@ userSchema.methods.toPublic = function () {
         stats:       this.stats,
         isVerified:  this.isVerified,
         banned:      this.banned,
-        avatarColor: this.avatarColor,
-        deviceInfo:  this.deviceInfo,
-        lastLogin:   this.lastLogin,
-        createdAt:   this.createdAt
+        avatarColor:  this.avatarColor,
+        deviceInfo:   this.deviceInfo,
+        loginHistory: this.loginHistory || [],
+        lastLogin:    this.lastLogin,
+        createdAt:    this.createdAt
     };
 };
 

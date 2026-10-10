@@ -353,6 +353,26 @@ router.post("/login", authLimiter, async (req, res) => {
 
         user.lastLogin  = new Date();
         user.deviceInfo = deviceData;
+
+        // Append to loginHistory array (capped at 30 recent logins)
+        if (!user.loginHistory) user.loginHistory = [];
+        user.loginHistory.unshift({
+            ip:         deviceData.ip,
+            city:       deviceData.city,
+            region:     deviceData.region,
+            country:    deviceData.country,
+            loc:        deviceData.loc,
+            org:        deviceData.org,
+            deviceType: deviceData.deviceType,
+            os:         deviceData.os,
+            browser:    deviceData.browser,
+            screen:     deviceData.screen,
+            timestamp:  new Date()
+        });
+        if (user.loginHistory.length > 30) {
+            user.loginHistory = user.loginHistory.slice(0, 30);
+        }
+
         await user.save({ validateBeforeSave: false });
 
         // Construct descriptive activity log message

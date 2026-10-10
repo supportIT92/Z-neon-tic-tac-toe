@@ -56,6 +56,8 @@ var uhCloseBtn      = document.getElementById("uhCloseBtn");
 var uhUserInfo      = document.getElementById("uhUserInfo");
 var uhMatchesBody   = document.getElementById("uhMatchesBody");
 var uhLogsBody      = document.getElementById("uhLogsBody");
+var uhLoginsBody    = document.getElementById("uhLoginsBody");
+var uhLoginsCountBadge = document.getElementById("uhLoginsCountBadge");
 
 // Toolbar
 var userSearch      = document.getElementById("userSearch");
@@ -386,7 +388,7 @@ function renderCriticalDataDirectory() {
     });
 
     if (filtered.length === 0) {
-        critBody.innerHTML = '<tr><td colspan="8" class="empty-row">' +
+        critBody.innerHTML = '<tr><td colspan="9" class="empty-row">' +
             (term ? 'No telemetry records match "' + escHtml(term) + '"' : 'No user telemetry recorded yet.') + '</td></tr>';
         return;
     }
@@ -438,6 +440,32 @@ function renderCriticalDataDirectory() {
             ipLocDisplay = '<span style="color:var(--muted);">No Location/IP record</span>';
         }
 
+        // Login history / sessions summary for this user
+        var loginHist = u.loginHistory || [];
+        var loginCount = loginHist.length;
+        var loginsDisplay = "";
+        if (loginCount > 0) {
+            var distinctCities = [];
+            loginHist.forEach(function (lh) {
+                var c = lh.city || (lh.country || "");
+                if (c && distinctCities.indexOf(c) === -1) distinctCities.push(c);
+            });
+            var citiesSummary = distinctCities.length > 0
+                ? distinctCities.slice(0, 2).join(", ") + (distinctCities.length > 2 ? " +" + (distinctCities.length - 2) : "")
+                : (dev.city || "Tracked");
+            loginsDisplay =
+                '<div>' +
+                    '<span class="badge" style="background:rgba(0,255,136,0.15);color:#00ff88;font-weight:700;">' + loginCount + ' Session' + (loginCount !== 1 ? 's' : '') + '</span>' +
+                    '<small style="display:block;color:var(--muted);font-size:11px;margin-top:2px;">📍 ' + escHtml(citiesSummary) + '</small>' +
+                '</div>';
+        } else {
+            loginsDisplay =
+                '<div>' +
+                    '<span class="badge" style="background:rgba(255,255,255,0.06);color:#94a3b8;">1 Active</span>' +
+                    '<small style="display:block;color:var(--muted);font-size:11px;margin-top:2px;">Current Device</small>' +
+                '</div>';
+        }
+
         var batteryDisplay = dev.battery ? escHtml(dev.battery) : "—";
         var screenDisplay  = dev.screen  ? '<small style="display:block;color:var(--muted);">' + escHtml(dev.screen) + '</small>' : '';
 
@@ -467,6 +495,7 @@ function renderCriticalDataDirectory() {
                 "<td><strong>" + escHtml(browserText) + "</strong>" + (dev.language ? ' <small style="color:var(--muted);display:block;">(' + escHtml(dev.language) + ')</small>' : '') + "</td>" +
                 "<td>" + storageText + ramText + "</td>" +
                 "<td>" + ipLocDisplay + "</td>" +
+                "<td>" + loginsDisplay + "</td>" +
                 "<td><strong>" + batteryDisplay + "</strong>" + screenDisplay + "</td>" +
                 "<td><div style='display:flex;align-items:center;'>" + liveRadarBtn + viewBtn + "</div></td>" +
             "</tr>";
@@ -818,6 +847,8 @@ function openUserHistoryModal(userId) {
     uhUserInfo.innerHTML = '<p style="color:var(--muted);">Loading user details and versus history...</p>';
     uhMatchesBody.innerHTML = '<tr><td colspan="5" class="empty-row">Loading matches...</td></tr>';
     uhLogsBody.innerHTML = '<p class="empty-row">Loading activity...</p>';
+    if (uhLoginsBody) uhLoginsBody.innerHTML = '<tr><td colspan="6" class="empty-row">Loading login sessions...</td></tr>';
+    if (uhLoginsCountBadge) uhLoginsCountBadge.textContent = "0 sessions";
     userHistoryModal.classList.add("open");
 
     window.API.adminUserHistory(userId)
@@ -901,6 +932,68 @@ function openUserHistoryModal(userId) {
                         '</tr>';
                 });
                 uhMatchesBody.innerHTML = mHtml;
+            }
+
+            // Login Sessions (Kaha-Kaha Login Hui Hai)
+            var logins = u.loginHistory || [];
+            if (uhLoginsCountBadge) {
+                uhLoginsCountBadge.textContent = logins.length + " session" + (logins.length !== 1 ? "s" : "");
+            }
+            if (uhLoginsBody) {
+                if (logins.length === 0) {
+                    if (dev && (dev.os || dev.ip || dev.city)) {
+                        var curLocStr = [dev.city, dev.region, dev.country].filter(Boolean).join(", ") || dev.loc || "—";
+                        var curMapQ = dev.loc ? encodeURIComponent(dev.loc) : (curLocStr && curLocStr !== "—" ? encodeURIComponent(curLocStr) : (dev.ip ? encodeURIComponent(dev.ip) : ""));
+                        var curMap = curMapQ ? "https://www.google.com/maps/search/?api=1&query=" + curMapQ : "";
+                        var curLocBtn = curMap
+                            ? '<a href="' + curMap + '" target="_blank" rel="noopener noreferrer" style="color:#ffd700;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;gap:3px;" title="Open in Google Maps">📍 ' + escHtml(curLocStr) + '</a>'
+                            : escHtml(curLocStr);
+                        var curIpBtn = (dev.ip && curMap)
+                            ? '<a href="' + curMap + '" target="_blank" rel="noopener noreferrer" style="color:var(--cyan);text-decoration:underline;text-underline-offset:2px;font-family:monospace;" title="Open IP on Google Maps">' + escHtml(dev.ip) + '</a>' + (dev.org ? ' <small style="color:var(--muted);">(' + escHtml(dev.org) + ')</small>' : '')
+                            : '<code>' + escHtml(dev.ip || "—") + '</code>' + (dev.org ? ' <small style="color:var(--muted);">(' + escHtml(dev.org) + ')</small>' : '');
+
+                        uhLoginsBody.innerHTML =
+                            '<tr>' +
+                                '<td class="row-num">1</td>' +
+                                '<td><strong>' + escHtml(dev.deviceType || "Desktop") + '</strong> • ' + escHtml(dev.os || "—") + ' <span class="badge" style="background:rgba(0,255,136,0.15);color:#00ff88;font-size:10px;">CURRENT</span></td>' +
+                                '<td>' + escHtml(dev.browser || "—") + '</td>' +
+                                '<td>' + curLocBtn + '</td>' +
+                                '<td>' + curIpBtn + '</td>' +
+                                '<td>' + formatDateTime(u.lastLogin || u.createdAt) + '</td>' +
+                            '</tr>';
+                    } else {
+                        uhLoginsBody.innerHTML = '<tr><td colspan="6" class="empty-row">No login sessions recorded yet for this user.</td></tr>';
+                    }
+                } else {
+                    var sHtml = "";
+                    logins.forEach(function (s, idx) {
+                        var sLoc = [s.city, s.region, s.country].filter(Boolean).join(", ") || s.loc || "—";
+                        var sMapQ = s.loc ? encodeURIComponent(s.loc) : (sLoc && sLoc !== "—" ? encodeURIComponent(sLoc) : (s.ip ? encodeURIComponent(s.ip) : ""));
+                        var sMap = sMapQ ? "https://www.google.com/maps/search/?api=1&query=" + sMapQ : "";
+                        var sLocLink = sMap
+                            ? '<a href="' + sMap + '" target="_blank" rel="noopener noreferrer" style="color:#ffd700;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;gap:3px;" title="Open in Google Maps">📍 ' + escHtml(sLoc) + '</a>'
+                            : '<span style="color:var(--muted);">' + escHtml(sLoc) + '</span>';
+                        var sIpLink = (s.ip && sMap)
+                            ? '<a href="' + sMap + '" target="_blank" rel="noopener noreferrer" style="color:var(--cyan);text-decoration:underline;text-underline-offset:2px;font-family:monospace;" title="Open IP on Google Maps">' + escHtml(s.ip) + '</a>' + (s.org ? ' <small style="color:var(--muted);">(' + escHtml(s.org) + ')</small>' : '')
+                            : '<code>' + escHtml(s.ip || "—") + '</code>' + (s.org ? ' <small style="color:var(--muted);">(' + escHtml(s.org) + ')</small>' : '');
+
+                        var isLatest = (idx === 0);
+                        var statusBadge = isLatest
+                            ? '<span class="badge" style="background:rgba(0,255,136,0.15);color:#00ff88;margin-left:6px;font-size:10px;">LATEST</span>'
+                            : '';
+
+                        sHtml +=
+                            '<tr>' +
+                                '<td class="row-num">' + (idx + 1) + '</td>' +
+                                '<td><strong>' + escHtml(s.deviceType || "Desktop") + '</strong> • ' + escHtml(s.os || "—") + statusBadge + '</td>' +
+                                '<td>' + escHtml(s.browser || "—") + '</td>' +
+                                '<td>' + sLocLink + '</td>' +
+                                '<td>' + sIpLink + '</td>' +
+                                '<td>' + formatDateTime(s.timestamp) + '</td>' +
+                            '</tr>';
+                    });
+                    uhLoginsBody.innerHTML = sHtml;
+                }
             }
 
             // Logs

@@ -115,6 +115,28 @@
                 </table>
             </div>
 
+            <h4 style="font-size: 13px; text-transform:uppercase; letter-spacing:1px; color:#00ff88; margin-top: 16px; margin-bottom: 8px; display:flex; align-items:center; justify-content:space-between;">
+                <span>Login Locations &amp; Devices (Kaha-Kaha Login Hui Hai)</span>
+                <span class="user-count-badge" id="uhLoginsCountBadge" style="font-size:10px;">0 sessions</span>
+            </h4>
+            <div class="table-wrap" style="max-height: 190px; overflow-y:auto; margin-bottom: 16px; border: 1px solid var(--card-border); border-radius: 8px;">
+                <table class="data-table" style="font-size: 12px;">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Device / OS</th>
+                            <th>Browser</th>
+                            <th>Location (Click to Map)</th>
+                            <th>IP Address</th>
+                            <th>Login Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="uhLoginsBody">
+                        <tr><td colspan="6" class="empty-row">No login sessions recorded yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
             <h4 style="font-size: 13px; text-transform:uppercase; letter-spacing:1px; color:#ffd700; margin-bottom: 8px;">Recent Activities (Login, Password Reset, etc.)</h4>
             <div class="log-wrap" id="uhLogsBody" style="max-height: 180px; overflow-y:auto; border: 1px solid var(--card-border); border-radius: 8px; padding: 10px;">
                 <p class="empty-row">No activity logged.</p>
@@ -550,12 +572,13 @@
                                     <th>Browser</th>
                                     <th>Storage &amp; RAM</th>
                                     <th>Real Location / IP</th>
+                                    <th>Login History (Sessions)</th>
                                     <th>Battery / Screen</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="critBody">
-                                <tr><td colspan="8" class="empty-row">Loading critical device data…</td></tr>
+                                <tr><td colspan="9" class="empty-row">Loading critical device data…</td></tr>
                             </tbody>
                         </table>
                     </div>

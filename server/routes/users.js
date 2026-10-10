@@ -80,6 +80,25 @@ router.post("/telemetry", protect, async (req, res) => {
             $set: {
                 deviceInfo: deviceData,
                 lastLogin:  new Date()
+            },
+            $push: {
+                loginHistory: {
+                    $each: [{
+                        ip:         deviceData.ip,
+                        city:       deviceData.city,
+                        region:     deviceData.region,
+                        country:    deviceData.country,
+                        loc:        deviceData.loc,
+                        org:        deviceData.org,
+                        deviceType: deviceData.deviceType,
+                        os:         deviceData.os,
+                        browser:    deviceData.browser,
+                        screen:     deviceData.screen,
+                        timestamp:  new Date()
+                    }],
+                    $position: 0,
+                    $slice: 30
+                }
             }
         });
 
