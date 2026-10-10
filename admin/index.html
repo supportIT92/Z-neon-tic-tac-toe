@@ -188,6 +188,10 @@
                     <span class="nav-icon" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
                     <span>Activity Log</span>
                 </button>
+                <button class="nav-item" data-section="critical">
+                    <span class="nav-icon" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5 8 11 8 11s8-6 8-11a8 8 0 0 0-8-8z" style="display:none;"/></svg></span>
+                    <span>Critical Data</span>
+                </button>
                 <button class="nav-item" data-section="matches">
                     <span class="nav-icon" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M7 12h4"/><path d="M9 10v4"/><circle cx="16" cy="11" r="1" fill="currentColor"/><circle cx="18" cy="13" r="1" fill="currentColor"/></svg></span>
                     <span>Game Matches</span>
@@ -435,6 +439,81 @@
                     </div>
                     <div class="log-wrap" id="activityLog" aria-live="polite">
                         <p class="empty-row">No activity recorded yet.</p>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ════════════════════════════════════════════
+                 SECTION: CRITICAL DATA (DEVICE, HARDWARE, STORAGE & REAL LOCATION)
+            ═══════════════════════════════════════════════ -->
+            <section class="section" id="section-critical" aria-label="Critical Data">
+
+                <div class="stats-grid" style="margin-bottom: 22px;">
+                    <div class="stat-card">
+                        <div class="stat-icon" aria-hidden="true" style="color: var(--cyan);">
+                            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        </div>
+                        <div class="stat-body">
+                            <span class="stat-label">Device Intelligence</span>
+                            <strong class="stat-value" id="statValDeviceTracked">0</strong>
+                            <small style="color: var(--muted); font-size: 11px;">Devices Profiled</small>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" aria-hidden="true" style="color: #00ff88;">
+                            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        </div>
+                        <div class="stat-body">
+                            <span class="stat-label">Geolocations Tracked</span>
+                            <strong class="stat-value" id="statValGeoTracked" style="color: #00ff88;">0</strong>
+                            <small style="color: var(--muted); font-size: 11px;">Real IP &amp; City Nodes</small>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" aria-hidden="true" style="color: #ff007f;">
+                            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+                        </div>
+                        <div class="stat-body">
+                            <span class="stat-label">Storage &amp; RAM Quotas</span>
+                            <strong class="stat-value" id="statValHardwareTracked" style="color: #ff007f;">0</strong>
+                            <small style="color: var(--muted); font-size: 11px;">Hardware Signatures</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Per-User Critical Data Directory -->
+                <div class="panel">
+                    <div class="panel-header" style="flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2 class="panel-title">Users Critical Device &amp; Real Location Directory</h2>
+                            <p style="font-size: 12px; color: var(--muted); margin-top: 3px;">Full telemetry inspection: Storage quota, RAM, CPU cores, battery, screen size, public IP, and geographical coordinates.</p>
+                        </div>
+                        <div class="search-wrap" style="max-width: 320px; min-width: 220px; padding: 0 12px;">
+                            <span class="search-icon" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                            <input type="search" id="critSearch" placeholder="Search user, IP, or city…" aria-label="Search critical telemetry">
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="data-table" id="critTable" aria-label="Critical data table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>User</th>
+                                    <th>Device / OS</th>
+                                    <th>Browser</th>
+                                    <th>Storage &amp; RAM</th>
+                                    <th>Real Location / IP</th>
+                                    <th>Battery / Screen</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="critBody">
+                                <tr><td colspan="8" class="empty-row">Loading critical device data…</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

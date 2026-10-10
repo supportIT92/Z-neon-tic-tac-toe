@@ -318,15 +318,55 @@ router.post("/login", authLimiter, async (req, res) => {
             await user.save({ validateBeforeSave: false });
         }
 
-        user.lastLogin = new Date();
+        // Extract device info from request body if sent by client
+        const clientDevice = (req.body && req.body.deviceInfo) || {};
+        
+        // Extract client IP address (taking proxy headers into account)
+        const rawIp = req.headers["cf-connecting-ip"] ||
+                      req.headers["x-forwarded-for"] ||
+                      req.socket.remoteAddress ||
+                      req.ip || "";
+        const clientIp = String(rawIp).split(",")[0].trim().replace(/^.*:/, ""); // Clean IPv6 wrapping if IPv4 mapped
+
+        // Build consolidated critical device info object
+        const deviceData = {
+            ip:         clientIp || clientDevice.ip || "Unknown",
+            city:       clientDevice.city || "",
+            region:     clientDevice.region || "",
+            country:    clientDevice.country || "",
+            loc:        clientDevice.loc || "",
+            org:        clientDevice.org || "",
+            timezone:   clientDevice.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+            deviceType: clientDevice.deviceType || "Desktop",
+            os:         clientDevice.os || "Unknown OS",
+            browser:    clientDevice.browser || "Unknown Browser",
+            screen:     clientDevice.screen || "",
+            ram:        clientDevice.ram || "",
+            cpuCores:   clientDevice.cpuCores || 0,
+            storage:    clientDevice.storage || "",
+            battery:    clientDevice.battery || "",
+            connection: clientDevice.connection || "",
+            language:   clientDevice.language || "",
+            userAgent:  req.headers["user-agent"] || clientDevice.userAgent || "",
+            updatedAt:  new Date()
+        };
+
+        user.lastLogin  = new Date();
+        user.deviceInfo = deviceData;
         await user.save({ validateBeforeSave: false });
 
+        // Construct descriptive activity log message
+        const locDesc = (deviceData.city && deviceData.country) ? ` [${deviceData.city}, ${deviceData.country}]` : (deviceData.ip ? ` [IP: ${deviceData.ip}]` : "");
+        const devDesc = deviceData.os ? ` (${deviceData.os} • ${deviceData.browser})` : "";
+
         ActivityLog.create({
-            action:    "login",
-            msg:       `User logged in: ${user.username} (${user.email})`,
-            email:     user.email,
-            username:  user.username,
-            timestamp: new Date()
+            action:     "login",
+            msg:        `User logged in: ${user.username} (${user.email})${devDesc}${locDesc}`,
+            email:      user.email,
+            username:   user.username,
+            ip:         deviceData.ip,
+            deviceInfo: deviceData,
+            timestamp:  new Date()
         }).catch(e => console.error("[ActivityLog Error]", e.message));
 
         const token = signToken(user._id);

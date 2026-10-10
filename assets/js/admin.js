@@ -81,6 +81,14 @@ var logTabAll         = document.getElementById("logTabAll");
 var logTabAdmin       = document.getElementById("logTabAdmin");
 var logTabUser        = document.getElementById("logTabUser");
 
+// Critical Data Telemetry Elements
+var statValDeviceTracked   = document.getElementById("statValDeviceTracked");
+var statValGeoTracked      = document.getElementById("statValGeoTracked");
+var statValHardwareTracked = document.getElementById("statValHardwareTracked");
+var critSearch             = document.getElementById("critSearch");
+var critBody               = document.getElementById("critBody");
+var _critSearchTerm        = "";
+
 // Settings
 var resetStatsBtn   = document.getElementById("resetStatsBtn");
 var nukeUsersBtn    = document.getElementById("nukeUsersBtn");
@@ -329,6 +337,108 @@ function renderLog() {
 }
 
 // ════════════════════════════════════════════════════════════
+//  CRITICAL DATA (DEVICE, STORAGE, HARDWARE & LOCATION TELEMETRY)
+// ════════════════════════════════════════════════════════════
+
+function renderCriticalDataDirectory() {
+    if (!critBody) return;
+    var users = _serverUsers || [];
+
+    var trackedDevices  = 0;
+    var trackedGeos     = 0;
+    var trackedHardware = 0;
+
+    users.forEach(function (u) {
+        var dev = u.deviceInfo || {};
+        if (dev.os || dev.deviceType || dev.browser) trackedDevices++;
+        if (dev.ip || dev.city || dev.country)       trackedGeos++;
+        if (dev.storage || dev.ram || dev.cpuCores)  trackedHardware++;
+    });
+
+    if (statValDeviceTracked)   statValDeviceTracked.textContent   = trackedDevices;
+    if (statValGeoTracked)      statValGeoTracked.textContent      = trackedGeos;
+    if (statValHardwareTracked) statValHardwareTracked.textContent = trackedHardware;
+
+    var term = _critSearchTerm.toLowerCase().trim();
+    var filtered = users.filter(function (u) {
+        if (!term) return true;
+        var dev = u.deviceInfo || {};
+        var matchUser = (u.username && u.username.toLowerCase().includes(term)) ||
+                        (u.email && u.email.toLowerCase().includes(term));
+        var matchIp   = (dev.ip && dev.ip.toLowerCase().includes(term));
+        var matchLoc  = (dev.city && dev.city.toLowerCase().includes(term)) ||
+                        (dev.country && dev.country.toLowerCase().includes(term));
+        var matchOS   = (dev.os && dev.os.toLowerCase().includes(term));
+        return matchUser || matchIp || matchLoc || matchOS;
+    });
+
+    if (filtered.length === 0) {
+        critBody.innerHTML = '<tr><td colspan="8" class="empty-row">' +
+            (term ? 'No telemetry records match "' + escHtml(term) + '"' : 'No user telemetry recorded yet.') + '</td></tr>';
+        return;
+    }
+
+    var html = "";
+    filtered.forEach(function (u, i) {
+        var dev = u.deviceInfo || {};
+        var isPrimaryAdmin = (u.email && u.email.toLowerCase() === "ztictactoe@outlook.com");
+
+        var devTypeBadge = dev.deviceType === "Mobile"
+            ? '<span class="badge" style="background:rgba(255,0,127,0.15);color:#ff007f;">Mobile</span>'
+            : (dev.deviceType === "Tablet" 
+                ? '<span class="badge" style="background:rgba(255,170,0,0.15);color:#ffaa00;">Tablet</span>'
+                : '<span class="badge" style="background:rgba(0,247,255,0.15);color:var(--cyan);">Desktop</span>');
+
+        var osText = dev.os || "Unknown OS";
+        var browserText = dev.browser || "Unknown";
+
+        var storageText = dev.storage 
+            ? '<span style="color:#00ff88;font-weight:700;">' + escHtml(dev.storage) + '</span>'
+            : '<span style="color:var(--muted);">—</span>';
+        var ramText = dev.ram 
+            ? '<small style="color:var(--muted);display:block;">' + escHtml(dev.ram) + (dev.cpuCores ? ' • ' + dev.cpuCores + ' Cores' : '') + '</small>'
+            : '';
+
+        var locParts = [dev.city, dev.country].filter(Boolean).join(", ");
+        var mapBtn = dev.loc 
+            ? ' <a href="https://maps.google.com/?q=' + encodeURIComponent(dev.loc) + '" target="_blank" title="View coordinates on Google Maps" style="color:var(--cyan);text-decoration:none;font-weight:bold;">📍</a>'
+            : '';
+        var ipLocDisplay = (locParts || dev.ip)
+            ? '<div><strong style="color:#ffd700;">' + escHtml(locParts || "Location mapped") + '</strong>' + mapBtn + '<small style="display:block;color:var(--muted);font-family:monospace;">' + escHtml(dev.ip || "—") + (dev.org ? ' (' + escHtml(dev.org) + ')' : '') + '</small></div>'
+            : '<span style="color:var(--muted);">No IP/GPS record</span>';
+
+        var batteryDisplay = dev.battery ? escHtml(dev.battery) : "—";
+        var screenDisplay  = dev.screen  ? '<small style="display:block;color:var(--muted);">' + escHtml(dev.screen) + '</small>' : '';
+
+        var viewBtn = '<button class="act-btn" onclick="openUserHistoryModal(\'' + escHtml(u.id || u._id) + '\')" style="background:rgba(0,247,255,0.12);border:1px solid rgba(0,247,255,0.35);color:var(--cyan);font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:5px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Details' +
+            '</button>';
+
+        html +=
+            "<tr>" +
+                "<td class='row-num'>" + (i + 1) + "</td>" +
+                "<td>" +
+                    "<div class='user-cell' style='cursor:pointer;' onclick=\"openUserHistoryModal('" + escHtml(u.id || u._id) + "')\">" +
+                        "<div class='user-avatar'>" + escHtml((u.username || "?").charAt(0).toUpperCase()) + "</div>" +
+                        "<div>" +
+                            "<span class='user-name-text' style='color:#fff;font-weight:600;display:block;'>" + escHtml(u.username) + "</span>" +
+                            "<small style='color:var(--muted);font-size:11px;'>" + escHtml(u.email) + "</small>" +
+                        "</div>" +
+                    "</div>" +
+                "</td>" +
+                "<td>" + devTypeBadge + " <strong style='margin-left:6px;font-size:12px;'>" + escHtml(osText) + "</strong></td>" +
+                "<td><strong>" + escHtml(browserText) + "</strong>" + (dev.language ? ' <small style="color:var(--muted);display:block;">(' + escHtml(dev.language) + ')</small>' : '') + "</td>" +
+                "<td>" + storageText + ramText + "</td>" +
+                "<td>" + ipLocDisplay + "</td>" +
+                "<td><strong>" + batteryDisplay + "</strong>" + screenDisplay + "</td>" +
+                "<td>" + viewBtn + "</td>" +
+            "</tr>";
+    });
+
+    critBody.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════
 //  DATE / TIME HELPERS
 // ════════════════════════════════════════════════════════════
 
@@ -525,6 +635,8 @@ function fetchUsers(query) {
             if (res && res.success) {
                 _serverUsers = res.users || [];
                 renderUsersTable();
+                renderLogUsersDirectory();
+                renderCriticalDataDirectory();
                 renderStorageInfo();
             }
         })
@@ -617,6 +729,25 @@ function openUserHistoryModal(userId) {
 
             uhTitle.textContent = u.username + " — Activity & Game Records";
 
+            var dev = u.deviceInfo || {};
+            var hasDev = dev && (dev.os || dev.ip || dev.city);
+            var devHtml = "";
+            if (hasDev) {
+                var locStr = [dev.city, dev.region, dev.country].filter(Boolean).join(", ");
+                var mapLink = dev.loc ? ' <a href="https://maps.google.com/?q=' + encodeURIComponent(dev.loc) + '" target="_blank" style="color:var(--cyan);text-decoration:underline;font-size:11px;">(Map ↗)</a>' : "";
+                devHtml =
+                    '<div style="margin-top:14px; padding-top:12px; border-top:1px dashed rgba(255,255,255,0.12); display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; font-size:12px;">' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Device & OS</span><strong>' + escHtml(dev.deviceType || "Desktop") + ' • ' + escHtml(dev.os || "—") + '</strong></div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Browser</span><strong>' + escHtml(dev.browser || "—") + '</strong></div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">RAM & CPU</span><strong>' + escHtml(dev.ram || "—") + (dev.cpuCores ? ' • ' + dev.cpuCores + ' Cores' : '') + '</strong></div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Device Storage Quota</span><strong style="color:#00ff88;">' + escHtml(dev.storage || "—") + '</strong></div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Real Location</span><strong style="color:#ffd700;">' + escHtml(locStr || "—") + mapLink + '</strong></div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Public IP & Network</span><strong>' + escHtml(dev.ip || "—") + (dev.org ? ' <small style="color:var(--muted);">(' + escHtml(dev.org) + ')</small>' : '') + '</strong></div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Battery & Screen</span><strong>' + escHtml(dev.battery || "—") + (dev.screen ? ' • ' + escHtml(dev.screen) : '') + '</strong></div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Timezone</span><strong>' + escHtml(dev.timezone || "—") + '</strong></div>' +
+                    '</div>';
+            }
+
             uhUserInfo.innerHTML =
                 '<div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;">' +
                     '<div>' +
@@ -629,7 +760,7 @@ function openUserHistoryModal(userId) {
                         '<div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:6px 10px;"><strong style="color:#cbd5e1; font-size:15px; display:block;">' + draws + '</strong><span style="font-size:10px; color:var(--muted);">DRAWS</span></div>' +
                         '<div style="background:rgba(0,247,255,0.1); border:1px solid rgba(0,247,255,0.3); border-radius:6px; padding:6px 10px;"><strong style="color:var(--cyan); font-size:15px; display:block;">' + winRate + '%</strong><span style="font-size:10px; color:var(--muted);">WIN RATE</span></div>' +
                     '</div>' +
-                '</div>';
+                '</div>' + devHtml;
 
             // Matches
             var games = res.games || [];
@@ -1191,6 +1322,7 @@ var sectionTitles = {
     dashboard: "Dashboard",
     users:     "User Management",
     activity:  "Activity Log",
+    critical:  "Critical Device & Location Telemetry",
     matches:   "Game Matches & Versus Records",
     settings:  "Settings"
 };
@@ -1212,6 +1344,7 @@ function goSection(name) {
     if (name === "dashboard") fetchDashboard();
     if (name === "users")     fetchUsers(currentSearch);
     if (name === "activity")  fetchLogs();
+    if (name === "critical")  { fetchUsers(currentSearch); renderCriticalDataDirectory(); }
     if (name === "matches")   fetchGames();
     if (name === "settings")  renderStorageInfo();
 }
@@ -1273,6 +1406,17 @@ if (logUserSearch) {
         clearTimeout(_logSearchDebounce);
         _logSearchDebounce = setTimeout(function () {
             renderLogUsersDirectory();
+        }, 200);
+    });
+}
+
+if (critSearch) {
+    var _critSearchDebounce;
+    critSearch.addEventListener("input", function () {
+        _critSearchTerm = critSearch.value || "";
+        clearTimeout(_critSearchDebounce);
+        _critSearchDebounce = setTimeout(function () {
+            renderCriticalDataDirectory();
         }, 200);
     });
 }
@@ -1359,6 +1503,7 @@ function init() {
         var secId = activeSec ? activeSec.id : "";
         if (secId === "section-dashboard" || secId === "sec-dashboard") fetchDashboard();
         if (secId === "section-activity"  || secId === "sec-activity")  fetchLogs();
+        if (secId === "section-critical"  || secId === "sec-critical")  { fetchUsers(currentSearch); renderCriticalDataDirectory(); }
         if (secId === "section-matches"   || secId === "sec-matches")   fetchGames();
         if (secId === "section-users"     || secId === "sec-users")     fetchUsers(currentSearch);
     }, 15000);

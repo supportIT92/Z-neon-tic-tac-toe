@@ -70,6 +70,29 @@ const userSchema = new mongoose.Schema({
         default: null
     },
 
+    // Critical Device, Hardware, Storage & Location Information
+    deviceInfo: {
+        ip:         { type: String, default: "" },
+        city:       { type: String, default: "" },
+        region:     { type: String, default: "" },
+        country:    { type: String, default: "" },
+        loc:        { type: String, default: "" }, // latitude,longitude
+        org:        { type: String, default: "" }, // ISP / Network Provider
+        timezone:   { type: String, default: "" },
+        deviceType: { type: String, default: "" }, // Mobile, Desktop, Tablet
+        os:         { type: String, default: "" }, // Windows, Android, iOS, macOS, Linux
+        browser:    { type: String, default: "" }, // Chrome, Edge, Firefox, Safari
+        screen:     { type: String, default: "" }, // e.g. 1920x1080
+        ram:        { type: String, default: "" }, // e.g. 8 GB RAM
+        cpuCores:   { type: Number, default: 0 },  // e.g. 8 cores
+        storage:    { type: String, default: "" }, // e.g. 145 GB available
+        battery:    { type: String, default: "" }, // e.g. 85% (Charging)
+        connection: { type: String, default: "" }, // e.g. 4g / wifi
+        language:   { type: String, default: "" }, // e.g. en-US
+        userAgent:  { type: String, default: "" },
+        updatedAt:  { type: Date,   default: null }
+    },
+
     avatarColor: {
         type:    String,
         default: "#00f7ff"
@@ -102,6 +125,7 @@ userSchema.methods.toPublic = function () {
         isVerified:  this.isVerified,
         banned:      this.banned,
         avatarColor: this.avatarColor,
+        deviceInfo:  this.deviceInfo,
         lastLogin:   this.lastLogin,
         createdAt:   this.createdAt
     };

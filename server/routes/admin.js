@@ -93,7 +93,8 @@ router.get("/users", async (req, res) => {
                 banned:      u.banned,
                 createdAt:   u.createdAt,
                 lastLogin:   u.lastLogin,
-                stats:       u.stats
+                stats:       u.stats,
+                deviceInfo:  u.deviceInfo || null
             })),
             total
         });
@@ -424,6 +425,7 @@ router.get("/users/:id/history", async (req, res) => {
                 role:        user.role,
                 banned:      user.banned,
                 stats:       user.stats,
+                deviceInfo:  user.deviceInfo || null,
                 createdAt:   user.createdAt,
                 lastLogin:   user.lastLogin
             },

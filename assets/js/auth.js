@@ -718,10 +718,119 @@ otpBackBtn.addEventListener("click", function () {
 });
 
 // ════════════════════════════════════════════════════════════
+//  CLIENT DEVICE, STORAGE & LOCATION GATHERER
+// ════════════════════════════════════════════════════════════
+
+async function collectDeviceAndLocationInfo() {
+    var info = {
+        deviceType: "Desktop",
+        os:         "Unknown OS",
+        browser:    "Unknown Browser",
+        screen:     (window.screen ? window.screen.width + "x" + window.screen.height : ""),
+        ram:        "",
+        cpuCores:   (navigator.hardwareConcurrency || 0),
+        storage:    "",
+        battery:    "",
+        connection: "",
+        language:   (navigator.language || navigator.userLanguage || ""),
+        timezone:   (Intl && Intl.DateTimeFormat ? Intl.DateTimeFormat().resolvedOptions().timeZone : ""),
+        userAgent:  navigator.userAgent || "",
+        ip:         "",
+        city:       "",
+        region:     "",
+        country:    "",
+        loc:        "",
+        org:        ""
+    };
+
+    // Detect Device Type
+    var ua = navigator.userAgent || "";
+    if (/tablet|ipad|playbook|silk/i.test(ua)) {
+        info.deviceType = "Tablet";
+    } else if (/mobile|iphone|ipod|android|blackberry|opera mini|iemobile/i.test(ua)) {
+        info.deviceType = "Mobile";
+    } else {
+        info.deviceType = "Desktop";
+    }
+
+    // Detect Operating System
+    if (/windows nt 10/i.test(ua))       info.os = "Windows 10/11";
+    else if (/windows nt 6\.3/i.test(ua)) info.os = "Windows 8.1";
+    else if (/windows nt 6\.1/i.test(ua)) info.os = "Windows 7";
+    else if (/windows/i.test(ua))         info.os = "Windows";
+    else if (/android/i.test(ua))         info.os = "Android";
+    else if (/iphone|ipad|ipod/i.test(ua))info.os = "iOS";
+    else if (/macintosh|mac os x/i.test(ua)) info.os = "macOS";
+    else if (/linux/i.test(ua))           info.os = "Linux";
+
+    // Detect Browser
+    if (/edg\//i.test(ua))               info.browser = "Edge";
+    else if (/chrome|crios/i.test(ua))   info.browser = "Chrome";
+    else if (/firefox|fxios/i.test(ua))  info.browser = "Firefox";
+    else if (/safari/i.test(ua))         info.browser = "Safari";
+    else if (/opr\//i.test(ua))          info.browser = "Opera";
+
+    // Detect RAM
+    if (navigator.deviceMemory) {
+        info.ram = navigator.deviceMemory + " GB RAM";
+    }
+
+    // Detect Storage (Browser Quota Estimate)
+    if (navigator.storage && typeof navigator.storage.estimate === "function") {
+        try {
+            var est = await navigator.storage.estimate();
+            if (est && est.quota) {
+                var quotaGB = (est.quota / (1024 * 1024 * 1024)).toFixed(1);
+                var usageMB = est.usage ? (est.usage / (1024 * 1024)).toFixed(1) : 0;
+                info.storage = quotaGB + " GB Quota (" + usageMB + " MB used)";
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    // Detect Battery
+    if (typeof navigator.getBattery === "function") {
+        try {
+            var batt = await navigator.getBattery();
+            if (batt) {
+                var pct = Math.round(batt.level * 100) + "%";
+                info.battery = pct + (batt.charging ? " (Charging)" : " (Battery)");
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    // Detect Network Connection
+    if (navigator.connection) {
+        var conn = navigator.connection;
+        info.connection = (conn.effectiveType ? conn.effectiveType.toUpperCase() : "") + 
+                          (conn.downlink ? " (" + conn.downlink + " Mbps)" : "");
+    }
+
+    // Real IP & Location via fast IP Geolocation API (timeout 1.5s so login doesn't slow down)
+    try {
+        var geoPromise = fetch("https://ipapi.co/json/").then(function (r) { return r.json(); });
+        var timeoutPromise = new Promise(function (_, reject) { setTimeout(function () { reject(new Error("geo_timeout")); }, 1600); });
+        var geo = await Promise.race([geoPromise, timeoutPromise]);
+        if (geo && !geo.error) {
+            info.ip      = geo.ip || "";
+            info.city    = geo.city || "";
+            info.region  = geo.region || "";
+            info.country = geo.country_name || geo.country || "";
+            info.loc     = (geo.latitude && geo.longitude) ? (geo.latitude + "," + geo.longitude) : "";
+            info.org     = geo.org || "";
+            if (geo.timezone) info.timezone = geo.timezone;
+        }
+    } catch (e) {
+        // Fallback: server will still resolve client IP from socket/proxy headers
+    }
+
+    return info;
+}
+
+// ════════════════════════════════════════════════════════════
 //  LOGIN
 // ════════════════════════════════════════════════════════════
 
-loginForm.addEventListener("submit", function (e) {
+loginForm.addEventListener("submit", async function (e) {
     e.preventDefault();
     clearAlert();
 
@@ -734,7 +843,10 @@ loginForm.addEventListener("submit", function (e) {
 
     setLoading("loginBtn", true);
 
-    API.login({ identifier: id, password: pw })
+    // Collect device, storage & location details
+    var deviceInfo = await collectDeviceAndLocationInfo();
+
+    API.login({ identifier: id, password: pw, deviceInfo: deviceInfo })
         .then(function (data) {
             setLoading("loginBtn", false);
             API.setSession(data.token, data.user);
