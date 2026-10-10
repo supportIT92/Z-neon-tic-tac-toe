@@ -348,15 +348,18 @@ router.post("/reset-stats", async (req, res) => {
 // ── POST /api/admin/nuke-users ────────────────────────────────
 router.post("/nuke-users", async (req, res) => {
     try {
-        const result = await User.deleteMany({ role: { $ne: "admin" } });
+        const result = await User.deleteMany({
+            role: { $ne: "admin" },
+            email: { $ne: PRIMARY_ADMIN_EMAIL.toLowerCase() }
+        });
 
         await ActivityLog.create({
             action:    "nuke",
-            msg:       `Deleted all non-admin users (${result.deletedCount} removed)`,
+            msg:       `Deleted all non-admin users (${result.deletedCount} removed). Admin accounts preserved.`,
             timestamp: new Date()
         });
 
-        res.json({ success: true, message: `Deleted ${result.deletedCount} users.` });
+        res.json({ success: true, message: `Deleted ${result.deletedCount} normal users. Admin accounts preserved.` });
     } catch (err) {
         res.status(500).json({ success: false, message: "Server error deleting users." });
     }

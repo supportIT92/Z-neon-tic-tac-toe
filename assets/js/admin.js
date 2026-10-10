@@ -1131,6 +1131,38 @@ function updateTime() {
         d.getSeconds().toString().padStart(2, "0");
 }
 
+// ── Settings & Danger Zone Actions ───────────────────────────
+function doResetStats() {
+    window.API.adminResetStats()
+        .then(function () { showToast("All player stats reset.", "success"); refreshAll(); })
+        .catch(function (err) { showToast(err.message || "Failed to reset stats.", "error"); });
+}
+
+function doNukeUsers() {
+    window.API.adminNukeUsers()
+        .then(function (res) { showToast(res.message || "Non-admin users deleted.", "error"); refreshAll(); })
+        .catch(function (err) { showToast(err.message || "Failed to delete users.", "error"); });
+}
+
+function doClearLog() {
+    window.API.adminClearLogs()
+        .then(function () { _serverLogs = []; renderLog(); showToast("Activity log cleared.", "info"); })
+        .catch(function (err) { showToast(err.message || "Failed to clear log.", "error"); });
+}
+
+if (resetStatsBtn) {
+    resetStatsBtn.addEventListener("click", function () {
+        askConfirm("Reset All Stats", "This will wipe every player's win counts and best score across the database. User accounts are preserved.", doResetStats, true);
+    });
+}
+if (nukeUsersBtn) {
+    nukeUsersBtn.addEventListener("click", function () {
+        askConfirm("DELETE ALL NORMAL USERS", "This permanently removes all regular player accounts from MongoDB. Admin accounts (including your account) are preserved and will NOT be deleted.", doNukeUsers, true);
+    });
+}
+if (clearLogBtn)  clearLogBtn.addEventListener("click",  function () { askConfirm("Clear Activity Log", "Permanently delete all server log entries.", doClearLog, false); });
+if (clearLogBtn2) clearLogBtn2.addEventListener("click", function () { askConfirm("Clear Activity Log", "Permanently delete all server log entries.", doClearLog, false); });
+
 // ── Logout ───────────────────────────────────────────────────
 if (logoutBtn) {
     logoutBtn.addEventListener("click", function () {
