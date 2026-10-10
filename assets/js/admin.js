@@ -838,7 +838,7 @@ function openUserHistoryModal(userId) {
             var devHtml = "";
             if (hasDev) {
                 var locStr = [dev.city, dev.region, dev.country].filter(Boolean).join(", ");
-                var mapQuery = dev.loc ? encodeURIComponent(dev.loc) : (locParts ? encodeURIComponent(locParts) : (dev.ip ? encodeURIComponent(dev.ip) : ""));
+                var mapQuery = dev.loc ? encodeURIComponent(dev.loc) : (locStr ? encodeURIComponent(locStr) : (dev.ip ? encodeURIComponent(dev.ip) : ""));
                 var mapUrl = mapQuery ? "https://www.google.com/maps/search/?api=1&query=" + mapQuery : "";
                 var locHtml = mapUrl 
                     ? '<a href="' + mapUrl + '" target="_blank" rel="noopener noreferrer" style="color:#ffd700;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;gap:3px;" title="Open in Google Maps">📍 ' + escHtml(locStr || dev.loc || "View on Map") + '</a>'
