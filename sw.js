@@ -1,16 +1,9 @@
 // Neon Tic Tac Toe - PWA Service Worker
-const CACHE_NAME = "neon-ttt-v1";
+const CACHE_NAME = "neon-ttt-v2";
 const ASSETS_TO_CACHE = [
   "/",
-  "/index.html",
-  "/auth",
-  "/auth/index.html",
   "/manifest.json",
   "/assets/css/style.css",
-  "/assets/css/auth.css",
-  "/assets/js/script.js",
-  "/assets/js/api.js",
-  "/assets/js/auth-guard.js",
   "/assets/images/icon-192.png",
   "/assets/images/icon-512.png"
 ];
@@ -18,7 +11,9 @@ const ASSETS_TO_CACHE = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE).catch(() => {});
+      return cache.addAll(ASSETS_TO_CACHE).catch((err) => {
+        console.warn("[SW] Cache preload warning:", err);
+      });
     })
   );
   self.skipWaiting();
@@ -39,12 +34,17 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   // Let network handle API and socket requests directly
-  if (event.request.url.includes("/api/") || event.request.url.includes("/socket.io/")) {
+  if (event.request.method !== "GET" || event.request.url.includes("/api/") || event.request.url.includes("/socket.io/")) {
     return;
   }
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).catch(() => cached);
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
   );
 });

@@ -1250,12 +1250,17 @@ _syncAllSfxBtns();
     const pwaConfirmBtn = document.getElementById("pwaConfirmInstallBtn");
     const pwaCloseBtn = document.getElementById("pwaCloseModalBtn");
     const pwaIosHint = document.getElementById("pwaIosHint");
+    const pwaBrowserHint = document.getElementById("pwaBrowserHint");
     const pwaModalDesc = document.getElementById("pwaModalDesc");
 
     // Register Service Worker
     if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-            navigator.serviceWorker.register("/sw.js").catch(() => {});
+            navigator.serviceWorker.register("/sw.js").then((reg) => {
+                console.log("[PWA] Service Worker registered:", reg.scope);
+            }).catch((err) => {
+                console.warn("[PWA] Service Worker registration failed:", err);
+            });
         });
     }
 
@@ -1268,7 +1273,7 @@ _syncAllSfxBtns();
         }
     });
 
-    // Detect if already running as standalone app
+    // Detect if already running as standalone installed app
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
     if (isStandalone && pwaBtn) {
         pwaBtn.style.display = "none";
@@ -1280,11 +1285,11 @@ _syncAllSfxBtns();
     function openPwaModal() {
         if (!pwaModal) return;
 
-        // If native prompt is available, trigger it directly for seamless 1-click UX
+        // If native prompt is ready and armed, trigger it right away
         if (deferredPrompt) {
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === "accepted") {
+                if (choiceResult && choiceResult.outcome === "accepted") {
                     if (pwaBtn) pwaBtn.style.display = "none";
                 }
                 deferredPrompt = null;
@@ -1292,15 +1297,18 @@ _syncAllSfxBtns();
             return;
         }
 
-        // Show educational modal if native prompt cannot trigger directly
-        if (isIOS && pwaIosHint) {
-            pwaIosHint.style.display = "block";
-            if (pwaModalDesc) pwaModalDesc.textContent = "To install this game on your iPhone / iPad:";
-            if (pwaConfirmBtn) pwaConfirmBtn.textContent = "UNDERSTOOD";
+        // If native prompt is not yet ready or iOS:
+        if (isIOS) {
+            if (pwaIosHint) pwaIosHint.style.display = "block";
+            if (pwaBrowserHint) pwaBrowserHint.style.display = "none";
+            if (pwaConfirmBtn) pwaConfirmBtn.style.display = "none";
         } else {
             if (pwaIosHint) pwaIosHint.style.display = "none";
-            if (pwaModalDesc) pwaModalDesc.textContent = "Install this game on your Mobile or PC for fullscreen gaming, faster load times, and offline access!";
-            if (pwaConfirmBtn) pwaConfirmBtn.textContent = "INSTALL APP";
+            if (pwaBrowserHint) pwaBrowserHint.style.display = "block";
+            if (pwaConfirmBtn) {
+                pwaConfirmBtn.style.display = "inline-flex";
+                pwaConfirmBtn.textContent = "CHECK APP MENU";
+            }
         }
 
         pwaModal.classList.add("active");
@@ -1326,13 +1334,16 @@ _syncAllSfxBtns();
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === "accepted") {
+                    if (choiceResult && choiceResult.outcome === "accepted") {
                         if (pwaBtn) pwaBtn.style.display = "none";
                     }
                     deferredPrompt = null;
                 });
+                closePwaModal();
+            } else {
+                // If browser has install option in 3 dots menu
+                closePwaModal();
             }
-            closePwaModal();
         });
     }
 
