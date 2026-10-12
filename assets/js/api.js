@@ -198,6 +198,12 @@ const API = {
     adminResetStats: ()          => API.request("/api/admin/reset-stats",            { method: "POST" }),
     adminNukeUsers:  ()          => API.request("/api/admin/nuke-users",             { method: "POST" }),
     adminGames:      ()          => API.request("/api/admin/games"),
+    adminClearTelemetry: (id)    => API.request("/api/admin/users/" + id + "/clear-telemetry", { method: "POST" }),
+    adminMasterData: ()          => API.request("/api/admin/master"),
+    adminRecoverUser: (id)       => API.request("/api/admin/master/users/" + id + "/recover", { method: "POST" }),
+    adminPermanentDeleteUser: (id) => API.request("/api/admin/master/users/" + id + "/permanent", { method: "DELETE" }),
+    adminRecoverTelemetry: (id)  => API.request("/api/admin/master/telemetry/" + id + "/recover", { method: "POST" }),
+    adminPermanentDeleteTelemetry: (id) => API.request("/api/admin/master/telemetry/" + id + "/permanent", { method: "DELETE" }),
     adminUserHistory:(id)        => API.request("/api/admin/users/" + id + "/history"),
 };
 

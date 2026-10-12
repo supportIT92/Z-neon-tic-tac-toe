@@ -258,6 +258,10 @@
                     <span class="nav-icon" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5 8 11 8 11s8-6 8-11a8 8 0 0 0-8-8z" style="display:none;"/></svg></span>
                     <span>Critical Data</span>
                 </button>
+                <button class="nav-item" data-section="master">
+                    <span class="nav-icon" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span>
+                    <span>Master Data</span>
+                </button>
                 <button class="nav-item" data-section="matches">
                     <span class="nav-icon" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M7 12h4"/><path d="M9 10v4"/><circle cx="16" cy="11" r="1" fill="currentColor"/><circle cx="18" cy="13" r="1" fill="currentColor"/></svg></span>
                     <span>Game Matches</span>
@@ -582,6 +586,95 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+            </section>
+
+            <!-- ════════════════════════════════════════════
+                 SECTION: MASTER DATA (RECYCLE BIN & ARCHIVED TELEMETRY)
+            ═══════════════════════════════════════════════ -->
+            <section class="section" id="section-master" aria-label="Master Data">
+
+                <div class="panel" style="margin-bottom: 24px;">
+                    <div class="panel-header" style="flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(255,215,0,0.2); padding-bottom: 14px;">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ffd700; box-shadow:0 0 10px #ffd700;"></span>
+                                <h2 class="panel-title" style="color:#ffd700; font-size:18px;">Master Data Center</h2>
+                            </div>
+                            <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">Recycle bin repository holding soft-deleted user accounts (with preserved encrypted passwords) and cleared critical telemetry logs. Restore data back to live system anytime or permanently destroy records.</p>
+                        </div>
+                        <div class="filter-group" role="tablist" aria-label="Master Data Tabs">
+                            <button type="button" class="filter-btn active" id="masterTabUsers" data-masterview="users" style="display:flex; align-items:center; gap:6px;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                                Deleted Users (<span id="masterUsersCountBadge">0</span>)
+                            </button>
+                            <button type="button" class="filter-btn" id="masterTabTelemetry" data-masterview="telemetry" style="display:flex; align-items:center; gap:6px;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                Cleared Telemetry Logs (<span id="masterTelemetryCountBadge">0</span>)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 1: MASTER USERS VIEW -->
+                    <div id="masterUsersContainer">
+                        <div style="padding: 12px 18px; background: rgba(255,215,0,0.04); border-bottom: 1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <span style="font-size:12px; color:#cbd5e1;">Accounts deleted from the Users directory are held here. Password hashes are strictly preserved for instant 1-click recovery.</span>
+                            <div class="search-wrap" style="max-width: 280px; min-width: 200px; padding: 0 10px;">
+                                <span class="search-icon" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                                <input type="search" id="masterUsersSearch" placeholder="Search deleted accounts…" aria-label="Search deleted users">
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="data-table" id="masterUsersTable" aria-label="Master deleted users">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Account</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Password State</th>
+                                        <th>Deleted Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="masterUsersBody">
+                                    <tr><td colspan="7" class="empty-row">Loading master users…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: MASTER CRITICAL TELEMETRY VIEW -->
+                    <div id="masterTelemetryContainer" style="display:none;">
+                        <div style="padding: 12px 18px; background: rgba(0,247,255,0.04); border-bottom: 1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <span style="font-size:12px; color:#cbd5e1;">System & hardware logs cleared from Critical Data are held here. Click <strong>Recover Log</strong> to restore them back to the user's active device info.</span>
+                            <div class="search-wrap" style="max-width: 280px; min-width: 200px; padding: 0 10px;">
+                                <span class="search-icon" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                                <input type="search" id="masterTelemetrySearch" placeholder="Search cleared telemetry…" aria-label="Search cleared telemetry">
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="data-table" id="masterTelemetryTable" aria-label="Master cleared telemetry">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>User Account</th>
+                                        <th>Device / OS</th>
+                                        <th>Storage & RAM</th>
+                                        <th>Archived Location / IP</th>
+                                        <th>Logged Sessions</th>
+                                        <th>Cleared At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="masterTelemetryBody">
+                                    <tr><td colspan="8" class="empty-row">Loading cleared telemetry records…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
 
             </section>

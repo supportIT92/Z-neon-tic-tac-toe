@@ -7,6 +7,7 @@ const User         = require("../models/User");
 const GameHistory  = require("../models/GameHistory");
 const GameRoom     = require("../models/GameRoom");
 const ActivityLog  = require("../models/ActivityLog");
+const ArchivedTelemetry = require("../models/ArchivedTelemetry");
 const { protect, adminOnly } = require("../middleware/auth.middleware");
 const { escapeRegex }        = require("../utils/security");
 
@@ -22,15 +23,15 @@ router.get("/stats", async (req, res) => {
         startOfToday.setHours(0, 0, 0, 0);
 
         const [totalUsers, adminCount, bannedUsers, activeToday, totalGames, activeRooms] = await Promise.all([
-            User.countDocuments(),
-            User.countDocuments({ role: "admin" }),
-            User.countDocuments({ banned: true }),
-            User.countDocuments({ lastLogin: { $gte: startOfToday } }),
+            User.countDocuments({ isDeleted: { $ne: true } }),
+            User.countDocuments({ role: "admin", isDeleted: { $ne: true } }),
+            User.countDocuments({ banned: true, isDeleted: { $ne: true } }),
+            User.countDocuments({ lastLogin: { $gte: startOfToday }, isDeleted: { $ne: true } }),
             GameHistory.countDocuments(),
             GameRoom.countDocuments({ status: { $in: ["waiting", "playing"] } })
         ]);
 
-        const recentUsers = await User.find()
+        const recentUsers = await User.find({ isDeleted: { $ne: true } })
             .sort({ createdAt: -1 })
             .limit(5)
             .select("username email createdAt role banned lastLogin");
@@ -69,12 +70,15 @@ router.get("/users", async (req, res) => {
         const search = String(req.query.search || "").trim();
 
         const safeSearch = escapeRegex(search);
-        const query = safeSearch
-            ? { $or: [
-                { username: { $regex: safeSearch, $options: "i" } },
-                { email:    { $regex: safeSearch, $options: "i" } }
-              ]}
-            : {};
+        const query = {
+            isDeleted: { $ne: true },
+            ...(safeSearch
+                ? { $or: [
+                    { username: { $regex: safeSearch, $options: "i" } },
+                    { email:    { $regex: safeSearch, $options: "i" } }
+                  ]}
+                : {})
+        };
 
         const users = await User.find(query)
             .sort({ createdAt: -1 })
@@ -234,7 +238,7 @@ router.put("/users/:id/role", async (req, res) => {
     }
 });
 
-// ── DELETE /api/admin/users/:id ───────────────────────────────
+// ── DELETE /api/admin/users/:id (Soft-Delete: Move to Master Data) ─
 router.delete("/users/:id", async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
@@ -244,19 +248,219 @@ router.delete("/users/:id", async (req, res) => {
             return res.status(403).json({ success: false, message: "Primary Admin cannot be deleted." });
         }
 
-        await User.findByIdAndDelete(req.params.id);
+        user.isDeleted = true;
+        user.deletedAt = new Date();
+        await user.save();
 
         await ActivityLog.create({
             action:    "delete",
-            msg:       `Deleted user account: ${user.username} (${user.email})`,
+            msg:       `Moved user account to Master Data (Soft Delete): ${user.username} (${user.email})`,
             email:     user.email,
             username:  user.username,
             timestamp: new Date()
         });
 
-        res.json({ success: true, message: `${user.username} deleted.` });
+        res.json({ success: true, message: `${user.username} moved to Master Data.` });
     } catch (err) {
         res.status(500).json({ success: false, message: "Server error." });
+    }
+});
+
+// ── POST /api/admin/users/:id/clear-telemetry (Clear System Details & Move to Master Data) ─
+router.post("/users/:id/clear-telemetry", async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
+        // Archive existing telemetry before clearing
+        const oldDevice = user.deviceInfo ? user.deviceInfo.toObject ? user.deviceInfo.toObject() : user.deviceInfo : {};
+        const oldHistory = Array.isArray(user.loginHistory) ? user.loginHistory : [];
+
+        const archived = await ArchivedTelemetry.create({
+            userId: user._id,
+            username: user.username,
+            email: user.email,
+            deviceInfo: oldDevice,
+            loginHistory: oldHistory,
+            clearedAt: new Date()
+        });
+
+        // Reset user telemetry and history
+        user.deviceInfo = {};
+        user.loginHistory = [];
+        await user.save();
+
+        await ActivityLog.create({
+            action:    "clear_log",
+            msg:       `Cleared system & hardware telemetry logs for ${user.username} (${user.email}) -> Archived to Master Data`,
+            email:     user.email,
+            username:  user.username,
+            timestamp: new Date()
+        });
+
+        res.json({
+            success: true,
+            message: `Cleared telemetry logs for ${user.username}. Data moved to Master Data.`,
+            archivedId: archived._id
+        });
+    } catch (err) {
+        console.error("[clear-telemetry error]", err);
+        res.status(500).json({ success: false, message: "Failed to clear telemetry log." });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// MASTER DATA (RECYCLE BIN & ARCHIVED TELEMETRY) ENDPOINTS
+// ═══════════════════════════════════════════════════════════════
+
+// ── GET /api/admin/master (Get All Master Data: Deleted Users & Cleared Logs) ──
+router.get("/master", async (req, res) => {
+    try {
+        const [deletedUsers, archivedTelemetry] = await Promise.all([
+            User.find({ isDeleted: true }).sort({ deletedAt: -1 }),
+            ArchivedTelemetry.find().sort({ clearedAt: -1 })
+        ]);
+
+        res.json({
+            success: true,
+            users: deletedUsers.map(u => ({
+                id:          u._id,
+                username:    u.username,
+                email:       u.email,
+                role:        u.role,
+                banned:      u.banned,
+                createdAt:   u.createdAt,
+                lastLogin:   u.lastLogin,
+                deletedAt:   u.deletedAt,
+                hasPassword: Boolean(u.password),
+                passwordStatus: "•••••••• (Encrypted & Preserved)"
+            })),
+            telemetry: archivedTelemetry.map(t => ({
+                id:          t._id,
+                userId:      t.userId,
+                username:    t.username,
+                email:       t.email,
+                deviceInfo:  t.deviceInfo || {},
+                loginHistory:t.loginHistory || [],
+                clearedAt:   t.clearedAt
+            }))
+        });
+    } catch (err) {
+        console.error("[admin/master error]", err);
+        res.status(500).json({ success: false, message: "Failed to fetch master data." });
+    }
+});
+
+// ── POST /api/admin/master/users/:id/recover (Recover User Account) ──
+router.post("/master/users/:id/recover", async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ success: false, message: "User not found in master data." });
+
+        user.isDeleted = false;
+        user.deletedAt = null;
+        await user.save();
+
+        await ActivityLog.create({
+            action:    "recover",
+            msg:       `Recovered user account from Master Data: ${user.username} (${user.email})`,
+            email:     user.email,
+            username:  user.username,
+            timestamp: new Date()
+        });
+
+        res.json({ success: true, message: `Account ${user.username} successfully recovered.` });
+    } catch (err) {
+        console.error("[master/recover user error]", err);
+        res.status(500).json({ success: false, message: "Failed to recover user." });
+    }
+});
+
+// ── DELETE /api/admin/master/users/:id/permanent (Permanent Delete User) ──
+router.delete("/master/users/:id/permanent", async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
+        if (isPrimaryAdmin(user)) {
+            return res.status(403).json({ success: false, message: "Primary Admin cannot be permanently deleted." });
+        }
+
+        const username = user.username;
+        const email = user.email;
+
+        await User.findByIdAndDelete(req.params.id);
+
+        await ActivityLog.create({
+            action:    "permanent_delete",
+            msg:       `Permanently deleted user account: ${username} (${email})`,
+            email:     email,
+            username:  username,
+            timestamp: new Date()
+        });
+
+        res.json({ success: true, message: `Account ${username} permanently deleted from database.` });
+    } catch (err) {
+        console.error("[master/permanent delete user error]", err);
+        res.status(500).json({ success: false, message: "Failed to permanently delete user." });
+    }
+});
+
+// ── POST /api/admin/master/telemetry/:id/recover (Recover Cleared Telemetry) ──
+router.post("/master/telemetry/:id/recover", async (req, res) => {
+    try {
+        const record = await ArchivedTelemetry.findById(req.params.id);
+        if (!record) return res.status(404).json({ success: false, message: "Archived telemetry not found." });
+
+        // Find associated user
+        const user = await User.findById(record.userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Associated active user not found to restore log to." });
+        }
+
+        // Restore telemetry and login history
+        user.deviceInfo = record.deviceInfo || {};
+        user.loginHistory = record.loginHistory || [];
+        await user.save();
+
+        // Remove from archive now that it's restored
+        await ArchivedTelemetry.findByIdAndDelete(req.params.id);
+
+        await ActivityLog.create({
+            action:    "recover_telemetry",
+            msg:       `Restored hardware & system telemetry back to user: ${user.username} (${user.email})`,
+            email:     user.email,
+            username:  user.username,
+            timestamp: new Date()
+        });
+
+        res.json({ success: true, message: `Telemetry logs successfully restored for ${user.username}.` });
+    } catch (err) {
+        console.error("[master/recover telemetry error]", err);
+        res.status(500).json({ success: false, message: "Failed to recover telemetry log." });
+    }
+});
+
+// ── DELETE /api/admin/master/telemetry/:id/permanent (Permanent Delete Telemetry) ──
+router.delete("/master/telemetry/:id/permanent", async (req, res) => {
+    try {
+        const record = await ArchivedTelemetry.findById(req.params.id);
+        if (!record) return res.status(404).json({ success: false, message: "Archived telemetry not found." });
+
+        await ArchivedTelemetry.findByIdAndDelete(req.params.id);
+
+        await ActivityLog.create({
+            action:    "permanent_delete_telemetry",
+            msg:       `Permanently deleted archived telemetry for ${record.username} (${record.email})`,
+            email:     record.email,
+            username:  record.username,
+            timestamp: new Date()
+        });
+
+        res.json({ success: true, message: `Archived telemetry record permanently deleted.` });
+    } catch (err) {
+        console.error("[master/permanent delete telemetry error]", err);
+        res.status(500).json({ success: false, message: "Failed to permanently delete telemetry." });
     }
 });
 

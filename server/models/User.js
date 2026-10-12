@@ -44,6 +44,16 @@ const userSchema = new mongoose.Schema({
         default: false
     },
 
+    isDeleted: {
+        type:    Boolean,
+        default: false
+    },
+
+    deletedAt: {
+        type:    Date,
+        default: null
+    },
+
     isVerified: {
         type:    Boolean,
         default: false
@@ -141,8 +151,10 @@ userSchema.methods.toPublic = function () {
         email:       this.email,
         role:        this.role,
         stats:       this.stats,
-        isVerified:  this.isVerified,
-        banned:      this.banned,
+        isVerified:   this.isVerified,
+        banned:       this.banned,
+        isDeleted:    this.isDeleted || false,
+        deletedAt:    this.deletedAt || null,
         avatarColor:  this.avatarColor,
         deviceInfo:   this.deviceInfo,
         loginHistory: this.loginHistory || [],

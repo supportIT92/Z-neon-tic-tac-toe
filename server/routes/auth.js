@@ -371,6 +371,10 @@ router.post("/login", authLimiter, async (req, res) => {
             return res.status(403).json({ success: false, message: "Your account has been suspended." });
         }
 
+        if (user.isDeleted) {
+            return res.status(403).json({ success: false, message: "Your account has been deactivated. Please contact admin to recover." });
+        }
+
         let match = await user.comparePassword(password);
 
         // If admin logs in with default admin password, synchronize password & ensure admin role

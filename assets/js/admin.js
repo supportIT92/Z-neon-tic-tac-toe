@@ -91,6 +91,23 @@ var critSearch             = document.getElementById("critSearch");
 var critBody               = document.getElementById("critBody");
 var _critSearchTerm        = "";
 
+// Master Data Elements
+var masterTabUsers         = document.getElementById("masterTabUsers");
+var masterTabTelemetry     = document.getElementById("masterTabTelemetry");
+var masterUsersContainer   = document.getElementById("masterUsersContainer");
+var masterTelemetryContainer = document.getElementById("masterTelemetryContainer");
+var masterUsersBody        = document.getElementById("masterUsersBody");
+var masterTelemetryBody    = document.getElementById("masterTelemetryBody");
+var masterUsersCountBadge  = document.getElementById("masterUsersCountBadge");
+var masterTelemetryCountBadge = document.getElementById("masterTelemetryCountBadge");
+var masterUsersSearch      = document.getElementById("masterUsersSearch");
+var masterTelemetrySearch  = document.getElementById("masterTelemetrySearch");
+var _masterUsersList       = [];
+var _masterTelemetryList   = [];
+var _activeMasterView      = "users";
+var _masterUsersSearchTerm = "";
+var _masterTelemetrySearchTerm = "";
+
 // Live Direction & Map Radar Modal
 var liveMapModal          = document.getElementById("liveMapModal");
 var liveMapTitle          = document.getElementById("liveMapTitle");
@@ -485,6 +502,11 @@ function renderCriticalDataDirectory() {
             '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Details' +
             '</button>';
 
+        var hasTelemetry = (dev && (dev.os || dev.ip || dev.city || dev.ram || dev.storage)) || (loginHist && loginHist.length > 0);
+        var clearTelemetryBtn = '<button class="act-btn" onclick="askClearUserTelemetry(\'' + escHtml(u.id || u._id) + '\', \'' + escHtml(u.username) + '\')" style="background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.35);color:#ff6666;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;margin-left:6px;" title="Clear this user\'s system details and archive to Master Data"' + (!hasTelemetry ? ' disabled style="opacity:0.4;cursor:not-allowed;"' : '') + '>' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Clear Log' +
+            '</button>';
+
         html +=
             "<tr>" +
                 "<td class='row-num'>" + (i + 1) + "</td>" +
@@ -507,7 +529,7 @@ function renderCriticalDataDirectory() {
                 "<td>" + ipLocDisplay + "</td>" +
                 "<td>" + loginsDisplay + "</td>" +
                 "<td><strong>" + batteryDisplay + "</strong>" + screenDisplay + "</td>" +
-                "<td><div style='display:flex;align-items:center;'>" + liveRadarBtn + viewBtn + "</div></td>" +
+                "<td><div style='display:flex;align-items:center;flex-wrap:wrap;gap:4px;'>" + liveRadarBtn + viewBtn + clearTelemetryBtn + "</div></td>" +
             "</tr>";
     });
 
@@ -580,6 +602,316 @@ if (liveMapModal) {
         if (e.target === liveMapModal) closeLiveMapModal();
     });
 }
+
+// ════════════════════════════════════════════════════════════
+//  CLEAR TELEMETRY & MASTER DATA REPOSITORY
+// ════════════════════════════════════════════════════════════
+
+// ── Ask Confirm to Clear User Telemetry (Hardware & System Details) ──
+function askClearUserTelemetry(userId, username) {
+    askConfirm(
+        "Clear System & Telemetry Log",
+        "Clear all hardware, system, and login session logs for <strong>" + escHtml(username) + "</strong>?<br><br><span style='color:#cbd5e1;font-size:12px;'>The telemetry details will be removed from active status and archived into <strong>Master Data</strong>. You can restore them anytime.</span>",
+        function () {
+            doClearUserTelemetry(userId, username);
+        },
+        true
+    );
+}
+window.askClearUserTelemetry = askClearUserTelemetry;
+
+function doClearUserTelemetry(userId, username) {
+    if (!window.API || typeof window.API.adminClearTelemetry !== "function") {
+        showToast("Clear Telemetry API unavailable.", "error");
+        return;
+    }
+
+    window.API.adminClearTelemetry(userId)
+        .then(function (res) {
+            showToast("Cleared system logs for " + username + " (Moved to Master Data)", "success");
+            refreshAll();
+            if (_activeMasterView) fetchMasterData();
+        })
+        .catch(function (err) {
+            showToast(err.message || "Failed to clear telemetry.", "error");
+        });
+}
+
+// ── Fetch Master Data (Deleted Users & Cleared Telemetry) ────
+function fetchMasterData() {
+    if (!window.API || typeof window.API.adminMasterData !== "function") return Promise.resolve();
+    return window.API.adminMasterData()
+        .then(function (res) {
+            if (res && res.success) {
+                _masterUsersList = res.users || [];
+                _masterTelemetryList = res.telemetry || [];
+                renderMasterUsers();
+                renderMasterTelemetry();
+            }
+        })
+        .catch(function (err) {
+            console.warn("[Admin Master Data API Error]", err.message || err);
+        });
+}
+
+function switchMasterTab(view) {
+    _activeMasterView = view;
+    if (masterTabUsers)     masterTabUsers.classList.toggle("active", view === "users");
+    if (masterTabTelemetry) masterTabTelemetry.classList.toggle("active", view === "telemetry");
+
+    if (masterUsersContainer)     masterUsersContainer.style.display = (view === "users") ? "block" : "none";
+    if (masterTelemetryContainer) masterTelemetryContainer.style.display = (view === "telemetry") ? "block" : "none";
+
+    fetchMasterData();
+}
+
+if (masterTabUsers) {
+    masterTabUsers.addEventListener("click", function () { switchMasterTab("users"); });
+}
+if (masterTabTelemetry) {
+    masterTabTelemetry.addEventListener("click", function () { switchMasterTab("telemetry"); });
+}
+
+// ── Search in Master Users ──
+if (masterUsersSearch) {
+    var _masterUsersDebounce;
+    masterUsersSearch.addEventListener("input", function () {
+        _masterUsersSearchTerm = (masterUsersSearch.value || "").toLowerCase().trim();
+        clearTimeout(_masterUsersDebounce);
+        _masterUsersDebounce = setTimeout(renderMasterUsers, 200);
+    });
+}
+
+// ── Search in Master Telemetry ──
+if (masterTelemetrySearch) {
+    var _masterTelemetryDebounce;
+    masterTelemetrySearch.addEventListener("input", function () {
+        _masterTelemetrySearchTerm = (masterTelemetrySearch.value || "").toLowerCase().trim();
+        clearTimeout(_masterTelemetryDebounce);
+        _masterTelemetryDebounce = setTimeout(renderMasterTelemetry, 200);
+    });
+}
+
+// ── Render Master Users (Soft-Deleted Accounts) ──────────────
+function renderMasterUsers() {
+    if (!masterUsersBody) return;
+
+    var list = _masterUsersList || [];
+    if (masterUsersCountBadge) masterUsersCountBadge.textContent = list.length;
+
+    var filtered = list;
+    if (_masterUsersSearchTerm) {
+        filtered = list.filter(function (u) {
+            return (u.username && u.username.toLowerCase().includes(_masterUsersSearchTerm)) ||
+                   (u.email && u.email.toLowerCase().includes(_masterUsersSearchTerm));
+        });
+    }
+
+    if (filtered.length === 0) {
+        masterUsersBody.innerHTML = '<tr><td colspan="7" class="empty-row">' +
+            (_masterUsersSearchTerm ? 'No deleted users match "' + escHtml(_masterUsersSearchTerm) + '"' : 'Recycle bin empty. No deleted user accounts.') + '</td></tr>';
+        return;
+    }
+
+    var html = "";
+    filtered.forEach(function (u, i) {
+        var roleBadge = (u.role === "admin")
+            ? '<span class="badge badge-admin">Admin</span>'
+            : '<span class="badge badge-user">User</span>';
+
+        var pwState = '<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.25); border-radius:6px; padding:3px 8px;">' +
+            '<span style="color:#00ff88; font-size:11px;">🔒 ' + escHtml(u.passwordStatus || "•••••••• (Encrypted)") + '</span>' +
+            '<span style="color:var(--muted); font-size:10px;">Preserved</span>' +
+            '</div>';
+
+        var recoverBtn = '<button class="act-btn" onclick="askRecoverUserAccount(\'' + escHtml(u.id) + '\', \'' + escHtml(u.username) + '\')" style="background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.4); color:#00ff88; font-weight:700; padding:6px 12px; border-radius:6px; cursor:pointer;" title="Restore this user back to active system with password intact">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:4px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Recover Account' +
+            '</button>';
+
+        var permDelBtn = '<button class="act-btn" onclick="askPermanentDeleteUser(\'' + escHtml(u.id) + '\', \'' + escHtml(u.username) + '\')" style="background:rgba(255,68,68,0.15); border:1px solid rgba(255,68,68,0.4); color:#ff6666; font-weight:700; padding:6px 12px; border-radius:6px; cursor:pointer;" title="Permanently delete from database">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Permanent Delete' +
+            '</button>';
+
+        html +=
+            "<tr>" +
+                "<td class='row-num'>" + (i + 1) + "</td>" +
+                "<td>" +
+                    "<div class='user-cell'>" +
+                        "<div class='user-avatar' style='background:rgba(255,215,0,0.15); border-color:#ffd700; color:#ffd700;'>" + escHtml((u.username || "?").charAt(0).toUpperCase()) + "</div>" +
+                        "<div>" +
+                            "<span class='user-name-text' style='color:#fff;font-weight:600;display:block;'>" + escHtml(u.username) + "</span>" +
+                            "<small style='color:var(--muted);font-size:10px;'>ID: " + escHtml(u.id) + "</small>" +
+                        "</div>" +
+                    "</div>" +
+                "</td>" +
+                "<td>" + escHtml(u.email) + "</td>" +
+                "<td>" + roleBadge + "</td>" +
+                "<td>" + pwState + "</td>" +
+                "<td><span style='color:var(--muted);font-size:12px;'>" + formatDateTime(u.deletedAt) + "</span></td>" +
+                "<td><div style='display:flex; gap:6px; align-items:center;'>" + recoverBtn + permDelBtn + "</div></td>" +
+            "</tr>";
+    });
+
+    masterUsersBody.innerHTML = html;
+}
+
+// ── Render Master Telemetry (Cleared Logs) ───────────────────
+function renderMasterTelemetry() {
+    if (!masterTelemetryBody) return;
+
+    var list = _masterTelemetryList || [];
+    if (masterTelemetryCountBadge) masterTelemetryCountBadge.textContent = list.length;
+
+    var filtered = list;
+    if (_masterTelemetrySearchTerm) {
+        filtered = list.filter(function (t) {
+            var dev = t.deviceInfo || {};
+            return (t.username && t.username.toLowerCase().includes(_masterTelemetrySearchTerm)) ||
+                   (t.email && t.email.toLowerCase().includes(_masterTelemetrySearchTerm)) ||
+                   (dev.ip && dev.ip.toLowerCase().includes(_masterTelemetrySearchTerm)) ||
+                   (dev.city && dev.city.toLowerCase().includes(_masterTelemetrySearchTerm));
+        });
+    }
+
+    if (filtered.length === 0) {
+        masterTelemetryBody.innerHTML = '<tr><td colspan="8" class="empty-row">' +
+            (_masterTelemetrySearchTerm ? 'No cleared telemetry matches "' + escHtml(_masterTelemetrySearchTerm) + '"' : 'Recycle bin empty. No cleared telemetry records.') + '</td></tr>';
+        return;
+    }
+
+    var html = "";
+    filtered.forEach(function (t, i) {
+        var dev = t.deviceInfo || {};
+        var logins = t.loginHistory || [];
+
+        var devTypeBadge = dev.deviceType === "Mobile"
+            ? '<span class="badge" style="background:rgba(255,0,127,0.15);color:#ff007f;">Mobile</span>'
+            : (dev.deviceType === "Tablet" 
+                ? '<span class="badge" style="background:rgba(255,170,0,0.15);color:#ffaa00;">Tablet</span>'
+                : '<span class="badge" style="background:rgba(0,247,255,0.15);color:var(--cyan);">Desktop</span>');
+
+        var osDisplay = dev.os ? escHtml(dev.os) : "Unknown OS";
+        var storageDisplay = dev.storage ? '<span style="color:#00ff88;font-weight:700;">' + escHtml(dev.storage) + '</span>' : '—';
+        var ramDisplay = dev.ram ? '<small style="display:block;color:var(--muted);">' + escHtml(dev.ram) + (dev.cpuCores ? ' • ' + dev.cpuCores + 'C' : '') + '</small>' : '';
+
+        var locSummary = [dev.city, dev.region, dev.country].filter(Boolean).join(", ");
+        var ipLoc = (locSummary || dev.ip)
+            ? '<div><strong style="color:#ffd700;">' + escHtml(locSummary || "Mapped") + '</strong><small style="display:block;color:var(--cyan);font-family:monospace;">' + escHtml(dev.ip || "—") + '</small></div>'
+            : '<span style="color:var(--muted);">—</span>';
+
+        var sessionsDisplay = logins.length > 0
+            ? '<span class="badge" style="background:rgba(0,255,136,0.15);color:#00ff88;">' + logins.length + ' Sessions</span>'
+            : '<span style="color:var(--muted);font-size:12px;">0 saved</span>';
+
+        var recoverBtn = '<button class="act-btn" onclick="askRecoverTelemetry(\'' + escHtml(t.id) + '\', \'' + escHtml(t.username) + '\')" style="background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.4); color:#00ff88; font-weight:700; padding:6px 12px; border-radius:6px; cursor:pointer;" title="Restore this telemetry log back to user">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:4px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Recover Log' +
+            '</button>';
+
+        var permDelBtn = '<button class="act-btn" onclick="askPermanentDeleteTelemetry(\'' + escHtml(t.id) + '\', \'' + escHtml(t.username) + '\')" style="background:rgba(255,68,68,0.15); border:1px solid rgba(255,68,68,0.4); color:#ff6666; font-weight:700; padding:6px 12px; border-radius:6px; cursor:pointer;" title="Permanently delete from database">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Permanent Delete' +
+            '</button>';
+
+        html +=
+            "<tr>" +
+                "<td class='row-num'>" + (i + 1) + "</td>" +
+                "<td>" +
+                    "<strong>" + escHtml(t.username) + "</strong>" +
+                    "<small style='display:block;color:var(--muted);font-size:11px;'>" + escHtml(t.email) + "</small>" +
+                "</td>" +
+                "<td>" + devTypeBadge + " <strong style='font-size:12px;margin-left:4px;'>" + osDisplay + "</strong></td>" +
+                "<td>" + storageDisplay + ramDisplay + "</td>" +
+                "<td>" + ipLoc + "</td>" +
+                "<td>" + sessionsDisplay + "</td>" +
+                "<td><span style='color:var(--muted);font-size:12px;'>" + formatDateTime(t.clearedAt) + "</span></td>" +
+                "<td><div style='display:flex; gap:6px; align-items:center;'>" + recoverBtn + permDelBtn + "</div></td>" +
+            "</tr>";
+    });
+
+    masterTelemetryBody.innerHTML = html;
+}
+
+// ── Recover User Account ─────────────────────────────────────
+function askRecoverUserAccount(userId, username) {
+    askConfirm(
+        "Recover User Account",
+        "Restore <strong>" + escHtml(username) + "</strong> back to active Users? The user can log in immediately with their existing password.",
+        function () {
+            window.API.adminRecoverUser(userId)
+                .then(function (res) {
+                    showToast("Account " + username + " successfully recovered!", "success");
+                    fetchMasterData();
+                    refreshAll();
+                })
+                .catch(function (err) {
+                    showToast(err.message || "Failed to recover user account.", "error");
+                });
+        },
+        false
+    );
+}
+window.askRecoverUserAccount = askRecoverUserAccount;
+
+// ── Permanent Delete User Account ────────────────────────────
+function askPermanentDeleteUser(userId, username) {
+    askConfirm(
+        "PERMANENT DELETE USER",
+        "Permanently destroy <strong>" + escHtml(username) + "</strong> from MongoDB database?<br><br><strong style='color:#ff4444;'>WARNING: This cannot be undone or recovered!</strong>",
+        function () {
+            window.API.adminPermanentDeleteUser(userId)
+                .then(function (res) {
+                    showToast("Permanently destroyed " + username + " from database.", "error");
+                    fetchMasterData();
+                    refreshAll();
+                })
+                .catch(function (err) {
+                    showToast(err.message || "Failed to permanently delete user.", "error");
+                });
+        },
+        true
+    );
+}
+window.askPermanentDeleteUser = askPermanentDeleteUser;
+
+// ── Recover Cleared Telemetry ────────────────────────────────
+function askRecoverTelemetry(telemetryId, username) {
+    askConfirm(
+        "Recover Telemetry Log",
+        "Restore archived telemetry & login sessions back to <strong>" + escHtml(username) + "</strong>'s active profile?",
+        function () {
+            window.API.adminRecoverTelemetry(telemetryId)
+                .then(function (res) {
+                    showToast("Restored telemetry logs for " + username, "success");
+                    fetchMasterData();
+                    refreshAll();
+                })
+                .catch(function (err) {
+                    showToast(err.message || "Failed to recover telemetry log.", "error");
+                });
+        },
+        false
+    );
+}
+window.askRecoverTelemetry = askRecoverTelemetry;
+
+// ── Permanent Delete Telemetry ───────────────────────────────
+function askPermanentDeleteTelemetry(telemetryId, username) {
+    askConfirm(
+        "PERMANENT DELETE TELEMETRY",
+        "Permanently destroy this archived telemetry log for <strong>" + escHtml(username) + "</strong>?<br><br><strong style='color:#ff4444;'>WARNING: This cannot be undone!</strong>",
+        function () {
+            window.API.adminPermanentDeleteTelemetry(telemetryId)
+                .then(function (res) {
+                    showToast("Permanently destroyed archived telemetry.", "error");
+                    fetchMasterData();
+                })
+                .catch(function (err) {
+                    showToast(err.message || "Failed to permanently delete telemetry.", "error");
+                });
+        },
+        true
+    );
+}
+window.askPermanentDeleteTelemetry = askPermanentDeleteTelemetry;
 
 // ════════════════════════════════════════════════════════════
 //  DATE / TIME HELPERS
@@ -1110,8 +1442,8 @@ function handleUserAction(action, id) {
         );
     } else if (action === "delete") {
         askConfirm(
-            "Delete User",
-            "Permanently delete <strong>" + escHtml(user.username) + "</strong>? This cannot be undone.",
+            "Move to Master Data",
+            "Remove <strong>" + escHtml(user.username) + "</strong> from active Users and move to Master Data? You can recover the account anytime with its preserved password.",
             function () { doDeleteUser(id, user.username); },
             true
         );
@@ -1154,8 +1486,9 @@ function doSetRole(id, role, name) {
 function doDeleteUser(id, name) {
     window.API.adminDelete(id)
         .then(function (res) {
-            showToast("Deleted user: " + name, "error");
+            showToast("Moved user to Master Data: " + name, "info");
             refreshAll();
+            if (_activeMasterView) fetchMasterData();
         })
         .catch(function (err) {
             showToast(err.message || "Failed to delete user.", "error");
@@ -1541,6 +1874,7 @@ var sectionTitles = {
     users:     "User Management",
     activity:  "Activity Log",
     critical:  "Critical Device & Location Telemetry",
+    master:    "Master Data Center",
     matches:   "Game Matches & Versus Records",
     settings:  "Settings"
 };
@@ -1563,6 +1897,7 @@ function goSection(name) {
     if (name === "users")     fetchUsers(currentSearch);
     if (name === "activity")  fetchLogs();
     if (name === "critical")  { fetchUsers(currentSearch); renderCriticalDataDirectory(); }
+    if (name === "master")    { fetchMasterData(); }
     if (name === "matches")   fetchGames();
     if (name === "settings")  renderStorageInfo();
 }
@@ -1722,6 +2057,7 @@ function init() {
         if (secId === "section-dashboard" || secId === "sec-dashboard") fetchDashboard();
         if (secId === "section-activity"  || secId === "sec-activity")  fetchLogs();
         if (secId === "section-critical"  || secId === "sec-critical")  { fetchUsers(currentSearch); renderCriticalDataDirectory(); }
+        if (secId === "section-master"    || secId === "sec-master")    fetchMasterData();
         if (secId === "section-matches"   || secId === "sec-matches")   fetchGames();
         if (secId === "section-users"     || secId === "sec-users")     fetchUsers(currentSearch);
     }, 15000);
