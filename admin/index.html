@@ -47,6 +47,13 @@
         <div class="modal-card">
             <h3 id="confirmTitle">Confirm Action</h3>
             <p id="confirmMessage">Are you sure?</p>
+            <div id="confirmSecretWrap" style="display:none; margin: 16px 0 6px 0; text-align:left;">
+                <label for="confirmSecretInput" style="display:block; font-size:12px; color:#ffd700; font-weight:700; margin-bottom:6px;">
+                    Enter Secret Security Code:
+                </label>
+                <input type="password" id="confirmSecretInput" placeholder="Enter secret code to authorize…" autocomplete="off" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,215,0,0.4); border-radius:8px; color:#fff; font-size:13px; font-family:monospace; outline:none; transition:0.2s;">
+                <p id="confirmSecretError" style="color:#ff4444; font-size:11px; margin-top:5px; margin-bottom:0; display:none;"></p>
+            </div>
             <div class="modal-btns">
                 <button class="modal-confirm-btn" id="confirmYes">Yes, proceed</button>
                 <button class="modal-cancel-btn" id="confirmNo">Cancel</button>

@@ -128,11 +128,16 @@ var storageInfo     = document.getElementById("storageInfo");
 var dashGoUsers     = document.getElementById("dashGoUsers");
 
 // Confirm modal
-var confirmModal    = document.getElementById("confirmModal");
-var confirmTitle    = document.getElementById("confirmTitle");
-var confirmMessage  = document.getElementById("confirmMessage");
-var confirmYes      = document.getElementById("confirmYes");
-var confirmNo       = document.getElementById("confirmNo");
+var confirmModal       = document.getElementById("confirmModal");
+var confirmTitle       = document.getElementById("confirmTitle");
+var confirmMessage     = document.getElementById("confirmMessage");
+var confirmYes         = document.getElementById("confirmYes");
+var confirmNo          = document.getElementById("confirmNo");
+var confirmSecretWrap  = document.getElementById("confirmSecretWrap");
+var confirmSecretInput = document.getElementById("confirmSecretInput");
+var confirmSecretError = document.getElementById("confirmSecretError");
+var _confirmRequiresSecret = false;
+var REQUIRED_SECRET_CODE   = "Ztictactoe0";
 
 // Edit modal
 var editModal       = document.getElementById("editModal");
@@ -855,9 +860,9 @@ window.askRecoverUserAccount = askRecoverUserAccount;
 function askPermanentDeleteUser(userId, username) {
     askConfirm(
         "PERMANENT DELETE USER",
-        "Permanently destroy <strong>" + escHtml(username) + "</strong> from MongoDB database?<br><br><strong style='color:#ff4444;'>WARNING: This cannot be undone or recovered!</strong>",
-        function () {
-            window.API.adminPermanentDeleteUser(userId)
+        "Permanently destroy <strong>" + escHtml(username) + "</strong> from MongoDB database?<br><br><span style='color:#cbd5e1;font-size:12px;'>Enter secret security code below to authorize permanent deletion.</span>",
+        function (secretCode) {
+            window.API.adminPermanentDeleteUser(userId, secretCode)
                 .then(function (res) {
                     showToast("Permanently destroyed " + username + " from database.", "error");
                     fetchMasterData();
@@ -867,7 +872,8 @@ function askPermanentDeleteUser(userId, username) {
                     showToast(err.message || "Failed to permanently delete user.", "error");
                 });
         },
-        true
+        true,
+        true // requiresSecret = true
     );
 }
 window.askPermanentDeleteUser = askPermanentDeleteUser;
@@ -897,9 +903,9 @@ window.askRecoverTelemetry = askRecoverTelemetry;
 function askPermanentDeleteTelemetry(telemetryId, username) {
     askConfirm(
         "PERMANENT DELETE TELEMETRY",
-        "Permanently destroy this archived telemetry log for <strong>" + escHtml(username) + "</strong>?<br><br><strong style='color:#ff4444;'>WARNING: This cannot be undone!</strong>",
-        function () {
-            window.API.adminPermanentDeleteTelemetry(telemetryId)
+        "Permanently destroy this archived telemetry log for <strong>" + escHtml(username) + "</strong>?<br><br><span style='color:#cbd5e1;font-size:12px;'>Enter secret security code below to authorize permanent deletion.</span>",
+        function (secretCode) {
+            window.API.adminPermanentDeleteTelemetry(telemetryId, secretCode)
                 .then(function (res) {
                     showToast("Permanently destroyed archived telemetry.", "error");
                     fetchMasterData();
@@ -908,7 +914,8 @@ function askPermanentDeleteTelemetry(telemetryId, username) {
                     showToast(err.message || "Failed to permanently delete telemetry.", "error");
                 });
         },
-        true
+        true,
+        true // requiresSecret = true
     );
 }
 window.askPermanentDeleteTelemetry = askPermanentDeleteTelemetry;
@@ -1590,26 +1597,97 @@ editCancelBtn.addEventListener("click", function () {
 //  CONFIRM MODAL
 // ════════════════════════════════════════════════════════════
 
-function askConfirm(title, msg, onYes, danger) {
+function askConfirm(title, msg, onYes, danger, requiresSecret) {
     confirmTitle.textContent = title;
     confirmMessage.innerHTML = msg;
     confirmYes.className     = "modal-confirm-btn" + (danger ? " danger" : "");
     pendingAction            = onYes;
+    _confirmRequiresSecret   = Boolean(requiresSecret);
+
+    if (confirmSecretWrap) {
+        if (_confirmRequiresSecret) {
+            confirmSecretWrap.style.display = "block";
+            if (confirmSecretInput) {
+                confirmSecretInput.value = "";
+                confirmSecretInput.style.borderColor = "rgba(255,215,0,0.4)";
+                setTimeout(function () { confirmSecretInput.focus(); }, 150);
+            }
+            if (confirmSecretError) {
+                confirmSecretError.textContent = "";
+                confirmSecretError.style.display = "none";
+            }
+        } else {
+            confirmSecretWrap.style.display = "none";
+            if (confirmSecretInput) confirmSecretInput.value = "";
+            if (confirmSecretError) confirmSecretError.style.display = "none";
+        }
+    }
+
     confirmModal.classList.add("open");
 }
 
-confirmYes.addEventListener("click", function () {
+function handleConfirmSubmit() {
+    if (_confirmRequiresSecret) {
+        var entered = (confirmSecretInput ? confirmSecretInput.value : "").trim();
+        if (!entered) {
+            if (confirmSecretError) {
+                confirmSecretError.textContent = "Please enter the secret security code to authorize.";
+                confirmSecretError.style.display = "block";
+            }
+            if (confirmSecretInput) confirmSecretInput.focus();
+            return;
+        }
+        if (entered !== REQUIRED_SECRET_CODE) {
+            if (confirmSecretError) {
+                confirmSecretError.textContent = "Incorrect secret code. Permanent deletion blocked!";
+                confirmSecretError.style.display = "block";
+            }
+            if (confirmSecretInput) {
+                confirmSecretInput.style.borderColor = "#ff4444";
+                confirmSecretInput.focus();
+                confirmSecretInput.select();
+            }
+            return;
+        }
+    }
+
     confirmModal.classList.remove("open");
-    if (typeof pendingAction === "function") { pendingAction(); pendingAction = null; }
-});
+    var codeToSend = _confirmRequiresSecret ? (confirmSecretInput ? confirmSecretInput.value.trim() : "") : null;
+    if (confirmSecretInput) confirmSecretInput.value = "";
+    _confirmRequiresSecret = false;
+
+    if (typeof pendingAction === "function") {
+        var action = pendingAction;
+        pendingAction = null;
+        action(codeToSend);
+    }
+}
+
+confirmYes.addEventListener("click", handleConfirmSubmit);
+
+if (confirmSecretInput) {
+    confirmSecretInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleConfirmSubmit();
+        }
+    });
+}
 
 confirmNo.addEventListener("click", function () {
     confirmModal.classList.remove("open");
+    if (confirmSecretInput) confirmSecretInput.value = "";
+    _confirmRequiresSecret = false;
     pendingAction = null;
 });
 
 confirmModal.addEventListener("click", function (e) {
-    if (e.target === confirmModal) { confirmModal.classList.remove("open"); pendingAction = null; }
+    if (e.target === confirmModal) {
+        confirmModal.classList.remove("open");
+        if (confirmSecretInput) confirmSecretInput.value = "";
+        _confirmRequiresSecret = false;
+        pendingAction = null;
+    }
 });
 editModal.addEventListener("click", function (e) {
     if (e.target === editModal) { editModal.classList.remove("open"); editingUserId = null; }

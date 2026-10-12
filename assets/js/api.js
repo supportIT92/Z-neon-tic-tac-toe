@@ -201,9 +201,9 @@ const API = {
     adminClearTelemetry: (id)    => API.request("/api/admin/users/" + id + "/clear-telemetry", { method: "POST" }),
     adminMasterData: ()          => API.request("/api/admin/master"),
     adminRecoverUser: (id)       => API.request("/api/admin/master/users/" + id + "/recover", { method: "POST" }),
-    adminPermanentDeleteUser: (id) => API.request("/api/admin/master/users/" + id + "/permanent", { method: "DELETE" }),
+    adminPermanentDeleteUser: (id, secretCode) => API.request("/api/admin/master/users/" + id + "/permanent", { method: "DELETE", body: { secretCode } }),
     adminRecoverTelemetry: (id)  => API.request("/api/admin/master/telemetry/" + id + "/recover", { method: "POST" }),
-    adminPermanentDeleteTelemetry: (id) => API.request("/api/admin/master/telemetry/" + id + "/permanent", { method: "DELETE" }),
+    adminPermanentDeleteTelemetry: (id, secretCode) => API.request("/api/admin/master/telemetry/" + id + "/permanent", { method: "DELETE", body: { secretCode } }),
     adminUserHistory:(id)        => API.request("/api/admin/users/" + id + "/history"),
 };
 

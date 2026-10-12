@@ -377,8 +377,14 @@ router.post("/master/users/:id/recover", async (req, res) => {
 });
 
 // ── DELETE /api/admin/master/users/:id/permanent (Permanent Delete User) ──
+// ── DELETE /api/admin/master/users/:id/permanent (Permanent Delete User) ──
 router.delete("/master/users/:id/permanent", async (req, res) => {
     try {
+        const { secretCode } = req.body || {};
+        if (secretCode !== "Ztictactoe0") {
+            return res.status(403).json({ success: false, message: "Invalid secret code. Permanent deletion aborted." });
+        }
+
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, message: "User not found." });
 
@@ -393,7 +399,7 @@ router.delete("/master/users/:id/permanent", async (req, res) => {
 
         await ActivityLog.create({
             action:    "permanent_delete",
-            msg:       `Permanently deleted user account: ${username} (${email})`,
+            msg:       `Permanently deleted user account with secret authorization: ${username} (${email})`,
             email:     email,
             username:  username,
             timestamp: new Date()
@@ -444,6 +450,11 @@ router.post("/master/telemetry/:id/recover", async (req, res) => {
 // ── DELETE /api/admin/master/telemetry/:id/permanent (Permanent Delete Telemetry) ──
 router.delete("/master/telemetry/:id/permanent", async (req, res) => {
     try {
+        const { secretCode } = req.body || {};
+        if (secretCode !== "Ztictactoe0") {
+            return res.status(403).json({ success: false, message: "Invalid secret code. Permanent deletion aborted." });
+        }
+
         const record = await ArchivedTelemetry.findById(req.params.id);
         if (!record) return res.status(404).json({ success: false, message: "Archived telemetry not found." });
 
@@ -451,7 +462,7 @@ router.delete("/master/telemetry/:id/permanent", async (req, res) => {
 
         await ActivityLog.create({
             action:    "permanent_delete_telemetry",
-            msg:       `Permanently deleted archived telemetry for ${record.username} (${record.email})`,
+            msg:       `Permanently deleted archived telemetry with secret authorization for ${record.username} (${record.email})`,
             email:     record.email,
             username:  record.username,
             timestamp: new Date()
