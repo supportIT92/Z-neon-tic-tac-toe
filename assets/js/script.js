@@ -1238,3 +1238,113 @@ _syncAllSfxBtns();
         });
     }
 })();
+
+// =============================
+// PWA — SERVICE WORKER & APP INSTALL PROMPT
+// =============================
+
+(function initPWA() {
+    let deferredPrompt = null;
+    const pwaBtn = document.getElementById("pwaInstallBtn");
+    const pwaModal = document.getElementById("pwaInstallModal");
+    const pwaConfirmBtn = document.getElementById("pwaConfirmInstallBtn");
+    const pwaCloseBtn = document.getElementById("pwaCloseModalBtn");
+    const pwaIosHint = document.getElementById("pwaIosHint");
+    const pwaModalDesc = document.getElementById("pwaModalDesc");
+
+    // Register Service Worker
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+            navigator.serviceWorker.register("/sw.js").catch(() => {});
+        });
+    }
+
+    // Capture browser's native install prompt event
+    window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (pwaBtn) {
+            pwaBtn.classList.add("can-install");
+        }
+    });
+
+    // Detect if already running as standalone app
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    if (isStandalone && pwaBtn) {
+        pwaBtn.style.display = "none";
+    }
+
+    // Detect iOS devices
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    function openPwaModal() {
+        if (!pwaModal) return;
+
+        // If native prompt is available, trigger it directly for seamless 1-click UX
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === "accepted") {
+                    if (pwaBtn) pwaBtn.style.display = "none";
+                }
+                deferredPrompt = null;
+            });
+            return;
+        }
+
+        // Show educational modal if native prompt cannot trigger directly
+        if (isIOS && pwaIosHint) {
+            pwaIosHint.style.display = "block";
+            if (pwaModalDesc) pwaModalDesc.textContent = "To install this game on your iPhone / iPad:";
+            if (pwaConfirmBtn) pwaConfirmBtn.textContent = "UNDERSTOOD";
+        } else {
+            if (pwaIosHint) pwaIosHint.style.display = "none";
+            if (pwaModalDesc) pwaModalDesc.textContent = "Install this game on your Mobile or PC for fullscreen gaming, faster load times, and offline access!";
+            if (pwaConfirmBtn) pwaConfirmBtn.textContent = "INSTALL APP";
+        }
+
+        pwaModal.classList.add("active");
+        pwaModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closePwaModal() {
+        if (!pwaModal) return;
+        pwaModal.classList.remove("active");
+        pwaModal.setAttribute("aria-hidden", "true");
+    }
+
+    if (pwaBtn) {
+        pwaBtn.addEventListener("click", openPwaModal);
+    }
+
+    if (pwaCloseBtn) {
+        pwaCloseBtn.addEventListener("click", closePwaModal);
+    }
+
+    if (pwaConfirmBtn) {
+        pwaConfirmBtn.addEventListener("click", () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === "accepted") {
+                        if (pwaBtn) pwaBtn.style.display = "none";
+                    }
+                    deferredPrompt = null;
+                });
+            }
+            closePwaModal();
+        });
+    }
+
+    if (pwaModal) {
+        pwaModal.addEventListener("click", (e) => {
+            if (e.target === pwaModal) closePwaModal();
+        });
+    }
+
+    window.addEventListener("appinstalled", () => {
+        if (pwaBtn) pwaBtn.style.display = "none";
+        deferredPrompt = null;
+        closePwaModal();
+    });
+})();

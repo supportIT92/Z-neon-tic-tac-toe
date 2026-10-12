@@ -17,6 +17,13 @@
             } catch(e) { window.location.replace('/auth'); }
         })();
     </script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00f7ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Neon TicTacToe">
+    <link rel="apple-touch-icon" href="assets/images/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/images/icon-192.png">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>.ic{width:18px;height:18px;display:inline-block;vertical-align:middle;stroke:currentColor;}</style>
     <script src="assets/js/api.js"></script>
@@ -87,6 +94,10 @@
                 </button>
                 <button id="rulesButton" class="mini-button" aria-label="Open rules">
                     ?
+                </button>
+                <!-- PWA Install App Button -->
+                <button id="pwaInstallBtn" class="mini-button pwa-install-btn" aria-label="Install App" title="Install Neon Game App">
+                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
                 <button id="logoutButton" class="mini-button" aria-label="Logout" title="Logout">
                     <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -393,6 +404,42 @@
                 <li>Use arrow keys to navigate the board with a keyboard.</li>
             </ul>
             <button id="closeRulesButton" class="primary-button">GOT IT</button>
+        </div>
+
+    </div>
+
+    <!-- =========================
+         PWA INSTALL APP MODAL
+    ========================== -->
+    <div
+        class="info-modal"
+        id="pwaInstallModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pwaModalTitle"
+        aria-hidden="true"
+        tabindex="-1">
+
+        <div class="info-card" style="max-width: 420px; text-align: center; border: 1px solid rgba(0,247,255,0.35); box-shadow: 0 0 40px rgba(0,247,255,0.18);">
+            <div style="width: 58px; height: 58px; margin: 0 auto 14px; border-radius: 16px; background: rgba(0,247,255,0.1); border: 1px solid rgba(0,247,255,0.4); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0,247,255,0.3);">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00f7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <p class="brand" style="margin-bottom: 4px;">INSTALL APPLICATION</p>
+            <h3 id="pwaModalTitle" style="color: #fff; font-size: 20px; margin-bottom: 8px;">Install Neon Tic Tac Toe</h3>
+            <p id="pwaModalDesc" style="font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.5;">
+                Install this game as a standalone app on your Mobile or PC for fullscreen gaming, faster load times, and offline access!
+            </p>
+            <div id="pwaIosHint" style="display:none; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; font-size: 12px; color: #cbd5e1; margin-bottom: 16px; text-align: left;">
+                Tap <strong>Share <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></strong> then select <strong>Add to Home Screen ⊞</strong>.
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" id="pwaConfirmInstallBtn" class="primary-button" style="margin: 0; min-width: 140px;">
+                    INSTALL NOW
+                </button>
+                <button type="button" id="pwaCloseModalBtn" class="back-button" style="margin: 0; min-width: 100px;">
+                    CANCEL
+                </button>
+            </div>
         </div>
 
     </div>

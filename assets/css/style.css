@@ -258,6 +258,31 @@ body.light-theme .info-card h3 {
     box-shadow: 0 0 16px rgba(0, 247, 255, .2);
 }
 
+.mini-button.pwa-install-btn {
+    border-color: rgba(0, 247, 255, 0.3);
+    color: var(--cyan);
+}
+
+.mini-button.pwa-install-btn:hover {
+    background: rgba(0, 247, 255, 0.12);
+    box-shadow: 0 0 18px rgba(0, 247, 255, 0.35);
+}
+
+.mini-button.pwa-install-btn.can-install {
+    animation: pwaPulse 2.4s infinite;
+}
+
+@keyframes pwaPulse {
+    0%, 100% {
+        border-color: rgba(0, 247, 255, 0.35);
+        box-shadow: 0 0 10px rgba(0, 247, 255, 0.2);
+    }
+    50% {
+        border-color: rgba(0, 247, 255, 0.85);
+        box-shadow: 0 0 20px rgba(0, 247, 255, 0.5);
+    }
+}
+
 .mini-button.small {
     width:     34px;
     height:    34px;
