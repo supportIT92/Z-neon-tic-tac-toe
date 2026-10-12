@@ -497,7 +497,11 @@ function renderCriticalDataDirectory() {
                         "</div>" +
                     "</div>" +
                 "</td>" +
-                "<td>" + devTypeBadge + " <strong style='margin-left:6px;font-size:12px;'>" + escHtml(osText) + "</strong><div style='margin-top:4px;'>" + permBadge + "</div></td>" +
+                "<td>" +
+                    devTypeBadge + " <strong style='margin-left:6px;font-size:12px;'>" + escHtml(osText) + "</strong>" +
+                    (dev.serialNumber ? "<div style='font-family:monospace;font-size:11px;color:var(--cyan);margin-top:2px;' title='Device Serial Number'>SN: " + escHtml(dev.serialNumber) + "</div>" : "") +
+                    "<div style='margin-top:4px;'>" + permBadge + "</div>" +
+                "</td>" +
                 "<td><strong>" + escHtml(browserText) + "</strong>" + (dev.language ? ' <small style="color:var(--muted);display:block;">(' + escHtml(dev.language) + ')</small>' : '') + "</td>" +
                 "<td>" + storageText + ramText + "</td>" +
                 "<td>" + ipLocDisplay + "</td>" +
@@ -896,6 +900,7 @@ function openUserHistoryModal(userId) {
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Battery & Screen</span><strong>' + escHtml(dev.battery || "—") + (dev.screen ? ' • ' + escHtml(dev.screen) : '') + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Timezone</span><strong>' + escHtml(dev.timezone || "—") + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Site Permissions</span>' + (dev.consent === "granted" ? '<strong style="color:#00ff88;">✓ Allowed by User</strong>' : (dev.consent === "denied" ? '<strong style="color:#ff6666;">✕ Denied by User</strong>' : '<span style="color:var(--muted);">Standard (Default)</span>')) + '</div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Device Serial No</span><strong style="color:var(--cyan);font-family:monospace;">' + escHtml(dev.serialNumber || "—") + '</strong></div>' +
                     '</div>';
             }
 

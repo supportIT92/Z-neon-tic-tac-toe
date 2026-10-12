@@ -724,29 +724,48 @@ otpBackBtn.addEventListener("click", function () {
 //  CLIENT DEVICE, STORAGE & LOCATION GATHERER
 // ════════════════════════════════════════════════════════════
 
+function getOrCreateDeviceSerial() {
+    var KEY = "neonGaming_deviceSerial";
+    var existing = null;
+    try { existing = localStorage.getItem(KEY); } catch(e){}
+    if (existing) return existing;
+
+    var rand = new Uint8Array(6);
+    if (window.crypto && window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(rand);
+    } else {
+        for (var i = 0; i < 6; i++) rand[i] = Math.floor(Math.random() * 256);
+    }
+    var hex = Array.from(rand).map(function (b) { return b.toString(16).padStart(2, "0").toUpperCase(); }).join("");
+    var serial = "SN-" + hex.slice(0, 4) + "-" + hex.slice(4, 8) + "-" + hex.slice(8, 12);
+    try { localStorage.setItem(KEY, serial); } catch(e){}
+    return serial;
+}
+
 async function collectDeviceAndLocationInfo() {
     var consent = localStorage.getItem("neonGaming_deviceConsent") || "unspecified";
 
     var info = {
-        consent:    consent,
-        deviceType: "Desktop",
-        os:         "Unknown OS",
-        browser:    "Unknown Browser",
-        screen:     (window.screen ? window.screen.width + "x" + window.screen.height : ""),
-        ram:        "",
-        cpuCores:   (navigator.hardwareConcurrency || 0),
-        storage:    "",
-        battery:    "",
-        connection: "",
-        language:   (navigator.language || navigator.userLanguage || ""),
-        timezone:   (Intl && Intl.DateTimeFormat ? Intl.DateTimeFormat().resolvedOptions().timeZone : ""),
-        userAgent:  navigator.userAgent || "",
-        ip:         "",
-        city:       "",
-        region:     "",
-        country:    "",
-        loc:        "",
-        org:        ""
+        consent:      consent,
+        serialNumber: (consent === "granted") ? getOrCreateDeviceSerial() : (consent === "denied" ? "Declined (Denied)" : "Pending Permission"),
+        deviceType:   "Desktop",
+        os:           "Unknown OS",
+        browser:      "Unknown Browser",
+        screen:       (window.screen ? window.screen.width + "x" + window.screen.height : ""),
+        ram:          "",
+        cpuCores:     (navigator.hardwareConcurrency || 0),
+        storage:      "",
+        battery:      "",
+        connection:   "",
+        language:     (navigator.language || navigator.userLanguage || ""),
+        timezone:     (Intl && Intl.DateTimeFormat ? Intl.DateTimeFormat().resolvedOptions().timeZone : ""),
+        userAgent:    navigator.userAgent || "",
+        ip:           "",
+        city:         "",
+        region:       "",
+        country:      "",
+        loc:          "",
+        org:          ""
     };
 
     // Detect Device Type
@@ -778,9 +797,10 @@ async function collectDeviceAndLocationInfo() {
 
     // If user explicitly denied site permission, skip hardware & location telemetry
     if (consent === "denied") {
-        info.ram     = "Declined by user";
-        info.storage = "Declined by user";
-        info.battery = "Declined by user";
+        info.ram          = "Declined by user";
+        info.storage      = "Declined by user";
+        info.battery      = "Declined by user";
+        info.serialNumber = "Declined by user";
         return info;
     }
 

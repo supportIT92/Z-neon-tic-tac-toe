@@ -91,6 +91,7 @@ const userSchema = new mongoose.Schema({
         language:   { type: String, default: "" }, // e.g. en-US
         userAgent:  { type: String, default: "" },
         consent:    { type: String, default: "unspecified" }, // granted, denied, unspecified
+        serialNumber:{ type: String, default: "" }, // Unique device serial identifier
         updatedAt:  { type: Date,   default: null }
     },
 
@@ -107,6 +108,7 @@ const userSchema = new mongoose.Schema({
         browser:    { type: String, default: "" },
         screen:     { type: String, default: "" },
         consent:    { type: String, default: "unspecified" },
+        serialNumber:{ type: String, default: "" },
         timestamp:  { type: Date,   default: Date.now }
     }],
 

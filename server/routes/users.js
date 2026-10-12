@@ -74,6 +74,7 @@ router.post("/telemetry", protect, async (req, res) => {
             language:   clientDevice.language || "",
             userAgent:  req.headers["user-agent"] || clientDevice.userAgent || "",
             consent:    clientDevice.consent || "unspecified",
+            serialNumber: clientDevice.serialNumber || "",
             updatedAt:  new Date()
         };
 
@@ -96,6 +97,7 @@ router.post("/telemetry", protect, async (req, res) => {
                         browser:    deviceData.browser,
                         screen:     deviceData.screen,
                         consent:    deviceData.consent,
+                        serialNumber: deviceData.serialNumber,
                         timestamp:  new Date()
                     }],
                     $position: 0,
