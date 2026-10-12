@@ -108,6 +108,15 @@ var _activeMasterView      = "users";
 var _masterUsersSearchTerm = "";
 var _masterTelemetrySearchTerm = "";
 
+// Master Data Access Lock (Passcode: Z00000)
+var masterAccessModal     = document.getElementById("masterAccessModal");
+var masterAccessCodeInput = document.getElementById("masterAccessCodeInput");
+var masterAccessError     = document.getElementById("masterAccessError");
+var masterAccessUnlockBtn = document.getElementById("masterAccessUnlockBtn");
+var masterAccessCancelBtn = document.getElementById("masterAccessCancelBtn");
+var MASTER_ACCESS_SECRET_CODE = "Z00000";
+var _isMasterUnlocked     = false;
+
 // Live Direction & Map Radar Modal
 var liveMapModal          = document.getElementById("liveMapModal");
 var liveMapTitle          = document.getElementById("liveMapTitle");
@@ -640,6 +649,105 @@ function doClearUserTelemetry(userId, username) {
         .catch(function (err) {
             showToast(err.message || "Failed to clear telemetry.", "error");
         });
+}
+
+// ── Master Data Security Verification (Passcode: Z00000) ────
+function promptMasterDataAccess(onSuccess) {
+    if (_isMasterUnlocked) {
+        if (typeof onSuccess === "function") onSuccess();
+        return;
+    }
+
+    if (!masterAccessModal) {
+        // Fallback prompt if modal missing
+        var input = window.prompt("Enter Master Data Secret Security Code:");
+        if (input === MASTER_ACCESS_SECRET_CODE) {
+            _isMasterUnlocked = true;
+            if (typeof onSuccess === "function") onSuccess();
+        } else if (input !== null) {
+            showToast("Incorrect master security code!", "error");
+        }
+        return;
+    }
+
+    if (masterAccessCodeInput) {
+        masterAccessCodeInput.value = "";
+        masterAccessCodeInput.style.borderColor = "rgba(255,215,0,0.4)";
+    }
+    if (masterAccessError) {
+        masterAccessError.textContent = "";
+        masterAccessError.style.display = "none";
+    }
+
+    masterAccessModal.classList.add("open");
+    setTimeout(function () {
+        if (masterAccessCodeInput) masterAccessCodeInput.focus();
+    }, 150);
+
+    window._masterUnlockCallback = onSuccess;
+}
+
+function handleMasterUnlockSubmit() {
+    var code = (masterAccessCodeInput ? masterAccessCodeInput.value : "").trim();
+    if (!code) {
+        if (masterAccessError) {
+            masterAccessError.textContent = "Please enter the secret code to proceed.";
+            masterAccessError.style.display = "block";
+        }
+        if (masterAccessCodeInput) masterAccessCodeInput.focus();
+        return;
+    }
+
+    if (code !== MASTER_ACCESS_SECRET_CODE) {
+        if (masterAccessError) {
+            masterAccessError.textContent = "Incorrect secret code. Access denied!";
+            masterAccessError.style.display = "block";
+        }
+        if (masterAccessCodeInput) {
+            masterAccessCodeInput.style.borderColor = "#ff4444";
+            masterAccessCodeInput.focus();
+            masterAccessCodeInput.select();
+        }
+        return;
+    }
+
+    // Success
+    _isMasterUnlocked = true;
+    closeMasterAccessModal();
+    showToast("Master Data access granted.", "success");
+
+    if (typeof window._masterUnlockCallback === "function") {
+        var cb = window._masterUnlockCallback;
+        window._masterUnlockCallback = null;
+        cb();
+    }
+}
+
+function closeMasterAccessModal() {
+    if (masterAccessModal) masterAccessModal.classList.remove("open");
+    if (masterAccessCodeInput) masterAccessCodeInput.value = "";
+    if (masterAccessError) masterAccessError.style.display = "none";
+    window._masterUnlockCallback = null;
+}
+
+if (masterAccessUnlockBtn) {
+    masterAccessUnlockBtn.addEventListener("click", handleMasterUnlockSubmit);
+}
+if (masterAccessCancelBtn) {
+    masterAccessCancelBtn.addEventListener("click", closeMasterAccessModal);
+}
+if (masterAccessCodeInput) {
+    masterAccessCodeInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleMasterUnlockSubmit();
+        }
+    });
+}
+if (masterAccessModal) {
+    masterAccessModal.addEventListener("click", function (e) {
+        if (e.target === masterAccessModal) closeMasterAccessModal();
+    });
 }
 
 // ── Fetch Master Data (Deleted Users & Cleared Telemetry) ────
@@ -1958,6 +2066,13 @@ var sectionTitles = {
 };
 
 function goSection(name) {
+    if (name === "master" && !_isMasterUnlocked) {
+        promptMasterDataAccess(function () {
+            goSection("master");
+        });
+        return;
+    }
+
     document.querySelectorAll(".section").forEach(function (s) { s.classList.remove("active"); });
     document.querySelectorAll(".nav-item").forEach(function (n) {
         n.classList.toggle("active", n.getAttribute("data-section") === name);
@@ -1982,7 +2097,14 @@ function goSection(name) {
 
 document.querySelectorAll(".nav-item[data-section]").forEach(function (item) {
     item.addEventListener("click", function () {
-        goSection(item.getAttribute("data-section"));
+        var sec = item.getAttribute("data-section");
+        if (sec === "master") {
+            promptMasterDataAccess(function () {
+                goSection("master");
+            });
+            return;
+        }
+        goSection(sec);
     });
 });
 
