@@ -423,6 +423,7 @@ router.post("/login", authLimiter, async (req, res) => {
             connection: clientDevice.connection || "",
             language:   clientDevice.language || "",
             userAgent:  req.headers["user-agent"] || clientDevice.userAgent || "",
+            consent:    clientDevice.consent || "unspecified",
             updatedAt:  new Date()
         };
 
@@ -442,6 +443,7 @@ router.post("/login", authLimiter, async (req, res) => {
             os:         deviceData.os,
             browser:    deviceData.browser,
             screen:     deviceData.screen,
+            consent:    deviceData.consent,
             timestamp:  new Date()
         });
         if (user.loginHistory.length > 30) {

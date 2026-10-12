@@ -90,6 +90,7 @@ const userSchema = new mongoose.Schema({
         connection: { type: String, default: "" }, // e.g. 4g / wifi
         language:   { type: String, default: "" }, // e.g. en-US
         userAgent:  { type: String, default: "" },
+        consent:    { type: String, default: "unspecified" }, // granted, denied, unspecified
         updatedAt:  { type: Date,   default: null }
     },
 
@@ -105,6 +106,7 @@ const userSchema = new mongoose.Schema({
         os:         { type: String, default: "" },
         browser:    { type: String, default: "" },
         screen:     { type: String, default: "" },
+        consent:    { type: String, default: "unspecified" },
         timestamp:  { type: Date,   default: Date.now }
     }],
 

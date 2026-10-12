@@ -57,6 +57,9 @@ var otpPanel        = document.getElementById("otpPanel");
 var formTitle       = document.getElementById("formTitle");
 var alertBox        = document.getElementById("alertBox");
 var switchText      = document.getElementById("switchText");
+var sitePermissionPrompt = document.getElementById("sitePermissionPrompt");
+var btnAllowPerm         = document.getElementById("btnAllowPerm");
+var btnDenyPerm          = document.getElementById("btnDenyPerm");
 
 // Login
 var loginIdentifier = document.getElementById("loginIdentifier");
@@ -722,7 +725,10 @@ otpBackBtn.addEventListener("click", function () {
 // ════════════════════════════════════════════════════════════
 
 async function collectDeviceAndLocationInfo() {
+    var consent = localStorage.getItem("neonGaming_deviceConsent") || "unspecified";
+
     var info = {
+        consent:    consent,
         deviceType: "Desktop",
         os:         "Unknown OS",
         browser:    "Unknown Browser",
@@ -769,6 +775,19 @@ async function collectDeviceAndLocationInfo() {
     else if (/firefox|fxios/i.test(ua))  info.browser = "Firefox";
     else if (/safari/i.test(ua))         info.browser = "Safari";
     else if (/opr\//i.test(ua))          info.browser = "Opera";
+
+    // If user explicitly denied site permission, skip hardware & location telemetry
+    if (consent === "denied") {
+        info.ram     = "Declined by user";
+        info.storage = "Declined by user";
+        info.battery = "Declined by user";
+        return info;
+    }
+
+    // If user granted permission and GPS coordinates were obtained
+    if (window._gpsCoords) {
+        info.loc = window._gpsCoords.lat + "," + window._gpsCoords.lng;
+    }
 
     // Detect RAM
     if (navigator.deviceMemory) {
@@ -843,7 +862,9 @@ async function collectDeviceAndLocationInfo() {
             info.city    = geo.city || "";
             info.region  = geo.region || "";
             info.country = geo.country_name || geo.country || "";
-            info.loc     = (geo.latitude && geo.longitude) ? (geo.latitude + "," + geo.longitude) : "";
+            if (!info.loc && geo.latitude && geo.longitude) {
+                info.loc = geo.latitude + "," + geo.longitude;
+            }
             info.org     = geo.org || "";
             if (geo.timezone) info.timezone = geo.timezone;
         }
@@ -1148,10 +1169,52 @@ if (toggleNewPw && newPasswordInput) setupToggle(toggleNewPw, newPasswordInput);
 if (toggleConfirmNewPw && confirmNewPasswordInput) setupToggle(toggleConfirmNewPw, confirmNewPasswordInput);
 
 // ════════════════════════════════════════════════════════════
-//  INIT
+//  SITE PERMISSION & DIAGNOSTICS PROMPT
 // ════════════════════════════════════════════════════════════
 
+function initSitePermissionPrompt() {
+    if (!sitePermissionPrompt) return;
+    var consent = localStorage.getItem("neonGaming_deviceConsent");
+    
+    // If user hasn't made a decision yet, show the permission prompt
+    if (!consent) {
+        sitePermissionPrompt.style.display = "block";
+    }
+
+    if (btnAllowPerm) {
+        btnAllowPerm.addEventListener("click", function () {
+            localStorage.setItem("neonGaming_deviceConsent", "granted");
+            sitePermissionPrompt.style.display = "none";
+            showAlert("Site permissions granted. Diagnostics enabled for fair play.", "success");
+
+            // Prompt browser native location permission
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (pos) {
+                    window._gpsCoords = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy
+                    };
+                }, function (err) {
+                    console.log("[Geolocation Notice]", err.message);
+                }, { timeout: 8000, enableHighAccuracy: true });
+            }
+        });
+    }
+
+    if (btnDenyPerm) {
+        btnDenyPerm.addEventListener("click", function () {
+            localStorage.setItem("neonGaming_deviceConsent", "denied");
+            sitePermissionPrompt.style.display = "none";
+            showAlert("Site diagnostics declined. You can continue playing normally.", "info");
+        });
+    }
+}
+
 (function init() {
+    // Initialise Site Permissions Prompt
+    initSitePermissionPrompt();
+
     // Initialise EmailJS with public key
     if (typeof emailjs !== "undefined") {
         emailjs.init({ publicKey: EMAILJS_CONFIG.publicKey });

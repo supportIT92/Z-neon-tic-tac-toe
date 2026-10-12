@@ -404,6 +404,12 @@ function renderCriticalDataDirectory() {
                 ? '<span class="badge" style="background:rgba(255,170,0,0.15);color:#ffaa00;">Tablet</span>'
                 : '<span class="badge" style="background:rgba(0,247,255,0.15);color:var(--cyan);">Desktop</span>');
 
+        var permBadge = dev.consent === "granted"
+            ? '<span class="badge" style="background:rgba(0,255,136,0.15);color:#00ff88;font-size:10px;" title="User accepted site permissions">✓ ALLOWED</span>'
+            : (dev.consent === "denied"
+                ? '<span class="badge" style="background:rgba(255,68,68,0.15);color:#ff6666;font-size:10px;" title="User declined site diagnostics">✕ DENIED</span>'
+                : '<span class="badge" style="background:rgba(255,255,255,0.06);color:#94a3b8;font-size:10px;">DEFAULT</span>');
+
         var osText = dev.os || "Unknown OS";
         var browserText = dev.browser || "Unknown";
 
@@ -491,7 +497,7 @@ function renderCriticalDataDirectory() {
                         "</div>" +
                     "</div>" +
                 "</td>" +
-                "<td>" + devTypeBadge + " <strong style='margin-left:6px;font-size:12px;'>" + escHtml(osText) + "</strong></td>" +
+                "<td>" + devTypeBadge + " <strong style='margin-left:6px;font-size:12px;'>" + escHtml(osText) + "</strong><div style='margin-top:4px;'>" + permBadge + "</div></td>" +
                 "<td><strong>" + escHtml(browserText) + "</strong>" + (dev.language ? ' <small style="color:var(--muted);display:block;">(' + escHtml(dev.language) + ')</small>' : '') + "</td>" +
                 "<td>" + storageText + ramText + "</td>" +
                 "<td>" + ipLocDisplay + "</td>" +
@@ -889,6 +895,7 @@ function openUserHistoryModal(userId) {
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Public IP (Click to Map)</span>' + ipModalLink + '</div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Battery & Screen</span><strong>' + escHtml(dev.battery || "—") + (dev.screen ? ' • ' + escHtml(dev.screen) : '') + '</strong></div>' +
                         '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Timezone</span><strong>' + escHtml(dev.timezone || "—") + '</strong></div>' +
+                        '<div><span style="color:var(--muted);display:block;font-size:10px;text-transform:uppercase;">Site Permissions</span>' + (dev.consent === "granted" ? '<strong style="color:#00ff88;">✓ Allowed by User</strong>' : (dev.consent === "denied" ? '<strong style="color:#ff6666;">✕ Denied by User</strong>' : '<span style="color:var(--muted);">Standard (Default)</span>')) + '</div>' +
                     '</div>';
             }
 
