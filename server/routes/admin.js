@@ -8,6 +8,7 @@ const GameHistory  = require("../models/GameHistory");
 const GameRoom     = require("../models/GameRoom");
 const ActivityLog  = require("../models/ActivityLog");
 const ArchivedTelemetry = require("../models/ArchivedTelemetry");
+const ArchivedUser      = require("../models/ArchivedUser");
 const { protect, adminOnly } = require("../middleware/auth.middleware");
 const { escapeRegex }        = require("../utils/security");
 
@@ -313,12 +314,13 @@ router.post("/users/:id/clear-telemetry", async (req, res) => {
 // MASTER DATA (RECYCLE BIN & ARCHIVED TELEMETRY) ENDPOINTS
 // ═══════════════════════════════════════════════════════════════
 
-// ── GET /api/admin/master (Get All Master Data: Deleted Users & Cleared Logs) ──
+// ── GET /api/admin/master (Get All Master Data: Deleted Users, Cleared Logs & Archived Collection) ──
 router.get("/master", async (req, res) => {
     try {
-        const [deletedUsers, archivedTelemetry] = await Promise.all([
+        const [deletedUsers, archivedTelemetry, archivedUsers] = await Promise.all([
             User.find({ isDeleted: true }).sort({ deletedAt: -1 }),
-            ArchivedTelemetry.find().sort({ clearedAt: -1 })
+            ArchivedTelemetry.find().sort({ clearedAt: -1 }),
+            ArchivedUser.find().sort({ archivedAt: -1 }).limit(100)
         ]);
 
         res.json({
@@ -343,7 +345,20 @@ router.get("/master", async (req, res) => {
                 deviceInfo:  t.deviceInfo || {},
                 loginHistory:t.loginHistory || [],
                 clearedAt:   t.clearedAt
-            }))
+            })),
+            archivedFolder: {
+                collection: "archived_users",
+                count: archivedUsers.length,
+                records: archivedUsers.map(a => ({
+                    id:          a._id,
+                    username:    a.username,
+                    email:       a.email,
+                    role:        a.role,
+                    archivedAt:  a.archivedAt,
+                    archivedBy:  a.archivedBy,
+                    reason:      a.reason
+                }))
+            }
         });
     } catch (err) {
         console.error("[admin/master error]", err);
@@ -376,8 +391,7 @@ router.post("/master/users/:id/recover", async (req, res) => {
     }
 });
 
-// ── DELETE /api/admin/master/users/:id/permanent (Permanent Delete User) ──
-// ── DELETE /api/admin/master/users/:id/permanent (Permanent Delete User) ──
+// ── DELETE /api/admin/master/users/:id/permanent (Permanent Delete User & Move to Archive Collection) ──
 router.delete("/master/users/:id/permanent", async (req, res) => {
     try {
         const { secretCode } = req.body || {};
@@ -385,7 +399,8 @@ router.delete("/master/users/:id/permanent", async (req, res) => {
             return res.status(403).json({ success: false, message: "Invalid secret code. Permanent deletion aborted." });
         }
 
-        const user = await User.findById(req.params.id);
+        // Fetch user with full password and fields
+        const user = await User.findById(req.params.id).select("+password");
         if (!user) return res.status(404).json({ success: false, message: "User not found." });
 
         if (isPrimaryAdmin(user)) {
@@ -393,22 +408,46 @@ router.delete("/master/users/:id/permanent", async (req, res) => {
         }
 
         const username = user.username;
-        const email = user.email;
+        const email    = user.email;
 
+        // Save complete snapshot to MongoDB 'archived_users' collection
+        await ArchivedUser.create({
+            originalUserId: user._id,
+            username:       user.username,
+            email:          user.email,
+            password:       user.password || "",
+            role:           user.role,
+            banned:         user.banned,
+            isVerified:     user.isVerified,
+            stats:          user.stats || {},
+            deviceInfo:     user.deviceInfo || {},
+            loginHistory:   user.loginHistory || [],
+            accountCreated: user.createdAt,
+            lastLogin:      user.lastLogin,
+            deletedAt:      user.deletedAt,
+            archivedAt:     new Date(),
+            archivedBy:     req.user ? req.user.username : "admin",
+            reason:         "Permanent deletion from Master Data with secret code authorization"
+        });
+
+        // Now remove from main User collection
         await User.findByIdAndDelete(req.params.id);
 
         await ActivityLog.create({
-            action:    "permanent_delete",
-            msg:       `Permanently deleted user account with secret authorization: ${username} (${email})`,
+            action:    "permanent_delete_archived",
+            msg:       `Permanently deleted user ${username} (${email}) and moved complete record into MongoDB archived folder ('archived_users')`,
             email:     email,
             username:  username,
             timestamp: new Date()
         });
 
-        res.json({ success: true, message: `Account ${username} permanently deleted from database.` });
+        res.json({
+            success: true,
+            message: `Account ${username} permanently deleted from active users and stored safely in MongoDB archived collection ('archived_users').`
+        });
     } catch (err) {
         console.error("[master/permanent delete user error]", err);
-        res.status(500).json({ success: false, message: "Failed to permanently delete user." });
+        res.status(500).json({ success: false, message: "Failed to permanently delete and archive user." });
     }
 });
 
