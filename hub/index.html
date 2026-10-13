@@ -79,6 +79,53 @@
             </div>
         </header>
 
+        <!-- Live Activity Ticker -->
+        <div class="cyber-ticker-wrap">
+            <span class="ticker-badge">LIVE FEED</span>
+            <div class="ticker-track">
+                <span class="ticker-content" id="cyberTickerContent">
+                    ⚡ Loading Live Cyber Arcade Feed...
+                </span>
+            </div>
+        </div>
+
+        <!-- Cyber Dock: Radio Player, Palette Shifter & Lucky Spin -->
+        <div class="cyber-dock-bar">
+            <!-- Neon Radio -->
+            <div class="radio-widget">
+                <button id="radioToggleBtn" class="radio-toggle-btn" title="Toggle Synthwave FM">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+                <div class="radio-info" id="radioNextBtn" title="Click to skip track" style="cursor:pointer;">
+                    <span class="radio-title-label">📻 SYNTHWAVE FM (CLICK SKIP)</span>
+                    <span class="radio-track-name" id="radioTrackTitle">Cyberpunk Drift</span>
+                </div>
+                <div class="radio-visualizer" id="radioVisualizer">
+                    <div class="viz-bar"></div>
+                    <div class="viz-bar"></div>
+                    <div class="viz-bar"></div>
+                    <div class="viz-bar"></div>
+                </div>
+            </div>
+
+            <!-- Theme Color Shifter -->
+            <div class="theme-palette-bar">
+                <span class="theme-palette-label">NEON GLOW:</span>
+                <button class="theme-color-chip chip-cyan active" data-theme="cyan" title="Cyber Cyan"></button>
+                <button class="theme-color-chip chip-matrix" data-theme="matrix" title="Matrix Emerald"></button>
+                <button class="theme-color-chip chip-crimson" data-theme="crimson" title="Crimson Blade"></button>
+                <button class="theme-color-chip chip-gold" data-theme="gold" title="Cyber Gold"></button>
+                <button class="theme-color-chip chip-synthwave" data-theme="synthwave" title="Synthwave Violet"></button>
+            </div>
+
+            <!-- Rewards Action Buttons -->
+            <div class="extra-actions-bar">
+                <button id="openWheelBtn" class="btn-cyber-action" title="Daily Lucky Wheel">
+                    <span>🎰</span> DAILY SPIN
+                </button>
+            </div>
+        </div>
+
         <!-- Welcome Hero -->
         <section class="hub-hero">
             <span class="hub-tagline">⚡ Next-Gen Cyber Portal ⚡</span>
@@ -299,6 +346,120 @@
             });
         }
     })();
+    </script>
+
+    <!-- Daily Lucky Wheel Modal -->
+    <div class="wheel-modal-overlay" id="wheelModalOverlay">
+        <div class="wheel-card">
+            <button class="btn-close-wheel" id="closeWheelBtn">&times;</button>
+            <h2>🎰 CYBER LUCKY WHEEL</h2>
+            <p>Spin once every 24 hours to claim bonus XP and rare cyber ranks!</p>
+
+            <div class="wheel-spinner-container">
+                <div class="wheel-pointer"></div>
+                <canvas id="wheelCanvas" class="wheel-canvas" width="200" height="200"></canvas>
+            </div>
+
+            <button id="spinActionBtn" class="btn-spin-now">SPIN WHEEL</button>
+        </div>
+    </div>
+
+    <!-- Scripts for Cyber Widgets -->
+    <script src="/assets/js/theme-shifter.js"></script>
+    <script src="/assets/js/neon-radio.js"></script>
+    <script src="/assets/js/rewards.js"></script>
+    <script>
+    // Bind Radio controls
+    var radioBtn = document.getElementById("radioToggleBtn");
+    var radioNext = document.getElementById("radioNextBtn");
+    if (radioBtn) radioBtn.addEventListener("click", window.NeonRadio.toggle);
+    if (radioNext) radioNext.addEventListener("click", window.NeonRadio.next);
+
+    // Bind Palette Chips
+    var chips = document.querySelectorAll(".theme-color-chip");
+    chips.forEach(function(chip) {
+        chip.addEventListener("click", function() {
+            window.NeonThemeShifter.apply(chip.dataset.theme);
+        });
+    });
+
+    // Draw Wheel Canvas
+    (function initWheelDrawing() {
+        var canvas = document.getElementById("wheelCanvas");
+        if (!canvas) return;
+        var ctx = canvas.getContext("2d");
+        var prizes = window.NeonRewards.prizes;
+        var num = prizes.length;
+        var arc = (Math.PI * 2) / num;
+
+        for (var i = 0; i < num; i++) {
+            var angle = i * arc;
+            ctx.fillStyle = prizes[i].color;
+            ctx.beginPath();
+            ctx.arc(100, 100, 96, angle, angle + arc);
+            ctx.lineTo(100, 100);
+            ctx.fill();
+
+            // Text
+            ctx.save();
+            ctx.translate(100, 100);
+            ctx.rotate(angle + arc / 2);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#050816";
+            ctx.font = "bold 11px sans-serif";
+            ctx.fillText(prizes[i].label, 86, 4);
+            ctx.restore();
+        }
+    })();
+
+    // Wheel Modal Actions
+    var openWheelBtn = document.getElementById("openWheelBtn");
+    var closeWheelBtn = document.getElementById("closeWheelBtn");
+    var wheelOverlay = document.getElementById("wheelModalOverlay");
+    var spinBtn = document.getElementById("spinActionBtn");
+    var wheelCanvas = document.getElementById("wheelCanvas");
+
+    if (openWheelBtn) {
+        openWheelBtn.addEventListener("click", function() {
+            if (wheelOverlay) wheelOverlay.classList.add("active");
+        });
+    }
+    if (closeWheelBtn) {
+        closeWheelBtn.addEventListener("click", function() {
+            if (wheelOverlay) wheelOverlay.classList.remove("active");
+        });
+    }
+
+    var isSpinning = false;
+    if (spinBtn) {
+        spinBtn.addEventListener("click", function() {
+            if (isSpinning) return;
+            if (!window.NeonRewards.canSpinToday()) {
+                alert("⏰ You've already claimed your daily spin! Check back tomorrow.");
+                return;
+            }
+
+            isSpinning = true;
+            spinBtn.disabled = true;
+
+            window.NeonRewards.spinWheel(function(prize, prizeIndex) {
+                var prizesCount = window.NeonRewards.prizes.length;
+                var degPerSlice = 360 / prizesCount;
+                var targetDeg = 360 * 5 + (360 - (prizeIndex * degPerSlice + degPerSlice / 2));
+
+                if (wheelCanvas) {
+                    wheelCanvas.style.transform = "rotate(" + targetDeg + "deg)";
+                }
+
+                setTimeout(function() {
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                    alert("🎉 CONGRATULATIONS! You won " + prize.label + "!");
+                    if (wheelOverlay) wheelOverlay.classList.remove("active");
+                }, 3800);
+            });
+        });
+    }
     </script>
 </body>
 </html>
