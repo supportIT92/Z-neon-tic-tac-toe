@@ -267,11 +267,67 @@
         }
     });
 
-    // Touch D-Pad bindings
-    if (btnUp) btnUp.addEventListener("click", function() { setDir(0, -1); });
-    if (btnDown) btnDown.addEventListener("click", function() { setDir(0, 1); });
-    if (btnLeft) btnLeft.addEventListener("click", function() { setDir(-1, 0); });
-    if (btnRight) btnRight.addEventListener("click", function() { setDir(1, 0); });
+    // Touch D-Pad bindings with zero-latency touchstart
+    function bindDpad(btn, dx, dy) {
+        if (!btn) return;
+        var trigger = function (e) {
+            if (!isRunning && !isGameOver) {
+                startGame();
+            }
+            setDir(dx, dy);
+            if (e && e.cancelable) e.preventDefault();
+        };
+        btn.addEventListener("touchstart", trigger, { passive: false });
+        btn.addEventListener("click", trigger);
+    }
+
+    bindDpad(btnUp, 0, -1);
+    bindDpad(btnDown, 0, 1);
+    bindDpad(btnLeft, -1, 0);
+    bindDpad(btnRight, 1, 0);
+
+    // Touch Swipe on Canvas
+    if (canvas) {
+        var touchStartX = 0;
+        var touchStartY = 0;
+
+        canvas.addEventListener("touchstart", function (e) {
+            var t = e.touches[0];
+            touchStartX = t.clientX;
+            touchStartY = t.clientY;
+            if (!isRunning && !isGameOver) {
+                startGame();
+            }
+        }, { passive: true });
+
+        canvas.addEventListener("touchmove", function (e) {
+            if (!isRunning) return;
+            var t = e.touches[0];
+            var diffX = t.clientX - touchStartX;
+            var diffY = t.clientY - touchStartY;
+            var minSwipe = 25; // minimum px for gesture
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // Horizontal swipe
+                if (Math.abs(diffX) > minSwipe) {
+                    if (diffX > 0) setDir(1, 0);
+                    else setDir(-1, 0);
+                    touchStartX = t.clientX;
+                    touchStartY = t.clientY;
+                    if (e.cancelable) e.preventDefault();
+                }
+            } else {
+                // Vertical swipe
+                if (Math.abs(diffY) > minSwipe) {
+                    if (diffY > 0) setDir(0, 1);
+                    else setDir(0, -1);
+                    touchStartX = t.clientX;
+                    touchStartY = t.clientY;
+                    if (e.cancelable) e.preventDefault();
+                }
+            }
+        }, { passive: false });
+    }
 
     // Overlay Start Button
     if (overlayBtn) {
