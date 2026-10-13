@@ -1,15 +1,17 @@
 // Neon Arcade Multi-Game - PWA Service Worker
-const CACHE_NAME = "neon-arcade-v1";
+const CACHE_NAME = "neon-arcade-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/hub",
   "/connect4",
   "/snake",
+  "/pong",
   "/manifest.json",
   "/assets/css/style.css",
   "/assets/css/hub.css",
   "/assets/css/connect4.css",
   "/assets/css/snake.css",
+  "/assets/css/pong.css",
   "/assets/images/icon-192.png",
   "/assets/images/icon-512.png"
 ];

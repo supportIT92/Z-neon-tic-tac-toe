@@ -40,6 +40,11 @@
                     <h1>Neon <span>Arcade</span></h1>
                     <div class="user-greeting-badge">
                         <span>Pilot:</span> <strong id="hubUsername">Player</strong>
+                        <span style="display:inline-block; margin: 0 4px; opacity:0.4;">|</span>
+                        <span style="background:rgba(0,247,255,0.15); border:1px solid rgba(0,247,255,0.4); padding:2px 8px; border-radius:12px; font-weight:700; color:var(--cyan); font-size:0.75rem;" id="hubLevelBadge">LVL 1</span>
+                        <span style="color:var(--yellow); font-size:0.8rem; font-weight:700; display:inline-flex; align-items:center; gap:3px;">
+                            ⭐ <span id="hubXpCount">120</span> XP
+                        </span>
                     </div>
                 </div>
             </div>
@@ -171,6 +176,36 @@
                     </a>
                 </div>
             </article>
+
+            <!-- Game 4: Neon Cyber Pong -->
+            <article class="game-card">
+                <div class="game-card-preview card-preview-pong">
+                    <span class="preview-badge badge-new">New Release</span>
+                    <div class="preview-icon-wrap icon-pong" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="6" y1="4" x2="6" y2="20" stroke-width="3"/>
+                            <line x1="18" y1="4" x2="18" y2="20" stroke-width="3"/>
+                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="game-card-body">
+                    <h3 class="game-card-title">Cyber Pong</h3>
+                    <p class="game-card-desc">High-speed neon paddle duel. Deflect the glowing quantum orb against the Cyber AI or challenge a friend in 2-Player mode!</p>
+                    <div class="game-tags">
+                        <span class="game-tag">Paddle Duel</span>
+                        <span class="game-tag">Cyber AI</span>
+                        <span class="game-tag">Local 2P</span>
+                        <span class="game-tag">Particle Trails</span>
+                    </div>
+                    <a href="/pong" class="btn-play-game btn-play-pong">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Play Cyber Pong
+                    </a>
+                </div>
+            </article>
         </main>
 
         <!-- Footer -->
@@ -193,6 +228,21 @@
         if (session && session.username && usernameEl) {
             usernameEl.textContent = session.username;
         }
+
+        // Calculate and render Player Arcade XP & Level
+        var xpKey = "neonArcade_xp_" + ((session && session.username) || "guest");
+        var currentXp = 50; // Welcome XP
+        try {
+            var savedXp = localStorage.getItem(xpKey);
+            if (savedXp) currentXp = parseInt(savedXp, 10);
+            else localStorage.setItem(xpKey, currentXp);
+        } catch(e) {}
+
+        var level = Math.max(1, Math.floor(currentXp / 100) + 1);
+        var lvlEl = document.getElementById("hubLevelBadge");
+        var xpEl = document.getElementById("hubXpCount");
+        if (lvlEl) lvlEl.textContent = "LVL " + level;
+        if (xpEl) xpEl.textContent = currentXp;
 
         // Show Admin button if role is admin
         var adminBtn = document.getElementById("adminBtn");

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Cyber Pong — Neon Arcade</title>
+    <meta name="description" content="High-speed retro neon cyber pong with AI mode, local 2-player, and particle effects.">
+    
+    <meta name="theme-color" content="#050816">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/images/icon-192.png">
+
+    <link rel="stylesheet" href="/assets/css/pong.css">
+    <!-- Auth Guard -->
+    <script src="/assets/js/auth-guard.js"></script>
+</head>
+<body>
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
+
+    <div class="pong-container">
+        <!-- Header -->
+        <header class="pong-header">
+            <a href="/hub" class="nav-back-link" title="Return to Arcade Hub">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Arcade Hub</span>
+            </a>
+
+            <div class="pong-title">
+                <h1>CYBER <span>PONG</span></h1>
+            </div>
+
+            <div class="pong-controls-top">
+                <button id="themeToggleBtn" class="mini-btn" title="Toggle Theme" aria-label="Toggle Theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Status & Mode Bar -->
+        <div class="status-bar">
+            <div class="mode-selectors">
+                <button id="modeAiBtn" class="mode-btn active">VS AI</button>
+                <button id="mode2pBtn" class="mode-btn">2 PLAYER</button>
+            </div>
+            <div style="font-size:0.85rem; color:var(--muted); font-weight:600;">
+                FIRST TO 7 WINS
+            </div>
+        </div>
+
+        <!-- Score Tracker -->
+        <div class="pong-scoreboard">
+            <div class="score-box score-p1">
+                <span>PLAYER 1 (W / S)</span>
+                <strong id="scoreP1">0</strong>
+            </div>
+            <div style="font-size:1.5rem; font-weight:900; color:var(--muted); opacity:0.5;">VS</div>
+            <div class="score-box score-p2">
+                <span id="p2Label">CYBER AI</span>
+                <strong id="scoreP2">0</strong>
+            </div>
+        </div>
+
+        <!-- Canvas Stage -->
+        <main class="canvas-wrap">
+            <canvas id="pongCanvas" width="800" height="450"></canvas>
+
+            <!-- Overlay Start/Pause -->
+            <div class="canvas-overlay active" id="canvasOverlay">
+                <h2 id="overlayTitle">CYBER PONG</h2>
+                <p id="overlayDesc">Use [W] &amp; [S] or Up/Down arrows to control your paddle. On mobile, touch &amp; drag the screen or use buttons below!</p>
+                <button id="overlayBtn" class="overlay-btn">SERVE BALL</button>
+            </div>
+        </main>
+
+        <!-- Mobile Touch Controls -->
+        <div class="mobile-controls">
+            <div class="touch-btn-column">
+                <button id="p1Up" class="touch-btn">▲ P1 UP</button>
+                <button id="p1Down" class="touch-btn">▼ P1 DOWN</button>
+            </div>
+            <div class="touch-btn-column">
+                <button id="p2Up" class="touch-btn pink">▲ P2 UP</button>
+                <button id="p2Down" class="touch-btn pink">▼ P2 DOWN</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/pong.js"></script>
+</body>
+</html>

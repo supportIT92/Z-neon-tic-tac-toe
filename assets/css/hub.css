@@ -273,6 +273,10 @@ body {
     background: linear-gradient(135deg, #062820 0%, #064e3b 100%);
     border-bottom: 1px solid rgba(16, 185, 129, 0.25);
 }
+.card-preview-pong {
+    background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+    border-bottom: 1px solid rgba(255, 43, 214, 0.25);
+}
 
 .preview-badge {
     position: absolute;
@@ -343,6 +347,16 @@ body {
     width: 46px;
     height: 46px;
     color: var(--green);
+}
+.icon-pong {
+    background: radial-gradient(circle, rgba(0, 247, 255, 0.25) 0%, rgba(255, 43, 214, 0.25) 100%);
+    border: 1.5px solid rgba(0, 247, 255, 0.5);
+    box-shadow: 0 0 24px rgba(0, 247, 255, 0.35);
+}
+.icon-pong svg {
+    width: 46px;
+    height: 46px;
+    color: var(--cyan);
 }
 
 /* Card Details */
@@ -434,6 +448,16 @@ body {
     background: linear-gradient(135deg, #34d399, #10b981);
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(16, 185, 129, 0.5);
+}
+.btn-play-pong {
+    background: linear-gradient(135deg, #00f7ff, #ff2bd6);
+    color: #050816;
+    box-shadow: 0 4px 18px rgba(0, 247, 255, 0.35);
+}
+.btn-play-pong:hover {
+    background: linear-gradient(135deg, #38bdf8, #f43f5e);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255, 43, 214, 0.5);
 }
 
 /* Footer & System info */

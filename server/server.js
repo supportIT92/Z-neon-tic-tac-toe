@@ -124,6 +124,7 @@ app.get("/auth",     (req, res) => res.sendFile(path.join(FRONTEND_DIR, "auth/in
 app.get("/hub",      (req, res) => res.sendFile(path.join(FRONTEND_DIR, "hub/index.html")));
 app.get("/connect4", (req, res) => res.sendFile(path.join(FRONTEND_DIR, "connect4/index.html")));
 app.get("/snake",    (req, res) => res.sendFile(path.join(FRONTEND_DIR, "snake/index.html")));
+app.get("/pong",     (req, res) => res.sendFile(path.join(FRONTEND_DIR, "pong/index.html")));
 app.get("/online",   (req, res) => res.sendFile(path.join(FRONTEND_DIR, "online/index.html")));
 app.get("/admin",    (req, res) => res.sendFile(path.join(FRONTEND_DIR, "admin/index.html")));
 app.get("/",         (req, res) => res.sendFile(path.join(FRONTEND_DIR, "index.html")));
