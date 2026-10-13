@@ -368,7 +368,7 @@ function goToGame()  {
         }
     } catch(e) {}
     var inSubdir = window.location.pathname.includes("/auth/") || window.location.pathname.endsWith("/auth");
-    window.location.href = inSubdir ? "../index.html" : "index.html";
+    window.location.href = inSubdir ? "../hub" : "/hub";
 }
 function goToAdmin() {
     var inSubdir = window.location.pathname.includes("/auth/") || window.location.pathname.endsWith("/auth");

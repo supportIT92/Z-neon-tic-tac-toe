@@ -1,0 +1,293 @@
+/* ========================================================
+   NEON CYBER SNAKE — Stylesheet
+   Theme: Matrix Emerald #10b981, Cyan #00f7ff, Dark #050816
+======================================================== */
+
+:root {
+    --green:       #10b981;
+    --cyan:        #00f7ff;
+    --pink:        #ff2bd6;
+    --yellow:      #ffd700;
+    --dark:        #050816;
+    --text:        #ffffff;
+    --card-bg:     rgba(13, 20, 44, 0.75);
+    --card-border: rgba(255, 255, 255, 0.15);
+    --muted:       #94a3b8;
+}
+
+body.light-theme {
+    --dark:        #edf7ff;
+    --text:        #0f172a;
+    --card-bg:     rgba(255, 255, 255, 0.85);
+    --card-border: rgba(15, 23, 42, 0.15);
+    --muted:       #475569;
+}
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(circle at 20% 20%, #064e3b 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, #172554 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, #051b14 0%, transparent 70%),
+        var(--dark);
+    background-attachment: fixed;
+    overflow-x: hidden;
+    position: relative;
+    padding-bottom: 30px;
+}
+
+.bg-glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.35;
+}
+.bg-glow-1 {
+    width: 380px;
+    height: 380px;
+    background: var(--green);
+    top: -80px;
+    left: -80px;
+}
+.bg-glow-2 {
+    width: 420px;
+    height: 420px;
+    background: var(--cyan);
+    bottom: -100px;
+    right: -100px;
+}
+
+.snake-container {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px 16px;
+}
+
+/* Header */
+.snake-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 14px 20px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    margin-bottom: 20px;
+}
+.nav-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--green);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    transition: all 0.2s ease;
+}
+.nav-back-link:hover {
+    background: rgba(16, 185, 129, 0.22);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.3);
+    transform: translateX(-3px);
+}
+.nav-back-link svg {
+    width: 18px;
+    height: 18px;
+}
+
+.snake-title h1 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-align: center;
+}
+.snake-title h1 span {
+    color: var(--green);
+}
+
+.mini-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.mini-btn:hover {
+    border-color: var(--green);
+    color: var(--green);
+}
+.mini-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Score Panel */
+.snake-scoreboard {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+}
+.score-box {
+    text-align: center;
+}
+.score-box span {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 2px;
+}
+.score-box strong {
+    font-size: 1.4rem;
+    font-weight: 900;
+}
+.score-current strong { color: var(--green); }
+.score-high strong { color: var(--yellow); }
+.score-speed strong { color: var(--cyan); }
+
+/* Canvas Stage */
+.canvas-wrap {
+    position: relative;
+    background: #020906;
+    border: 2px solid rgba(16, 185, 129, 0.45);
+    border-radius: 20px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 35px rgba(16, 185, 129, 0.2);
+    overflow: hidden;
+    margin: 0 auto 20px;
+    max-width: 440px;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#snakeCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Canvas Overlay Start/Pause */
+.canvas-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(5, 8, 22, 0.82);
+    backdrop-filter: blur(6px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+.canvas-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+.canvas-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+    color: #ffffff;
+}
+.canvas-overlay p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+}
+.overlay-btn {
+    padding: 12px 28px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--green), #059669);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4);
+    transition: all 0.2s ease;
+}
+.overlay-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.6);
+}
+
+/* Mobile Touch D-Pad */
+.dpad-container {
+    display: none; /* activated on touch/mobile */
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+@media (pointer: coarse), (max-width: 600px) {
+    .dpad-container {
+        display: flex;
+    }
+}
+.dpad-row {
+    display: flex;
+    gap: 16px;
+}
+.dpad-btn {
+    width: 60px;
+    height: 52px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all 0.15s ease;
+}
+.dpad-btn:active {
+    background: rgba(16, 185, 129, 0.35);
+    border-color: var(--green);
+    transform: scale(0.92);
+}
+.dpad-btn svg {
+    width: 26px;
+    height: 26px;
+}

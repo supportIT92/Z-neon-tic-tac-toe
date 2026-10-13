@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Arcade Hub — Multi-Game Portal</title>
+    <meta name="description" content="Neon Gaming Arcade: Play Tic Tac Toe, Connect 4, Neon Cyber Snake and more with your Neon account.">
+    
+    <!-- PWA meta tags -->
+    <meta name="theme-color" content="#050816">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/images/icon-192.png">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/assets/css/hub.css">
+
+    <!-- Auth Guard (redirects to /auth if not logged in) -->
+    <script src="/assets/js/auth-guard.js"></script>
+</head>
+<body>
+    <!-- Background Glows -->
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
+
+    <div class="hub-container">
+        <!-- Header -->
+        <header class="hub-header">
+            <div class="brand-section">
+                <div class="brand-logo-badge" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="6" width="20" height="12" rx="2"/>
+                        <path d="M6 12h4m-2-2v4"/>
+                        <circle cx="17" cy="10" r="1"/>
+                        <circle cx="15" cy="13" r="1"/>
+                    </svg>
+                </div>
+                <div class="brand-info">
+                    <h1>Neon <span>Arcade</span></h1>
+                    <div class="user-greeting-badge">
+                        <span>Pilot:</span> <strong id="hubUsername">Player</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Actions -->
+            <div class="hub-actions">
+                <button id="themeToggleBtn" class="hub-btn" title="Toggle Theme" aria-label="Toggle Theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <button id="pwaInstallBtn" class="hub-btn" title="Install App" aria-label="Install App">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                </button>
+                <a href="/admin" id="adminBtn" class="hub-btn btn-admin" title="Admin Dashboard" aria-label="Admin Dashboard" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 20h20"/>
+                        <path d="m4 20 2-10 6 4 4-8 4 8 2-4 2 10"/>
+                    </svg>
+                </a>
+                <button id="logoutBtn" class="hub-btn btn-logout" title="Sign Out" aria-label="Sign Out">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Welcome Hero -->
+        <section class="hub-hero">
+            <span class="hub-tagline">⚡ Next-Gen Cyber Portal ⚡</span>
+            <h2>CHOOSE YOUR <span>ARENA</span></h2>
+            <p>One unified account. High-speed battles, tactical strategy, and neon arcade classics.</p>
+        </section>
+
+        <!-- Games Grid -->
+        <main class="games-grid">
+            <!-- Game 1: Tic Tac Toe -->
+            <article class="game-card">
+                <div class="game-card-preview card-preview-ttt">
+                    <span class="preview-badge badge-live">Multiplayer &amp; AI</span>
+                    <div class="preview-icon-wrap icon-ttt" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="game-card-body">
+                    <h3 class="game-card-title">Neon Tic Tac Toe</h3>
+                    <p class="game-card-desc">The flagship 3x3 neon grid battle. Play local 2-Player, challenge the smart AI, or battle live online opponents!</p>
+                    <div class="game-tags">
+                        <span class="game-tag">3x3 Grid</span>
+                        <span class="game-tag">Smart AI</span>
+                        <span class="game-tag">Live 1v1 Online</span>
+                        <span class="game-tag">Sound FX</span>
+                    </div>
+                    <a href="/" class="btn-play-game btn-play-ttt">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Play Tic Tac Toe
+                    </a>
+                </div>
+            </article>
+
+            <!-- Game 2: Connect 4 -->
+            <article class="game-card">
+                <div class="game-card-preview card-preview-c4">
+                    <span class="preview-badge badge-new">New Release</span>
+                    <div class="preview-icon-wrap icon-c4" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="7" cy="7" r="3"/>
+                            <circle cx="17" cy="7" r="3"/>
+                            <circle cx="7" cy="17" r="3"/>
+                            <circle cx="17" cy="17" r="3"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="game-card-body">
+                    <h3 class="game-card-title">Neon Connect 4</h3>
+                    <p class="game-card-desc">7x6 vertical drop arena. Connect four glowing neon discs in a row horizontally, vertically, or diagonally to triumph.</p>
+                    <div class="game-tags">
+                        <span class="game-tag">7x6 Arena</span>
+                        <span class="game-tag">Local 2P</span>
+                        <span class="game-tag">Cyber AI</span>
+                        <span class="game-tag">Drop Physics</span>
+                    </div>
+                    <a href="/connect4" class="btn-play-game btn-play-c4">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Play Connect 4
+                    </a>
+                </div>
+            </article>
+
+            <!-- Game 3: Neon Cyber Snake -->
+            <article class="game-card">
+                <div class="game-card-preview card-preview-snake">
+                    <span class="preview-badge badge-arcade">Arcade Classic</span>
+                    <div class="preview-icon-wrap icon-snake" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="4 17 10 11 4 5"/>
+                            <line x1="12" y1="19" x2="20" y2="19"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="game-card-body">
+                    <h3 class="game-card-title">Cyber Snake</h3>
+                    <p class="game-card-desc">High-speed retro neon cyber snake. Gobble glowing quantum energy orbs, survive speed ramps, and smash high scores!</p>
+                    <div class="game-tags">
+                        <span class="game-tag">Arcade Reflex</span>
+                        <span class="game-tag">Energy Orbs</span>
+                        <span class="game-tag">High Scores</span>
+                        <span class="game-tag">Mobile Touch</span>
+                    </div>
+                    <a href="/snake" class="btn-play-game btn-play-snake">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Play Cyber Snake
+                    </a>
+                </div>
+            </article>
+        </main>
+
+        <!-- Footer -->
+        <footer class="hub-footer">
+            <p>Neon Gaming Platform &copy; 2026. All games synchronized with your Neon Player ID.</p>
+        </footer>
+    </div>
+
+    <!-- Hub Interactive Script -->
+    <script>
+    (function initHub() {
+        // Read session
+        var session = null;
+        try {
+            var raw = localStorage.getItem("neonGaming_session");
+            if (raw) session = JSON.parse(raw);
+        } catch(e) {}
+
+        var usernameEl = document.getElementById("hubUsername");
+        if (session && session.username && usernameEl) {
+            usernameEl.textContent = session.username;
+        }
+
+        // Show Admin button if role is admin
+        var adminBtn = document.getElementById("adminBtn");
+        if (session && session.role === "admin" && adminBtn) {
+            adminBtn.style.display = "inline-flex";
+        }
+
+        // Logout
+        var logoutBtn = document.getElementById("logoutBtn");
+        if (logoutBtn) {
+            logoutBtn.addEventListener("click", function() {
+                try {
+                    localStorage.removeItem("neonGaming_session");
+                    localStorage.removeItem("neonGaming_token");
+                } catch(e) {}
+                window.location.href = "/auth";
+            });
+        }
+
+        // Theme Toggle
+        var themeToggleBtn = document.getElementById("themeToggleBtn");
+        var savedTheme = localStorage.getItem("neonTheme") || "dark";
+        if (savedTheme === "light") {
+            document.body.classList.add("light-theme");
+        }
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener("click", function() {
+                document.body.classList.toggle("light-theme");
+                var isLight = document.body.classList.contains("light-theme");
+                try {
+                    localStorage.setItem("neonTheme", isLight ? "light" : "dark");
+                } catch(e) {}
+            });
+        }
+
+        // PWA Install Prompt
+        var deferredPrompt = null;
+        var pwaBtn = document.getElementById("pwaInstallBtn");
+        window.addEventListener("beforeinstallprompt", function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (pwaBtn) pwaBtn.style.display = "inline-flex";
+        });
+        if (pwaBtn) {
+            pwaBtn.addEventListener("click", function() {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(function(res) {
+                        deferredPrompt = null;
+                    });
+                } else {
+                    alert("To install the Neon Arcade App, tap 'Share' or browser settings (⋮) and select 'Add to Home Screen'!");
+                }
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

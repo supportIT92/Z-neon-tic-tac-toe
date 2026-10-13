@@ -1,9 +1,15 @@
-// Neon Tic Tac Toe - PWA Service Worker
-const CACHE_NAME = "neon-ttt-v2";
+// Neon Arcade Multi-Game - PWA Service Worker
+const CACHE_NAME = "neon-arcade-v1";
 const ASSETS_TO_CACHE = [
   "/",
+  "/hub",
+  "/connect4",
+  "/snake",
   "/manifest.json",
   "/assets/css/style.css",
+  "/assets/css/hub.css",
+  "/assets/css/connect4.css",
+  "/assets/css/snake.css",
   "/assets/images/icon-192.png",
   "/assets/images/icon-512.png"
 ];

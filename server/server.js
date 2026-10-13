@@ -120,10 +120,13 @@ app.get("/ping",   (req, res) => res.status(200).send("pong"));
 app.get("/health", (req, res) => res.status(200).json({ status: "ok", uptime: Math.floor(process.uptime()) }));
 
 // Clean URLs
-app.get("/auth",   (req, res) => res.sendFile(path.join(FRONTEND_DIR, "auth/index.html")));
-app.get("/online", (req, res) => res.sendFile(path.join(FRONTEND_DIR, "online/index.html")));
-app.get("/admin",  (req, res) => res.sendFile(path.join(FRONTEND_DIR, "admin/index.html")));
-app.get("/",       (req, res) => res.sendFile(path.join(FRONTEND_DIR, "index.html")));
+app.get("/auth",     (req, res) => res.sendFile(path.join(FRONTEND_DIR, "auth/index.html")));
+app.get("/hub",      (req, res) => res.sendFile(path.join(FRONTEND_DIR, "hub/index.html")));
+app.get("/connect4", (req, res) => res.sendFile(path.join(FRONTEND_DIR, "connect4/index.html")));
+app.get("/snake",    (req, res) => res.sendFile(path.join(FRONTEND_DIR, "snake/index.html")));
+app.get("/online",   (req, res) => res.sendFile(path.join(FRONTEND_DIR, "online/index.html")));
+app.get("/admin",    (req, res) => res.sendFile(path.join(FRONTEND_DIR, "admin/index.html")));
+app.get("/",         (req, res) => res.sendFile(path.join(FRONTEND_DIR, "index.html")));
 
 // ── API Routes ───────────────────────────────────────────────
 app.use("/api/auth",  authRoutes);

@@ -1,9 +1,9 @@
 {
-  "name": "Neon Tic Tac Toe",
-  "short_name": "TicTacToe",
-  "description": "The ultimate neon multiplayer Tic Tac Toe battle with AI and online matchmaking",
+  "name": "Neon Arcade — Multi Game",
+  "short_name": "Neon Arcade",
+  "description": "Neon Arcade: Play Tic Tac Toe, Connect 4, Cyber Snake and more",
   "id": "/",
-  "start_url": "/?pwa=1",
+  "start_url": "/hub",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

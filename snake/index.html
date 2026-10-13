@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Cyber Snake — Neon Arcade</title>
+    <meta name="description" content="Play Neon Cyber Snake: Retro arcade cyber snake with food orbs, speed ramping, and high scores.">
+    
+    <meta name="theme-color" content="#050816">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/images/icon-192.png">
+
+    <link rel="stylesheet" href="/assets/css/snake.css">
+    <!-- Auth Guard -->
+    <script src="/assets/js/auth-guard.js"></script>
+</head>
+<body>
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
+
+    <div class="snake-container">
+        <!-- Header -->
+        <header class="snake-header">
+            <a href="/hub" class="nav-back-link" title="Return to Arcade Hub">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Arcade Hub</span>
+            </a>
+
+            <div class="snake-title">
+                <h1>CYBER <span>SNAKE</span></h1>
+            </div>
+
+            <div class="snake-controls-top">
+                <button id="themeToggleBtn" class="mini-btn" title="Toggle Theme" aria-label="Toggle Theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Score Tracker -->
+        <div class="snake-scoreboard">
+            <div class="score-box score-current">
+                <span>SCORE</span>
+                <strong id="scoreCurrent">0</strong>
+            </div>
+            <div class="score-box score-speed">
+                <span>SPEED</span>
+                <strong id="scoreSpeed">1x</strong>
+            </div>
+            <div class="score-box score-high">
+                <span>BEST SCORE</span>
+                <strong id="scoreHigh">0</strong>
+            </div>
+        </div>
+
+        <!-- The Canvas Stage -->
+        <main class="canvas-wrap">
+            <canvas id="snakeCanvas" width="400" height="400"></canvas>
+
+            <!-- Overlay Start/Game Over -->
+            <div class="canvas-overlay active" id="canvasOverlay">
+                <h2 id="overlayTitle">CYBER PROTOCOL</h2>
+                <p id="overlayDesc">Use Arrow keys, WASD, or on-screen D-Pad to navigate and collect glowing energy orbs.</p>
+                <button id="overlayBtn" class="overlay-btn">START RUN</button>
+            </div>
+        </main>
+
+        <!-- Mobile Touch D-Pad -->
+        <div class="dpad-container" aria-label="Touch Controls">
+            <div class="dpad-row">
+                <button id="dpadUp" class="dpad-btn" aria-label="Up">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                </button>
+            </div>
+            <div class="dpad-row">
+                <button id="dpadLeft" class="dpad-btn" aria-label="Left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <button id="dpadDown" class="dpad-btn" aria-label="Down">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <button id="dpadRight" class="dpad-btn" aria-label="Right">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/snake.js"></script>
+</body>
+</html>
