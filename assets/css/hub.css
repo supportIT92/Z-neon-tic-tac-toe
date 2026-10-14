@@ -277,6 +277,10 @@ body {
     background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
     border-bottom: 1px solid rgba(255, 43, 214, 0.25);
 }
+.card-preview-chess {
+    background: linear-gradient(135deg, #0f1c3f 0%, #1e1b4b 100%);
+    border-bottom: 1px solid rgba(0, 247, 255, 0.25);
+}
 
 .preview-badge {
     position: absolute;
@@ -354,6 +358,16 @@ body {
     box-shadow: 0 0 24px rgba(0, 247, 255, 0.35);
 }
 .icon-pong svg {
+    width: 46px;
+    height: 46px;
+    color: var(--cyan);
+}
+.icon-chess {
+    background: radial-gradient(circle, rgba(0, 247, 255, 0.25) 0%, rgba(255, 215, 0, 0.2) 100%);
+    border: 1.5px solid rgba(0, 247, 255, 0.5);
+    box-shadow: 0 0 24px rgba(0, 247, 255, 0.35);
+}
+.icon-chess svg {
     width: 46px;
     height: 46px;
     color: var(--cyan);
@@ -458,6 +472,16 @@ body {
     background: linear-gradient(135deg, #38bdf8, #f43f5e);
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(255, 43, 214, 0.5);
+}
+.btn-play-chess {
+    background: linear-gradient(135deg, #00f7ff, #ffd700);
+    color: #050816;
+    box-shadow: 0 4px 18px rgba(0, 247, 255, 0.35);
+}
+.btn-play-chess:hover {
+    background: linear-gradient(135deg, #ffd700, #00f7ff);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.5);
 }
 
 /* Footer & System info */
