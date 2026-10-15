@@ -11,10 +11,11 @@
     // ── 1. ACHIEVEMENTS SYSTEM ─────────────────────────────
     var ACHIEVEMENTS = [
         { id: "first_blood", title: "First Blood", desc: "Won your first game in the Arcade", icon: "⚔️", xp: 50 },
-        { id: "tactician", title: "Cyber Tactician", desc: "Defeated the AI in Connect 4 or Tic Tac Toe", icon: "🧠", xp: 75 },
-        { id: "snake_pro", title: "Orb Glutton", desc: "Reached 100+ points in Cyber Snake", icon: "🐍", xp: 100 },
-        { id: "pong_ace", title: "Speed Demon", desc: "Scored 7 points in Cyber Pong", icon: "⚡", xp: 100 },
-        { id: "daily_spin", title: "High Roller", desc: "Spun the Daily Cyber Wheel", icon: "🎰", xp: 40 }
+        { id: "tactician", title: "Master Tactician", desc: "Defeated the AI in Neon Connect 4 or Neon Tic Tac Toe", icon: "🧠", xp: 75 },
+        { id: "snake_pro", title: "Orb Glutton", desc: "Reached 100+ points in Neon Snake", icon: "🐍", xp: 100 },
+        { id: "pong_ace", title: "Speed Demon", desc: "Scored 7 points in Neon Pong", icon: "⚡", xp: 100 },
+        { id: "chess_master", title: "Grandmaster", desc: "Won a match in Neon Chess", icon: "♟️", xp: 150 },
+        { id: "daily_spin", title: "High Roller", desc: "Spun the Daily Lucky Wheel", icon: "🎰", xp: 40 }
     ];
 
     function getUnlockedAchievements() {
@@ -90,7 +91,7 @@
         { label: "+50 XP", xp: 50, color: "#00f7ff" },
         { label: "Rare Badge", xp: 120, color: "#ff2bd6" },
         { label: "+25 XP", xp: 25, color: "#10b981" },
-        { label: "Cyber Title", xp: 80, color: "#ffd700" },
+        { label: "Neon Title", xp: 80, color: "#ffd700" },
         { label: "+100 XP", xp: 100, color: "#8b5cf6" },
         { label: "+75 XP", xp: 75, color: "#f43f5e" }
     ];
@@ -127,11 +128,12 @@
 
     // ── 3. LIVE ACTIVITY TICKER ────────────────────────────
     var MOCK_ACTIVITIES = [
-        "⚡ Player @Alex won a battle in Tic Tac Toe!",
-        "🔴 @CyberNinja connected 4 tokens vs Cyber AI!",
-        "🐍 @Kavya reached 260 points in Cyber Snake!",
-        "🏓 @Viper struck an ace in Cyber Pong!",
-        "🌟 @Rohit reached LVL 3 in Neon Arcade!",
+        "⚡ Player @Alex won a battle in Neon Tic Tac Toe!",
+        "🔴 @Aarav connected 4 discs in Neon Connect 4!",
+        "🐍 @Kavya scored 280 points in Neon Snake!",
+        "🏓 @Viper took the championship in Neon Pong!",
+        "♟️ @Rohan delivered checkmate in Neon Chess!",
+        "🌟 @Rohit leveled up to LVL 3 in Neon Arcade!",
         "🎰 @Shadow unlocked the High Roller trophy!"
     ];
 
