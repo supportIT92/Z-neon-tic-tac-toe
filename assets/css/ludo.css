@@ -1,0 +1,449 @@
+/* ========================================================
+   NEON LUDO CLASSIC — Stylesheet
+   Theme: Cyan #00f7ff, Pink #ff2bd6, Gold #ffd700, Green #10b981
+======================================================== */
+
+:root {
+    --cyan:        #00f7ff;
+    --pink:        #ff2bd6;
+    --yellow:      #ffd700;
+    --green:       #10b981;
+    --dark:        #050816;
+    --text:        #ffffff;
+    --card-bg:     rgba(13, 20, 44, 0.75);
+    --card-border: rgba(255, 255, 255, 0.15);
+    --muted:       #94a3b8;
+}
+
+body.light-theme {
+    --dark:        #edf7ff;
+    --text:        #0f172a;
+    --card-bg:     rgba(255, 255, 255, 0.85);
+    --card-border: rgba(15, 23, 42, 0.15);
+    --muted:       #475569;
+}
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(circle at 15% 15%, #172554 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, #064e3b 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, #0d1430 0%, transparent 70%),
+        var(--dark);
+    background-attachment: fixed;
+    overflow-x: hidden;
+    position: relative;
+    padding-bottom: 40px;
+}
+
+.bg-glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.35;
+}
+.bg-glow-1 {
+    width: 380px;
+    height: 380px;
+    background: var(--cyan);
+    top: -80px;
+    left: -80px;
+}
+.bg-glow-2 {
+    width: 420px;
+    height: 420px;
+    background: var(--pink);
+    bottom: -100px;
+    right: -100px;
+}
+
+.ludo-container {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 20px 16px;
+}
+
+/* Header */
+.ludo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 14px 20px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    margin-bottom: 18px;
+}
+.nav-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--cyan);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(0, 247, 255, 0.1);
+    border: 1px solid rgba(0, 247, 255, 0.3);
+    transition: all 0.2s ease;
+}
+.nav-back-link:hover {
+    background: rgba(0, 247, 255, 0.22);
+    box-shadow: 0 0 14px rgba(0, 247, 255, 0.3);
+    transform: translateX(-3px);
+}
+.nav-back-link svg {
+    width: 18px;
+    height: 18px;
+}
+
+.ludo-title h1 {
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    text-align: center;
+}
+.ludo-title h1 span {
+    background: linear-gradient(135deg, var(--cyan), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.mini-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.mini-btn:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+}
+.mini-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Control & Mode Bar */
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(14px);
+    padding: 12px 18px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.mode-selectors {
+    display: flex;
+    gap: 8px;
+}
+.mode-btn {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.mode-btn.active {
+    background: linear-gradient(135deg, var(--cyan), #0284c7);
+    color: #050816;
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px rgba(0, 247, 255, 0.4);
+}
+
+.turn-status-badge {
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.turn-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.dot-cyan { background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
+.dot-pink { background: var(--pink); box-shadow: 0 0 12px var(--pink); }
+
+/* The Ludo Board Wrap */
+.ludo-board-wrap {
+    background: linear-gradient(145deg, #09132b, #040918);
+    border: 2px solid rgba(0, 247, 255, 0.4);
+    border-radius: 20px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 247, 255, 0.15);
+    padding: 14px;
+    margin: 0 auto 20px;
+    max-width: 580px;
+    aspect-ratio: 1;
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.ludo-grid {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    grid-template-rows: repeat(15, 1fr);
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: #050816;
+}
+
+.cell {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+/* Home Bases */
+.home-base {
+    position: absolute;
+    width: 40%;
+    height: 40%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+.home-cyan {
+    top: 0; left: 0;
+    background: rgba(0, 247, 255, 0.15);
+    border-right: 2px solid var(--cyan);
+    border-bottom: 2px solid var(--cyan);
+}
+.home-green {
+    top: 0; right: 0;
+    background: rgba(16, 185, 129, 0.15);
+    border-left: 2px solid var(--green);
+    border-bottom: 2px solid var(--green);
+}
+.home-yellow {
+    bottom: 0; left: 0;
+    background: rgba(255, 215, 0, 0.15);
+    border-right: 2px solid var(--yellow);
+    border-top: 2px solid var(--yellow);
+}
+.home-pink {
+    bottom: 0; right: 0;
+    background: rgba(255, 43, 214, 0.15);
+    border-left: 2px solid var(--pink);
+    border-top: 2px solid var(--pink);
+}
+
+.base-inner-box {
+    width: 80%;
+    height: 80%;
+    background: rgba(5, 8, 22, 0.7);
+    border-radius: 14px;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+}
+
+.token-nest {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+}
+
+/* Center Triangle / Victory Zone */
+.ludo-center-zone {
+    position: absolute;
+    top: 40%; left: 40%;
+    width: 20%; height: 20%;
+    background: radial-gradient(circle, #1e1b4b 0%, #050816 100%);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    box-shadow: inset 0 0 15px rgba(0, 247, 255, 0.3);
+}
+
+/* Tokens */
+.ludo-token {
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    border: 2px solid #ffffff;
+    z-index: 5;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+}
+.token-cyan {
+    background: radial-gradient(circle at 30% 30%, #a5f3fc, var(--cyan) 60%, #0284c7);
+    box-shadow: 0 0 12px var(--cyan);
+}
+.token-pink {
+    background: radial-gradient(circle at 30% 30%, #fbcfe8, var(--pink) 60%, #b80093);
+    box-shadow: 0 0 12px var(--pink);
+}
+
+.ludo-token.can-move {
+    animation: tokenBounce 0.6s infinite alternate;
+    cursor: pointer !important;
+}
+@keyframes tokenBounce {
+    0% { transform: scale(1); filter: brightness(1); }
+    100% { transform: scale(1.25); filter: brightness(1.4) drop-shadow(0 0 8px #fff); }
+}
+
+/* Path Tracks */
+.cell.track-cyan { background: rgba(0, 247, 255, 0.25); }
+.cell.track-pink { background: rgba(255, 43, 214, 0.25); }
+.cell.safe-star {
+    font-size: 1rem;
+    color: var(--yellow);
+    text-shadow: 0 0 8px var(--yellow);
+}
+
+/* Dice Section Bar */
+.dice-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(14px);
+    border-radius: 16px;
+    padding: 14px 20px;
+    margin-top: 10px;
+}
+.player-tag {
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+.dice-box {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border: 2px solid var(--cyan);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 247, 255, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+}
+.dice-box:hover {
+    transform: scale(1.06);
+    box-shadow: 0 8px 24px rgba(0, 247, 255, 0.55);
+}
+.dice-box.rolling {
+    animation: diceShake 0.45s ease-in-out;
+}
+@keyframes diceShake {
+    0% { transform: rotate(0deg) scale(1.1); }
+    25% { transform: rotate(20deg) scale(1.15); }
+    50% { transform: rotate(-20deg) scale(1.15); }
+    75% { transform: rotate(10deg) scale(1.1); }
+    100% { transform: rotate(0deg) scale(1); }
+}
+
+.dice-hint {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+/* Modal Victory */
+.victory-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(5, 8, 22, 0.88);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.victory-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+.victory-modal {
+    background: var(--card-bg);
+    border: 2px solid var(--cyan);
+    border-radius: 20px;
+    padding: 32px 28px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(0, 247, 255, 0.35);
+}
+.victory-modal h2 { font-size: 2rem; margin-bottom: 8px; font-weight: 900; }
+.victory-modal p { color: var(--muted); font-size: 1rem; margin-bottom: 24px; }
+.btn-reset-ludo {
+    padding: 12px 28px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--cyan), #0284c7);
+    color: #050816;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(0, 247, 255, 0.4);
+}

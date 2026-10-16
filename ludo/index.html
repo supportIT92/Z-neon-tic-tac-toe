@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Ludo — Neon Arcade</title>
+    <meta name="description" content="Play Neon Ludo: Classic Indian Ludo with glowing neon board, roll 6 to open, captures and Smart AI.">
+    
+    <meta name="theme-color" content="#050816">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/images/icon-192.png">
+
+    <link rel="stylesheet" href="/assets/css/ludo.css">
+    <!-- Auth Guard -->
+    <script src="/assets/js/auth-guard.js"></script>
+</head>
+<body>
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
+
+    <div class="ludo-container">
+        <!-- Header -->
+        <header class="ludo-header">
+            <a href="/hub" class="nav-back-link" title="Return to Arcade Hub">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Arcade Hub</span>
+            </a>
+
+            <div class="ludo-title">
+                <h1>NEON <span>LUDO</span></h1>
+            </div>
+
+            <div class="ludo-controls-top">
+                <button id="themeToggleBtn" class="mini-btn" title="Toggle Theme" aria-label="Toggle Theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="mode-selectors">
+                <button id="modeAiBtn" class="mode-btn active">VS SMART AI</button>
+                <button id="mode2pBtn" class="mode-btn">2 PLAYER</button>
+            </div>
+            <div class="turn-status-badge" id="turnIndicator">
+                <span class="turn-dot dot-cyan"></span>
+                <span>Cyan Turn</span>
+            </div>
+        </div>
+
+        <!-- The 15x15 Ludo Board -->
+        <main class="ludo-board-wrap">
+            <div class="ludo-grid" id="ludoGrid"></div>
+
+            <!-- Home Base Cyan (Top-Left) -->
+            <div class="home-base home-cyan">
+                <div class="base-inner-box">
+                    <div class="token-nest" id="nest-cyan-0"></div>
+                    <div class="token-nest" id="nest-cyan-1"></div>
+                    <div class="token-nest" id="nest-cyan-2"></div>
+                    <div class="token-nest" id="nest-cyan-3"></div>
+                </div>
+            </div>
+
+            <!-- Home Base Green (Top-Right) -->
+            <div class="home-base home-green">
+                <div class="base-inner-box">
+                    <div class="token-nest"></div>
+                    <div class="token-nest"></div>
+                    <div class="token-nest"></div>
+                    <div class="token-nest"></div>
+                </div>
+            </div>
+
+            <!-- Home Base Yellow (Bottom-Left) -->
+            <div class="home-base home-yellow">
+                <div class="base-inner-box">
+                    <div class="token-nest"></div>
+                    <div class="token-nest"></div>
+                    <div class="token-nest"></div>
+                    <div class="token-nest"></div>
+                </div>
+            </div>
+
+            <!-- Home Base Pink (Bottom-Right) -->
+            <div class="home-base home-pink">
+                <div class="base-inner-box">
+                    <div class="token-nest" id="nest-pink-0"></div>
+                    <div class="token-nest" id="nest-pink-1"></div>
+                    <div class="token-nest" id="nest-pink-2"></div>
+                    <div class="token-nest" id="nest-pink-3"></div>
+                </div>
+            </div>
+
+            <!-- Center Home Run Zone -->
+            <div class="ludo-center-zone" id="ludoCenterZone">
+                👑
+            </div>
+        </main>
+
+        <!-- Dice Section -->
+        <div class="dice-section">
+            <div class="player-tag" id="playerTag">CYAN</div>
+            <div class="dice-box" id="diceBox" title="Tap to Roll">🎲</div>
+            <div class="dice-hint" id="diceHint">Tap dice to roll!</div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div class="victory-modal-overlay" id="victoryModalOverlay">
+        <div class="victory-modal">
+            <h2 id="victoryTitle">CYAN WINS!</h2>
+            <p id="victoryDesc">All 4 tokens reached home victory triangle!</p>
+            <button id="victoryPlayAgain" class="btn-reset-ludo">Play Again</button>
+        </div>
+    </div>
+
+    <script src="/assets/js/ludo.js"></script>
+</body>
+</html>

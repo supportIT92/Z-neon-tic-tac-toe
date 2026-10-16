@@ -281,6 +281,10 @@ body {
     background: linear-gradient(135deg, #0f1c3f 0%, #1e1b4b 100%);
     border-bottom: 1px solid rgba(0, 247, 255, 0.25);
 }
+.card-preview-ludo {
+    background: linear-gradient(135deg, #062820 0%, #1e1b4b 100%);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.25);
+}
 
 .preview-badge {
     position: absolute;
@@ -371,6 +375,16 @@ body {
     width: 46px;
     height: 46px;
     color: var(--cyan);
+}
+.icon-ludo {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.25) 0%, rgba(255, 43, 214, 0.25) 100%);
+    border: 1.5px solid rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 24px rgba(255, 215, 0, 0.35);
+}
+.icon-ludo svg {
+    width: 46px;
+    height: 46px;
+    color: var(--yellow);
 }
 
 /* Card Details */
@@ -482,6 +496,16 @@ body {
     background: linear-gradient(135deg, #ffd700, #00f7ff);
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(255, 215, 0, 0.5);
+}
+.btn-play-ludo {
+    background: linear-gradient(135deg, #ffd700, #ff2bd6);
+    color: #050816;
+    box-shadow: 0 4px 18px rgba(255, 215, 0, 0.35);
+}
+.btn-play-ludo:hover {
+    background: linear-gradient(135deg, #ff2bd6, #ffd700);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255, 43, 214, 0.5);
 }
 
 /* Footer & System info */

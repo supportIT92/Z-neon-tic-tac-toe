@@ -133,6 +133,7 @@
         "🐍 @Kavya scored 280 points in Neon Snake!",
         "🏓 @Viper took the championship in Neon Pong!",
         "♟️ @Rohan delivered checkmate in Neon Chess!",
+        "🎲 @Ankit brought all 4 tokens home in Neon Ludo!",
         "🌟 @Rohit leveled up to LVL 3 in Neon Arcade!",
         "🎰 @Shadow unlocked the High Roller trophy!"
     ];
